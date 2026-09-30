@@ -88,8 +88,22 @@ android {
         }
     }
 
+    // Release signing: the keystore and its passwords stay out of the repository. Set
+    // DRAFFT_KEYSTORE_FILE, DRAFFT_KEYSTORE_PASSWORD, DRAFFT_KEY_ALIAS and DRAFFT_KEY_PASSWORD (CI secrets,
+    // or the shell). Without them a release build is left unsigned.
+    val releaseKeystore = System.getenv("DRAFFT_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+    signingConfigs {
+        if (releaseKeystore != null) create("release") {
+            storeFile = file(releaseKeystore)
+            storePassword = System.getenv("DRAFFT_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("DRAFFT_KEY_ALIAS")
+            keyPassword = System.getenv("DRAFFT_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
