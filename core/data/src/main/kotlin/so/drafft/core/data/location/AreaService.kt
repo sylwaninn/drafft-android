@@ -8,6 +8,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.backend.asObject
+import so.drafft.core.data.backend.attempt
+import so.drafft.core.data.backend.attemptOrNull
+import so.drafft.core.data.backend.parseJsonOrNull
+import so.drafft.core.data.backend.string
 import so.drafft.core.data.platform.Coordinate
 import so.drafft.core.data.platform.LocationProvider
 import so.drafft.core.data.platform.LocationProvider.Authorization
@@ -47,10 +53,30 @@ object LocationPrivacy {
 }
 
 /**
- * Resolved on the device until the server does it. The server will do a
- * point-in-polygon test against official boundaries (IGN / INSEE / OpenStreetMap); here the
- * arrondissements of Paris, Lyon and Marseille are approximated by their centres, and any other
- * place falls back to the city name from the system geocoder, never the street.
+ * The server's answer (`area_at`): the commune or arrondissement the blurred position falls in,
+ * from official boundaries, so every app shows the same name without a geocoder (Android without
+ * Google Play services has none). Offline, outside France, or before the areas are loaded, the
+ * server has none: resolved on the device instead ([fallback]).
+ */
+class ServerAreaResolver(private val backend: Backend, private val fallback: AreaResolving) : AreaResolving {
+    override suspend fun area(blurred: Coordinate): Area? =
+        attempt { backend.rpc("area_at", mapOf("p_lat" to blurred.latitude, "p_lng" to blurred.longitude)) }
+            ?.let(::areaFrom)
+            ?: fallback.area(blurred)
+
+    companion object {
+        /** `{"name", "city"}`, or null for the server's `null` and anything it doesn't recognise. */
+        fun areaFrom(response: ByteArray): Area? {
+            val found = response.parseJsonOrNull().asObject ?: return null
+            return attemptOrNull { Area(found.string("name"), found.string("city")) }
+        }
+    }
+}
+
+/**
+ * Resolved on the device, when the server has no answer: the arrondissements of Paris, Lyon and
+ * Marseille are approximated by their centres, and any other place falls back to the city name
+ * from the system geocoder, never the street.
  */
 class OnDeviceAreaResolver(private val location: LocationProvider) : AreaResolving {
     private class City(val name: String, val radiusKm: Double, val centres: List<Coordinate>)
