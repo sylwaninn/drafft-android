@@ -414,10 +414,9 @@ Hear %s
 Hear about matches, messages and sessions right away.
 Help
 Help center
-Hidden from Discover and likes. Your chats and sessions carry on.
 Hide My Email
-Hide from Discover for a while. Your chats stay open.
 Hide password
+Hides you from Discover and likes. Your chats and sessions carry on.
 Hiking
 Hill repeats and a view?
 Hockey

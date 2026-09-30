@@ -1,6 +1,5 @@
 package so.drafft.app.feature.me
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.VisibilityThreshold
@@ -11,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -168,11 +166,8 @@ fun MeView(modifier: Modifier = Modifier) {
                 ToggleSettingsRow(
                     L("Pause my profile"),
                     "pause.fill",
-                    detail = if (app.profilePaused) {
-                        L("Hidden from Discover and likes. Your chats and sessions carry on.")
-                    } else {
-                        L("Hide from Discover for a while. Your chats stay open.")
-                    },
+                    // One text, on or off: the strip under the card says it's on.
+                    detail = L("Hides you from Discover and likes. Your chats and sessions carry on."),
                     isOn = app.profilePaused,
                     onChange = { app.profilePaused = it },
                     tint = p.paused,
@@ -555,7 +550,8 @@ private fun PausedStrip(visible: Boolean) {
                     val placeable = measurable.measure(constraints)
                     layout(placeable.width, (placeable.height - tuck).coerceAtLeast(0)) { placeable.place(0, -tuck) }
                 }
-                .background(p.paused, RoundedCornerShape(DS.Radius.xl))
+                // Square at the top: it continues the card rather than sitting behind it.
+                .background(p.paused, RoundedCornerShape(bottomStart = DS.Radius.xl, bottomEnd = DS.Radius.xl))
                 .padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Radius.xl + DS.Space.md, bottom = DS.Space.md)
                 .semantics(mergeDescendants = true) { },
             horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
@@ -679,13 +675,7 @@ private fun ToggleSettingsRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(title, style = TextStyles.body.semibold, color = p.ink)
             if (detail != null) {
-                AnimatedContent(
-                    targetState = detail,
-                    transitionSpec = { fadeIn(Motion.snappy()) togetherWith fadeOut(Motion.snappy()) },
-                    label = "toggleDetail",
-                ) { text ->
-                    Text(text, style = TextStyles.footnote, color = p.body)
-                }
+                Text(detail, style = TextStyles.footnote, color = p.body)
             }
         }
         DrafftSwitch(

@@ -662,7 +662,7 @@ class AppModel(
         backend.events.collect { event ->
             when (event) {
                 Backend.Event.PROFILE_PAUSED_BY_SERVER -> {
-                    applyServerPause(true)
+                    serverRefusedPaused()
                     scope.launch { moderation.load() }
                 }
                 Backend.Event.ACCOUNT_HELD_BY_SERVER -> scope.launch { moderation.load() }
@@ -1510,8 +1510,9 @@ class AppModel(
 
     /** The person flipped the switch: send it (the server's own state isn't sent back). */
     private fun pauseChanged(from: Boolean) {
-        // Resumed: discovery reads the deck again (nothing was read while paused).
-        if (from && !profilePaused) refreshDiscovery()
+        // Resumed by the server (another device, a lifted hold): discovery reads the deck again. A
+        // flip on this phone does it once saved (`syncPause`).
+        if (from && !profilePaused && pauseFromServer) refreshDiscovery()
         if (profilePaused == from || pauseFromServer) return
         val paused = profilePaused
         pauseEdits += 1
@@ -1531,6 +1532,15 @@ class AppModel(
     }
 
     /**
+     * A request was refused because the profile is paused. While a flip is being saved the refusal
+     * may predate it, and the save's own outcome decides.
+     */
+    fun serverRefusedPaused() {
+        if (pauseSaves > 0) return
+        applyServerPause(true)
+    }
+
+    /**
      * Sends the switch to the server; if it can't be saved (signed out included), the switch goes
      * back to the server's state.
      */
@@ -1538,6 +1548,9 @@ class AppModel(
         pauseSaves += 1
         try {
             backend.updateMyProfile(jsonOf("paused" to paused))
+            // Resumed: discovery reads the deck again (nothing was read while paused). Only once the
+            // server has it: asked sooner, it answers "paused" and the pause came back on.
+            if (!paused && edit == pauseEdits) refreshDiscovery()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
