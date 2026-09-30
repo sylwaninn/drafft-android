@@ -58,12 +58,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import java.text.BreakIterator
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.L
@@ -77,7 +71,12 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
-import so.drafft.core.ui.theme.semibold
+import java.text.BreakIterator
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/MessageFocus.swift.
 

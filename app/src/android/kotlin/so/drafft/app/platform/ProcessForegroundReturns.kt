@@ -13,7 +13,10 @@ class ProcessForegroundReturns : ForegroundReturns, DefaultLifecycleObserver {
     private val events = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private var wasStopped = false
 
+    private val leaving = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     override val returns: Flow<Unit> get() = events
+    override val leaves: Flow<Unit> get() = leaving
 
     init {
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
@@ -21,6 +24,7 @@ class ProcessForegroundReturns : ForegroundReturns, DefaultLifecycleObserver {
 
     override fun onStop(owner: LifecycleOwner) {
         wasStopped = true
+        leaving.tryEmit(Unit)
     }
 
     override fun onStart(owner: LifecycleOwner) {

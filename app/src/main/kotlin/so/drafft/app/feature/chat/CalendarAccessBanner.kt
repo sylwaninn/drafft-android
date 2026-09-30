@@ -13,17 +13,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/CalendarAccessBanner.swift.
 

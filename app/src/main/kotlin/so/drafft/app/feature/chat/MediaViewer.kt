@@ -61,27 +61,26 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
-import kotlinx.coroutines.launch
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
 import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.MessageImage
+import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.image.BundledImages
 import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.platform.ShareItem
 import so.drafft.core.ui.platform.VideoPlayer
-import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
+import kotlin.math.abs
+import kotlin.math.min
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/MediaViewer.swift.
 
