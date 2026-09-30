@@ -85,3 +85,12 @@ dependencies {
 }
 
 tasks.test { useJUnit() }
+
+// Some Compose Multiplatform runtime dependencies live on Google's Maven only. The unit tests exercise
+// plain logic (no UI), so they run without them.
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "androidx.arch.core")
+    exclude(group = "androidx.lifecycle")
+    exclude(group = "androidx.annotation")
+    exclude(group = "androidx.collection")
+}
