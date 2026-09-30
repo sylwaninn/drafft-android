@@ -1,5 +1,6 @@
 package so.drafft.app.feature.me
 
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -274,6 +275,7 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
     val stack = rememberNavStack(ROOT)
 
     val close = { if (state.hasChanges) state.confirmDiscard = true else dismiss() }
+    InteractiveDismissDisabled(state.hasChanges || state.saving)
 
     // Saves the whole draft. From a sub-page it returns to the list; from the list it closes the editor.
     val save: () -> Unit = save@{

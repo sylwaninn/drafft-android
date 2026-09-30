@@ -1,5 +1,11 @@
 package so.drafft.core.ui.components
 
+import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.SheetValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -96,10 +102,13 @@ fun DrafftSheet(
     detent: SheetDetent = SheetDetent.LARGE,
     showsGrabber: Boolean = true,
     raised: Boolean = false,
+    dismissDisabled: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    SheetHost(state, onDismissRequest, modifier, detent, showsGrabber, raised, content)
+    val lock = remember { SheetLock() }
+    lock.fixed = dismissDisabled
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true) { it != SheetValue.Hidden || !lock.isLocked }
+    SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, content)
 }
 
 /**
@@ -115,9 +124,12 @@ fun DrafftSheet(
     detent: SheetDetent = SheetDetent.LARGE,
     showsGrabber: Boolean = true,
     raised: Boolean = false,
+    dismissDisabled: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val lock = remember { SheetLock() }
+    lock.fixed = dismissDisabled
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true) { it != SheetValue.Hidden || !lock.isLocked }
     var shown by remember { mutableStateOf(visible) }
     LaunchedEffect(visible) {
         if (visible) {
@@ -127,13 +139,14 @@ fun DrafftSheet(
             shown = false
         }
     }
-    if (shown) SheetHost(state, onDismissRequest, modifier, detent, showsGrabber, raised, content)
+    if (shown) SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, content)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SheetHost(
     state: SheetState,
+    lock: SheetLock,
     onDismissRequest: () -> Unit,
     modifier: Modifier,
     detent: SheetDetent,
@@ -149,6 +162,7 @@ private fun SheetHost(
     }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = !lock.isLocked),
         // A large sheet stops just below the status bar, like the iPhone's.
         modifier = if (detent == SheetDetent.LARGE) Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 10.dp) else Modifier,
         sheetState = state,
@@ -167,6 +181,7 @@ private fun SheetHost(
             LocalIsNightSurface provides false,
             LocalContentColor provides p.ink,
             LocalSheetDismiss provides dismiss,
+            LocalSheetLock provides lock,
         ) {
             val height = when (detent) {
                 SheetDetent.LARGE -> Modifier.fillMaxHeight()
@@ -175,6 +190,33 @@ private fun SheetHost(
             }
             Column(modifier.fillMaxWidth().then(height), content = content)
         }
+    }
+}
+
+/**
+ * Whether the sheet may be closed by a drag, a tap on the scrim or system back (iOS
+ * `interactiveDismissDisabled`). A closing through [LocalSheetDismiss] always works.
+ */
+@Stable
+class SheetLock {
+    internal var fixed by mutableStateOf(false)
+    internal var holds by mutableIntStateOf(0)
+    val isLocked: Boolean get() = fixed || holds > 0
+}
+
+val LocalSheetLock = compositionLocalOf<SheetLock?> { null }
+
+/**
+ * Keeps the enclosing [DrafftSheet] from being swiped or backed away while [disabled] (a purchase
+ * running, a send in flight, unsaved changes), like SwiftUI's `.interactiveDismissDisabled(_:)`.
+ */
+@Composable
+fun InteractiveDismissDisabled(disabled: Boolean = true) {
+    val lock = LocalSheetLock.current ?: return
+    if (!disabled) return
+    DisposableEffect(lock) {
+        lock.holds++
+        onDispose { lock.holds-- }
     }
 }
 

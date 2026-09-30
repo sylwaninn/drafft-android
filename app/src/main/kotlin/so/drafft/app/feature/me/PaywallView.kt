@@ -1,5 +1,6 @@
 package so.drafft.app.feature.me
 
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -145,6 +146,7 @@ fun PaywallView(
     var notice by remember { mutableStateOf<String?>(null) }
     var legal by remember { mutableStateOf<LegalDoc?>(null) }
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
+    InteractiveDismissDisabled(purchasing || receipt != null)
     val scroll = rememberScrollState()
 
     LaunchedEffect(Unit) { store.load() }
