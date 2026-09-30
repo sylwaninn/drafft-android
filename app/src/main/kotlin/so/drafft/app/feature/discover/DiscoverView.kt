@@ -715,7 +715,7 @@ private fun TopBar(onFilters: () -> Unit, onWallet: () -> Unit, onLikes: () -> U
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Wordmark(size = 30f, color = p.ink, trail = p.accentInk, trailStrength = 0.55f)
+            Wordmark(size = 30f, color = p.ink)
             // drafft tempo members get the spark next to the wordmark, as on the paywall.
             AnimatedVisibility(
                 app.isPremium,

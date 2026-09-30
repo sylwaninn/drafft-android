@@ -148,7 +148,6 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
                             modifier = Modifier.clearAndSetSemantics { }.rise(appeared, 0, reduceMotion),
                             size = 26f,
                             color = Color.White,
-                            trail = p.accentOnNight,
                         )
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         // The empty screens' sign, its outline lined up with the text.
