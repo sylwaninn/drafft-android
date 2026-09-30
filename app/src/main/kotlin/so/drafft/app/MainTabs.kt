@@ -1,6 +1,11 @@
 package so.drafft.app
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +65,8 @@ import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.FullScreenCover
 import so.drafft.core.ui.components.LocalTabBarInset
+import so.drafft.core.ui.components.LocalTabBarVisibility
+import so.drafft.core.ui.components.TabBarVisibility
 import so.drafft.core.ui.components.PauseScope
 import so.drafft.core.ui.components.PausedLock
 import so.drafft.core.ui.components.TopOverlayWindow
@@ -103,9 +110,11 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
     var built by remember { mutableStateOf(setOf(app.tab)) }
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val barInset = TabBarHeight + TabBarMargin + navInset
+    // Hidden while a tab's stack shows a pushed screen (a chat).
+    val tabBar = remember { TabBarVisibility() }
 
     Box(modifier.fillMaxSize().background(DS.palette.canvasSoft)) {
-        CompositionLocalProvider(LocalTabBarInset provides barInset) {
+        CompositionLocalProvider(LocalTabBarInset provides barInset, LocalTabBarVisibility provides tabBar) {
             for (item in tabs) {
                 if (item.tab !in built) continue
                 val current = item.tab == app.tab
@@ -129,17 +138,22 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
             }
         }
 
-        TabBar(
-            selected = app.tab,
-            badges = mapOf(AppModel.Tab.LIKES to app.likedMeCount, AppModel.Tab.CHATS to app.unreadTotal),
-            onSelect = { app.tab = it },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .zIndex(3f)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(horizontal = 20.dp)
-                .padding(bottom = TabBarMargin),
-        )
+        AnimatedVisibility(
+            visible = !tabBar.hidden,
+            modifier = Modifier.align(Alignment.BottomCenter).zIndex(3f),
+            enter = slideInVertically(Motion.snappy()) { it } + fadeIn(Motion.snappy()),
+            exit = slideOutVertically(Motion.snappy()) { it } + fadeOut(Motion.snappy()),
+        ) {
+            TabBar(
+                selected = app.tab,
+                badges = mapOf(AppModel.Tab.LIKES to app.likedMeCount, AppModel.Tab.CHATS to app.unreadTotal),
+                onSelect = { app.tab = it },
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = TabBarMargin),
+            )
+        }
 
         // Banners that must sit above everything, sheets included.
         val banner: Any? = when {

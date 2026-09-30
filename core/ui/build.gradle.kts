@@ -41,6 +41,11 @@ dependencies {
     // VideoPlayer (AndroidPlatformUi): ExoPlayer drawn by Media3's Compose surface.
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui.compose)
+    // Front camera for the selfie check (AndroidFrontCamera): CameraX preview, analysis and capture.
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
     api(platform(libs.koin.bom))
     api(libs.koin.compose)
     debugImplementation(libs.compose.ui.tooling)

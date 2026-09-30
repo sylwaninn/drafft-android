@@ -28,6 +28,7 @@ supabase = "3.2.4"
 streamChat = "6.24.0"
 revenuecat = "9.7.2"
 libphonenumber = "9.0.15"
+mlkitFaceDetection = "16.1.7"
 junit = "4.13.2"
 
 [libraries]
@@ -90,6 +91,7 @@ stream-chat-offline = { module = "io.getstream:stream-chat-android-offline", ver
 stream-chat-state = { module = "io.getstream:stream-chat-android-state", version.ref = "streamChat" }
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
+mlkit-face-detection = { module = "com.google.mlkit:face-detection", version.ref = "mlkitFaceDetection" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
