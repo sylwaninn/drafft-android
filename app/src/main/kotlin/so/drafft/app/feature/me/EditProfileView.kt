@@ -32,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.ZoneOffset
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.FrequencyStepper
@@ -76,6 +78,7 @@ import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
@@ -158,7 +161,7 @@ private sealed interface EditField {
 
 /** Edit profile's draft: nothing changes until "Save changes". */
 @Stable
-private class EditProfileState(profile: Profile) {
+private class EditProfileState(profile: Profile, val moderation: PhotoModeration) {
     var original by mutableStateOf(profile)
     var draft by mutableStateOf(profile)
     var vitals by mutableStateOf(profile.vitals ?: Vitals.blank)
@@ -170,6 +173,25 @@ private class EditProfileState(profile: Profile) {
     var saveError by mutableStateOf<String?>(null)
     var pickingPrompt by mutableStateOf<Int?>(null)
     var focus by mutableStateOf<EditField?>(null)
+
+    /** Face check on the first photo: null while checking. */
+    var mainFace by mutableStateOf<FaceCheck.Result?>(null)
+
+    /**
+     * Photos picked in this editor and not saved yet: drafts on the server, deleted if the person leaves
+     * without saving them ([PhotoModeration.discard]).
+     */
+    var picked by mutableStateOf<List<String>>(emptyList())
+    var confirmBack by mutableStateOf(false)
+
+    /** Whether the open back confirmation is about photos: kept as asked while the dialog leaves. */
+    var confirmBackPhotos by mutableStateOf(false)
+
+    /** Leaving [page] with changes not saved: asks first. */
+    fun askBeforeLeaving(page: Any?) {
+        confirmBackPhotos = page == EditProfilePage.PHOTOS && photosChanged
+        confirmBack = true
+    }
 
     val edited: Profile
         get() {
@@ -187,13 +209,46 @@ private class EditProfileState(profile: Profile) {
 
     val canSave: Boolean
         get() = hasChanges && draft.name.isNotBlank() && draft.sports.isNotEmpty() &&
-            (draft.icebreaker.isComplete || draft.icebreaker.isBlank)
+            (draft.icebreaker.isComplete || draft.icebreaker.isBlank) &&
+            (!photosChanged || photosCheck == PhotoSetCheck.READY)
+
+    /**
+     * The photos as sign-up asks for them ([PhotoSetCheck]). Only changed photos hold the save back: a
+     * portrait the team refuses later never keeps someone from fixing their bio.
+     */
+    val photosCheck: PhotoSetCheck get() = PhotoSetCheck.of(allPhotos, mainFace, moderation)
+    val photosChanged: Boolean get() = allPhotos != original.allPhotos
+
+    /** Photos moderation refused, still on the grid: said on the Photos row. */
+    val refusedPhotos: Int get() = allPhotos.count { moderation.state(it) == PhotoModeration.State.Refused }
 
     val allPhotos: List<String> get() = listOf(draft.portrait) + draft.photos
 
     fun setPhotos(list: List<String>) {
         val first = list.firstOrNull() ?: return
         draft = draft.copy(portrait = first, photos = list.drop(1))
+    }
+
+    fun removePhoto(i: Int) {
+        val list = allPhotos.toMutableList()
+        val removed = list.removeAt(i)
+        // A photo picked here and taken off again: a draft nobody will save.
+        if (removed in picked) {
+            picked = picked.filter { it != removed }
+            moderation.discard(listOf(removed))
+        }
+        setPhotos(list)
+    }
+
+    /** Everything as it was at the last save (photos added since deleted). */
+    fun revertChanges() {
+        moderation.discard(picked)
+        picked = emptyList()
+        draft = original
+        vitals = original.vitals ?: Vitals.blank
+        prompts = original.prompts
+        voice = null
+        saveError = null
     }
 
     /** One-line preview of what's in each page. */
@@ -217,6 +272,7 @@ private class EditProfileState(profile: Profile) {
         EditProfilePage.IDENTITY -> draft.name.isBlank()
         EditProfilePage.BIO -> draft.bio.length > 200
         EditProfilePage.SPORTS -> draft.sports.isEmpty()
+        EditProfilePage.PHOTOS -> photosCheck.needsAction
         EditProfilePage.PROMPTS -> !draft.icebreaker.isComplete && !draft.icebreaker.isBlank
         else -> false
     }
@@ -235,10 +291,13 @@ private class EditProfileState(profile: Profile) {
             return if (parts.isEmpty()) L("Not filled in") else parts.joinToString(", ")
         }
 
-    val footerHint: String
+    /** Null while a photo is being checked: its tile's loader says it. */
+    val footerHint: String?
         get() = saveError ?: when {
             saved -> L("Your profile is up to date.")
             !hasChanges -> L("Make a change to save it.")
+            photosChanged && photosCheck == PhotoSetCheck.CHECKING -> null
+            photosChanged && photosCheck.reason != null -> photosCheck.reason
             draft.sports.isEmpty() -> L("Add at least one sport.")
             draft.name.isBlank() -> L("Add your first name.")
             !draft.icebreaker.isComplete && !draft.icebreaker.isBlank -> L("Finish your interactive prompt.")
@@ -272,7 +331,7 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
     val moderation = koinInject<PhotoModeration>()
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
-    val state = remember { EditProfileState(profile) }
+    val state = remember { EditProfileState(profile, moderation) }
     val stack = rememberNavStack(ROOT)
 
     val close = { if (state.hasChanges) state.confirmDiscard = true else dismiss() }
@@ -280,7 +339,7 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
     // With changes, system back on the list is Close: it asks before discarding (a sub-page pops first).
     BackHandler(enabled = state.hasChanges && !state.saving && !stack.canPop) { close() }
 
-    // Saves the whole draft. From a sub-page it returns to the list; from the list it closes the editor.
+    // Saves the whole draft, then returns to the list.
     val save: () -> Unit = save@{
         if (!state.canSave || state.saving) return@save
         state.focus = null
@@ -306,18 +365,15 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
                 }
                 Haptics.success()
                 app.me = result
+                // Saved: on the profile now, no longer drafts to delete.
+                state.picked = state.picked.filter { it !in result.allPhotos }
                 state.saved = true
-                val fromSubPage = stack.canPop
                 delay(150)
-                if (fromSubPage) {
-                    state.original = result
-                    state.draft = result
-                    state.voice = null
-                    state.saved = false
-                    stack.popToRoot()
-                } else {
-                    dismiss()
-                }
+                state.original = result
+                state.draft = result
+                state.voice = null
+                state.saved = false
+                stack.popToRoot()
             } finally {
                 state.saving = false
             }
@@ -327,21 +383,36 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
     val pickPhoto = LocalPlatformUi.current.rememberPhotoPicker { data ->
         scope.launch {
             val path = PhotoCompressor.savePicked(data) ?: return@launch
+            state.picked = state.picked + path
             state.setPhotos(state.allPhotos + path)
             Haptics.success()
-            // Sent to the backend: compressed, uploaded, then judged by moderation (the tile shows it).
+            // Sent to the backend as a draft: compressed, uploaded, then judged by moderation (the tile
+            // shows it). On the profile only once saved.
             moderation.submit(path)
         }
     }
 
+    LaunchedEffect(state.draft.portrait) {
+        state.mainFace = null
+        val face = PhotoSetCheck.face(state.draft.portrait, moderation)
+        // The first photo changed meanwhile: its own check answers.
+        if (!isActive) return@LaunchedEffect
+        state.mainFace = face
+    }
+    // Closed without saving them (discarded, or dismissed once nothing else changed): they go.
+    DisposableEffect(Unit) { onDispose { moderation.discard(state.picked) } }
     LaunchedEffect(state.draft) { state.saveError = null }
 
-    NavStackHost(stack, modifier) { route ->
-        val footer: @Composable () -> Unit = { Footer(state, save) }
+    // Leaving a page with changes not saved asks first (photos just added would be lost). The list has
+    // no save: each page saves its own changes, so it never holds unsaved ones.
+    val backGuard = stack.canPop && state.hasChanges
+    BackHandler(enabled = backGuard) { state.askBeforeLeaving(stack.top) }
+
+    NavStackHost(stack, modifier, backEnabled = !backGuard) { route ->
         if (route is EditProfilePage) {
-            SubPage(route, state, stack, close, footer, pickPhoto)
+            SubPage(route, state, stack, close, { Footer(state, save) }, pickPhoto)
         } else {
-            ListPage(state, stack, close, footer)
+            ListPage(state, stack, close)
         }
     }
 
@@ -353,6 +424,27 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
         message = L("What you changed since your last save will be lost."),
         cancelTitle = L("Keep editing"),
         actions = listOf(ConfirmAction(L("Discard changes"), ConfirmAction.Kind.DESTRUCTIVE) { dismiss() }),
+    )
+
+    // Puts everything back as it was at the last save (new photo drafts deleted), then back to the list.
+    val photosBack = state.confirmBackPhotos
+    DrafftConfirm(
+        visible = state.confirmBack,
+        onDismissRequest = { state.confirmBack = false },
+        icon = "trash-bin-minimalistic",
+        title = if (photosBack) L("Discard your photo changes?") else L("Discard your changes?"),
+        message = if (photosBack) {
+            L("Photos you added will be deleted, and the others go back as they were.")
+        } else {
+            L("What you changed since your last save will be lost.")
+        },
+        cancelTitle = L("Keep editing"),
+        actions = listOf(
+            ConfirmAction(L("Discard changes"), ConfirmAction.Kind.DESTRUCTIVE) {
+                state.revertChanges()
+                stack.popToRoot()
+            },
+        ),
     )
 
     state.pickingPrompt?.let { slot ->
@@ -374,9 +466,10 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ListPage(state: EditProfileState, stack: NavStack, close: () -> Unit, footer: @Composable () -> Unit) {
+private fun ListPage(state: EditProfileState, stack: NavStack, close: () -> Unit) {
     val scroll = rememberScrollState()
-    SheetPage(L("Edit profile"), scroll, onClose = close, bottomBar = footer) { bars ->
+    // No save here: each page saves its own changes, and leaving one unsaved asks first.
+    SheetPage(L("Edit profile"), scroll, onClose = close) { bars ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -437,7 +530,9 @@ private fun CategoryGroup(title: String, pages: List<EditProfilePage>, state: Ed
                         )
                     }
                 }
-                if (attention) {
+                if (page == EditProfilePage.PHOTOS && state.refusedPhotos > 0) {
+                    RefusedCountChip(state.refusedPhotos)
+                } else if (attention) {
                     DrafftIcon(
                         "danger-circle",
                         size = symbolSize(TextStyles.body),
@@ -467,7 +562,13 @@ private fun SubPage(
         title = page.title,
         scroll = scroll,
         onClose = close,
-        leading = { GlassCircleButton("alt-arrow-left", onClick = { stack.pop() }, contentDescription = L("Back")) },
+        leading = {
+            GlassCircleButton(
+                "alt-arrow-left",
+                onClick = { if (state.hasChanges) state.askBeforeLeaving(page) else stack.pop() },
+                contentDescription = L("Back"),
+            )
+        },
         bottomBar = footer,
     ) { bars ->
         FocusScrollView(state = scroll, contentPadding = bars) {
@@ -477,7 +578,12 @@ private fun SubPage(
             ) {
                 when (page) {
                     EditProfilePage.PHOTOS ->
-                        Block(L("Photos"), page.icon, note = L("Hold a photo, then drag to reorder")) { PhotosGrid(state, pickPhoto) }
+                        Block(L("Photos"), page.icon, note = L("Hold a photo, then drag to reorder")) {
+                            Column(verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
+                                PhotosGrid(state, pickPhoto)
+                                PhotoSetHint(state.photosCheck)
+                            }
+                        }
                     EditProfilePage.BIO ->
                         Block(L("Your bio"), page.icon, note = L("Optional")) {
                             DrafftTextArea(
@@ -537,11 +643,7 @@ private fun PhotosGrid(state: EditProfileState, pickPhoto: () -> Unit) {
                 DrafftIcon("add", size = 24.dp, tint = p.ink)
             }
         },
-        onRemove = { i ->
-            val list = state.allPhotos.toMutableList()
-            list.removeAt(i)
-            state.setPhotos(list)
-        },
+        onRemove = { i -> state.removePhoto(i) },
     )
 }
 
@@ -827,7 +929,9 @@ private fun Footer(state: EditProfileState, save: () -> Unit) {
             transitionSpec = { fadeIn(Motion.gentle()) togetherWith fadeOut(Motion.gentle()) },
             label = "footerHint",
         ) { hint ->
-            Text(hint, style = TextStyles.footnote, color = hintColor, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if (hint != null) {
+                Text(hint, style = TextStyles.footnote, color = hintColor, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
         }
     }
 }
