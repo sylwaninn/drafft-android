@@ -125,6 +125,7 @@ import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Audience
 import so.drafft.core.model.Icebreaker
 import so.drafft.core.model.L
+import so.drafft.core.model.Localization
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.model.Sport
@@ -270,7 +271,8 @@ private class OnboardingState(
     var forward by mutableStateOf(true)
     var birthday by mutableStateOf<Instant?>(null)
     var acceptedTerms by mutableStateOf(false)
-    var language by mutableStateOf(AppLanguage.deviceDefault())
+    // The language the app is drawn in now (the saved one, else the phone's), so the check matches the screen.
+    var language by mutableStateOf(Localization.language)
     var legalDoc by mutableStateOf<LegalDoc?>(null)
     var identity by mutableStateOf<String?>(null)
     var interestedIn by mutableStateOf<Set<String>>(emptySet())
