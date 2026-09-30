@@ -927,7 +927,7 @@ private fun NotificationsStep(state: OnboardingState) {
 
 @Composable
 private fun GenderStep(state: OnboardingState) {
-    StepTitle(L("Which describes you best?"), L("You can change it anytime in You."))
+    StepTitle(L("Which describes you best?"), L("You can't change it later. If it's ever wrong, write to the help center in You."))
     ChoiceRows(listOf("Woman", "Man", "Non-binary"), isOn = { state.identity == it }) { o ->
         state.identity = if (state.identity == o) null else o
     }
@@ -1073,7 +1073,7 @@ private fun LocationFacts() {
         Modifier.block(DS.palette.canvas).padding(DS.Space.xl),
         verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
     ) {
-        Fact("arrow.triangle.2.circlepath", L("Updates as you move"), L("Each time you open drafft, your area follows you: home, work, a weekend away."))
+        Fact("arrow.triangle.2.circlepath", L("Read once, not tracked"), L("Your area comes from where you are right now. drafft doesn't follow your moves or track you in the background."))
         Fact("circle.dotted.circle", L("Blurred before it leaves your phone"), L("Your position is rounded to about 1 km. Your exact spot is never sent or stored."))
         Fact("eye", L("What others see"), L("Your area, like a district, and a distance rounded to the kilometre. Never your address."))
     }

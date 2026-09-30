@@ -231,7 +231,7 @@ fun PaywallView(
     }
 
     val perks = listOf(
-        Perk("arrow.uturn.backward", L("Undo any swipe"), L("Swiped too fast? Bring them back.")),
+        Perk("arrow.uturn.backward", L("Undo your last swipe"), L("Swiped too fast? Bring them back.")),
         Perk("heart.text.square", L("See who liked you"), L("Match instantly with people already into you.")),
         Perk("infinity", L("Unlimited likes"), L("No daily cap, like everyone you'd train with.")),
         Perk("bolt.fill", L("Weekly boost"), L("One free boost every week: 30 minutes at the top of decks near you.")),
@@ -839,7 +839,7 @@ private fun SubscriptionStatus(sub: TempoSubscription) {
 private fun Included() {
     val p = DS.palette
     val perks = listOf(
-        IncludedPerk("arrow.uturn.backward", L("Undo any swipe")),
+        IncludedPerk("arrow.uturn.backward", L("Undo your last swipe")),
         IncludedPerk("heart.text.square", L("See who liked you")),
         IncludedPerk("infinity", L("Unlimited likes")),
         IncludedPerk("bolt.fill", L("One free boost every week")),

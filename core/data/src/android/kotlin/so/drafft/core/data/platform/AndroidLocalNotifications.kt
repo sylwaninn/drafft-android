@@ -123,7 +123,7 @@ class AndroidLocalNotifications(
                 LocalNotifications.Channel.LIKES -> L("Likes")
                 LocalNotifications.Channel.MESSAGES -> L("Messages")
                 LocalNotifications.Channel.SESSIONS -> L("Sessions")
-                LocalNotifications.Channel.ACCOUNT -> L("Your account")
+                LocalNotifications.Channel.ACCOUNT -> L("Account")
             }
             system.createNotificationChannel(NotificationChannel(channel.id, name, NotificationManager.IMPORTANCE_HIGH))
         }
