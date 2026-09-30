@@ -38,6 +38,9 @@ dependencies {
     api(libs.androidx.activity.compose)
     api(libs.androidx.lifecycle.runtime.compose)
     api(libs.coil.compose)
+    // VideoPlayer (AndroidPlatformUi): ExoPlayer drawn by Media3's Compose surface.
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui.compose)
     api(platform(libs.koin.bom))
     api(libs.koin.compose)
     debugImplementation(libs.compose.ui.tooling)

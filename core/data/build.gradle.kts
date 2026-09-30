@@ -55,6 +55,9 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.media3.transformer)
+    // Location (AndroidLocationProvider): the fused provider, awaited as coroutines.
+    implementation(libs.play.services.location)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)

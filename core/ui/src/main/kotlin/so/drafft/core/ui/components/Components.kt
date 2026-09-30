@@ -48,6 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -226,9 +228,11 @@ fun PressScaleButton(
     contentDescription: String? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    // Scaled as a whole: the backgrounds and frames given in [modifier] shrink with the press.
     Box(
-        modifier
+        Modifier
             .pressScale(onClick, scale, enabled)
+            .then(modifier)
             .then(if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier),
         contentAlignment = Alignment.Center,
         content = content,
@@ -310,17 +314,20 @@ fun SportChip(
         onDark -> Color.White.copy(alpha = 0.16f)
         else -> p.canvas
     }
+    // Selection is a colour change: `Motion.select`, never a spring.
+    val fg by animateColorAsState(foreground, Motion.select(), label = "chipInk")
+    val bg by animateColorAsState(background, Motion.select(), label = "chipFill")
     val name = sport.displayName
     Row(
         modifier
-            .background(background, CircleShape)
+            .drawBehind { drawRoundRect(bg, cornerRadius = CornerRadius(size.height / 2)) }
             .padding(horizontal = DS.Space.md, vertical = DS.Space.sm)
             .clearAndSetSemantics { contentDescription = name },
         horizontalArrangement = Arrangement.spacedBy(DS.Space.xs + 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DrafftIcon(sport.symbol, size = symbolBox(15f), tint = foreground)
-        Text(name, style = TextStyles.subheadline.semibold, color = foreground, maxLines = 1, softWrap = false)
+        DrafftIcon(sport.symbol, size = symbolBox(15f), tint = fg)
+        Text(name, style = TextStyles.subheadline.semibold, color = fg, maxLines = 1, softWrap = false)
     }
 }
 
@@ -426,8 +433,8 @@ fun DrafftField(
 @Composable
 private fun FieldError(error: String?) {
     // The last error stays drawn while it fades out.
-    var shown by remember { mutableStateOf(error) }
-    if (error != null) shown = error
+    val last = remember { arrayOfNulls<String>(1) }
+    if (error != null) last[0] = error
     AnimatedVisibility(
         visible = error != null,
         enter = fadeIn(Motion.snappy()) + slideInVertically(Motion.snappy()) { -it / 2 },
@@ -435,7 +442,7 @@ private fun FieldError(error: String?) {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
             DrafftIcon("exclamationmark.circle.fill", size = symbolBox(13f), tint = DS.palette.negative)
-            Text(shown.orEmpty(), style = TextStyles.footnote.medium, color = DS.palette.negative)
+            Text(last[0].orEmpty(), style = TextStyles.footnote.medium, color = DS.palette.negative)
         }
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
@@ -94,6 +95,7 @@ private data class ProgressiveBlurElement(
         node.blurs = blurs
         node.page = page
         node.probe = probe
+        node.invalidateDraw()
     }
 
     override fun InspectorInfo.inspectableProperties() {
