@@ -43,6 +43,8 @@ class DrafftApplication : Application() {
         Haptics.engine = AndroidHaptics(this)
         installDrafftUi()
         koin.get<Diagnostics>().start()
+        // Starts the foreground refresh and the push token fetch.
+        koin.get<so.drafft.core.data.notifications.NotificationService>()
     }
 
     private fun currentLocales(): List<java.util.Locale> {

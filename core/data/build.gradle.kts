@@ -58,6 +58,11 @@ dependencies {
     // Location (AndroidLocationProvider): the fused provider, awaited as coroutines.
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.play.services)
+    // Push (DrafftMessagingService, AndroidLocalNotifications): the FCM token and incoming pushes.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+    // The face on the first photo (AndroidFaceCheck), on device.
+    implementation(libs.mlkit.face.detection)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)

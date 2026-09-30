@@ -1,6 +1,7 @@
 package so.drafft.app.platform
 
 import android.icu.text.DateFormat
+import android.icu.text.RelativeDateTimeFormatter
 import android.icu.util.TimeZone
 import android.icu.util.ULocale
 import java.time.Instant
@@ -18,6 +19,23 @@ object IcuDates {
 
     fun install() {
         DateText.formatter = ::format
+        DateText.relativeFormatter = ::relative
+    }
+
+    /** "yesterday", "2 weeks ago" in the app's language (named where the language has a word for it). */
+    private fun relative(date: Instant, now: Instant, locale: Locale): String {
+        val (value, unit) = DateText.relativeUnit(java.time.Duration.between(date, now).seconds)
+        val formatter = RelativeDateTimeFormatter.getInstance(ULocale.forLocale(locale))
+        val icuUnit = when (unit) {
+            "second" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.SECOND
+            "minute" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.MINUTE
+            "hour" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.HOUR
+            "day" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.DAY
+            "week" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.WEEK
+            "month" -> RelativeDateTimeFormatter.RelativeDateTimeUnit.MONTH
+            else -> RelativeDateTimeFormatter.RelativeDateTimeUnit.YEAR
+        }
+        return synchronized(formatter) { formatter.format(-value.toDouble(), icuUnit) }
     }
 
     private fun format(skeleton: String, date: Instant, locale: Locale): String {

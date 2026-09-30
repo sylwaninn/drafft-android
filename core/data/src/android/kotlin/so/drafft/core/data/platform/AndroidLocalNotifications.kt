@@ -1,6 +1,7 @@
 package so.drafft.core.data.platform
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -75,6 +76,8 @@ class AndroidLocalNotifications(
         null
     }
 
+    // Checked just below (notifications on), and a permission taken back meanwhile is caught.
+    @SuppressLint("MissingPermission")
     override fun post(notification: LocalNotifications.Notification) {
         if (!manager.areNotificationsEnabled()) return
         ensureChannels()

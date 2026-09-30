@@ -355,4 +355,36 @@ object DateText {
 
     /** "18:30" (or "6:30 PM" where the language writes it so). */
     fun time(date: Instant): String = format("jmm", date)
+
+    /**
+     * How long ago (or ahead) [date] is, in words, like `.relative(presentation: .named)`: "yesterday",
+     * "2 weeks ago". On Android, [relativeFormatter] is set to ICU's `RelativeDateTimeFormatter` at
+     * launch; the default below (English) serves JVM tests.
+     */
+    @Volatile
+    var relativeFormatter: (date: Instant, now: Instant, locale: java.util.Locale) -> String = ::jvmRelative
+
+    fun relative(date: Instant, now: Instant = Instant.now()): String = relativeFormatter(date, now, appLocale)
+
+    private fun jvmRelative(date: Instant, now: Instant, locale: java.util.Locale): String {
+        val seconds = java.time.Duration.between(date, now).seconds
+        val (value, unit) = relativeUnit(seconds)
+        if (value == 0L) return "now"
+        val plural = if (kotlin.math.abs(value) == 1L) unit else unit + "s"
+        return if (value > 0) "$value $plural ago" else "in ${-value} $plural"
+    }
+
+    /** The largest whole unit in [seconds] (positive: in the past), as ICU's unit names. */
+    fun relativeUnit(seconds: Long): Pair<Long, String> {
+        val a = kotlin.math.abs(seconds)
+        return when {
+            a < 60 -> seconds to "second"
+            a < 3_600 -> seconds / 60 to "minute"
+            a < 86_400 -> seconds / 3_600 to "hour"
+            a < 7 * 86_400 -> seconds / 86_400 to "day"
+            a < 30 * 86_400 -> seconds / (7 * 86_400) to "week"
+            a < 365 * 86_400 -> seconds / (30 * 86_400) to "month"
+            else -> seconds / (365 * 86_400) to "year"
+        }
+    }
 }

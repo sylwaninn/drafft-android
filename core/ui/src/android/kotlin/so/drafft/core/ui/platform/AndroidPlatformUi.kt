@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -38,6 +41,7 @@ import so.drafft.core.ui.components.MessageImage
 import so.drafft.core.ui.components.StackBlurTransformation
 import so.drafft.core.ui.theme.DS
 import java.io.ByteArrayInputStream
+import kotlinx.coroutines.launch
 
 /**
  * The Android side of [PlatformUi], provided at the root: `LocalPlatformUi provides AndroidPlatformUi`.
@@ -102,6 +106,102 @@ object AndroidPlatformUi : PlatformUi {
             readable.getPixels(it, 0, readable.width, 0, 0, readable.width, readable.height)
         }
     }
+
+    @Composable
+    override fun rememberOpenAppSettings(): () -> Unit {
+        val context = LocalContext.current
+        return remember(context) {
+            {
+                val intent = android.content.Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.fromParts("package", context.packageName, null),
+                ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            }
+        }
+    }
+
+    @Composable
+    override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit {
+        val context = LocalContext.current
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val deliver = androidx.compose.runtime.rememberUpdatedState(onPicked)
+        val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch {
+                val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+                } ?: return@launch
+                deliver.value(bytes)
+            }
+        }
+        return remember(launcher) {
+            {
+                launcher.launch(
+                    androidx.activity.result.PickVisualMediaRequest(
+                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly,
+                    ),
+                )
+            }
+        }
+    }
+
+    @Composable
+    override fun rememberFrontCamera(): FrontCamera {
+        val context = LocalContext.current
+        val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        val camera = remember(context, owner) { AndroidFrontCamera(context, owner) }
+        DisposableEffect(camera) { onDispose { camera.stop() } }
+        return camera
+    }
+
+    @Composable
+    override fun CameraPreview(camera: FrontCamera, modifier: Modifier) {
+        val view = (camera as? AndroidFrontCamera)?.previewView
+        if (view == null) {
+            Box(modifier.background(DS.palette.nightRaised))
+            return
+        }
+        androidx.compose.ui.viewinterop.AndroidView(factory = { view }, modifier = modifier.clipToBounds())
+    }
+
+    override fun smsCodeAutofill(modifier: Modifier): Modifier =
+        modifier.semantics { contentType = ContentType.SmsOtpCode }
+
+    @Composable
+    override fun rememberWebPage(): WebPage {
+        val context = LocalContext.current
+        val page = remember(context) { AndroidWebPage(context) }
+        DisposableEffect(page) { onDispose { page.destroy() } }
+        return page
+    }
+
+    @Composable
+    override fun WebPageView(page: WebPage, modifier: Modifier) {
+        val web = page as? AndroidWebPage ?: return
+        // One web view, placed in one frame at a time (hidden in the form, visible in the check sheet).
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = {
+                web.detach()
+                web.webView
+            },
+            modifier = modifier,
+            onRelease = { web.detach() },
+        )
+    }
+    @Composable
+    override fun rememberMediaPicker(maxSelection: Int, onPicked: (List<PickedMedia>) -> Unit): () -> Unit =
+        rememberChatMediaPicker(maxSelection, onPicked)
+
+    @Composable
+    override fun rememberCameraCapture(onCapture: (CameraCapture) -> Unit): (() -> Unit)? = rememberSystemCamera(onCapture)
+
+    override suspend fun videoInfo(url: String): VideoInfo? = readVideoInfo(url)
+
+    @Composable
+    override fun rememberShare(): (ShareItem) -> Unit = rememberShareSheet()
 }
 
 @Volatile
