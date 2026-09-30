@@ -63,7 +63,7 @@ class RevenueCatStore(
         if (isDebugBuild) Purchases.logLevel = LogLevel.DEBUG
         // Public SDK key (safe in the app): RevenueCat project "drafft" or "drafft staging".
         val key = backend.config.revenueCatAPIKey
-        // Without a key (not in local.properties) the SDK refuses to configure and would stop the app at
+        // Without a key (REVENUECAT_API_KEY empty in config/<flavor>.properties) the SDK refuses to configure and would stop the app at
         // launch: purchases stay off instead (the store reads as unavailable).
         if (!Purchases.isConfigured && key.isNotBlank()) {
             runCatching { Purchases.configure(PurchasesConfiguration.Builder(context, key).build()) }

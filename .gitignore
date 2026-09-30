@@ -11,3 +11,12 @@ build/
 google-services.json
 *.keystore
 *.jks
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# The local Supabase's URL and key for this machine (scripts/local-backend.sh), like the iPhone's
+# Local.private.xcconfig. Per-flavor values are committed in config/<flavor>.properties.
+/local.private.properties
+# The app reads no .env file; keep any out of git.
+.env
+.env.*
