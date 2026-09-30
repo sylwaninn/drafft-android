@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.io.File
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -25,10 +26,12 @@ import so.drafft.core.data.backend.optString
 import so.drafft.core.data.backend.requireObject
 import so.drafft.core.data.backend.string
 import so.drafft.core.data.media.EdgeFunctionTicketProvider
+import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.media.MediaUploads
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.platform.NetworkMonitor
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
@@ -37,12 +40,13 @@ import so.drafft.core.model.Profile
  * Ports Drafft/Services/Backend/PhotoModeration.swift.
  *
  * Where a profile photo stands on the server: sent, then judged by moderation (AWS Rekognition in the
- * backend's db-events function). Keyed by the photo's local path, as the photo grids show it.
+ * backend's db-events function). Known by its local path (picked) or its object key (on the server).
  */
 class PhotoModeration(
     private val backend: Backend,
     private val defaults: KeyValueStore,
     private val lifecycle: AppLifecycle,
+    network: NetworkMonitor,
     /** `NotificationService.syncPushToken` (resolved late: the notification service needs this one). */
     private val syncPushToken: suspend () -> Unit,
     private val scope: CoroutineScope,
@@ -69,8 +73,8 @@ class PhotoModeration(
         val id: String get() = path
     }
 
-    /** Each picked photo's state, by path (observed by the grids). */
-    val states: MutableMap<String, State> = mutableStateMapOf()
+    /** Each photo's state (observed by the grids). Keyed by [slot]: a photo on the server keeps its state when its signed link changes. */
+    private val states: MutableMap<String, State> = mutableStateMapOf()
 
     /**
      * Server id of each photo, once registered. Kept on the device, so a push tapped after the app was
@@ -94,27 +98,59 @@ class PhotoModeration(
     var presentedRefusal: Refusal? by mutableStateOf(null)
 
     /**
-     * Photos read back from the server (their link, as the grids show them): the id of each one, so a
-     * refused one can be looked at again or removed, and a later verdict still reaches it. Not kept on
-     * the device: every read of the account gives them again.
+     * Photos read back from the server, by [slot]: their id, so they can be looked at again or removed,
+     * and a later verdict still reaches them. Not kept on the device: every read of the account gives
+     * them again.
      */
     private val serverIDs: MutableMap<String, String> = mutableStateMapOf()
 
+    /** The latest link of each photo read back from the server, by [slot]: what a banner shows. */
+    private val links: MutableMap<String, String> = mutableStateMapOf()
+
+    /** Photos read back from the server on which it found no face, by [slot]. */
+    private val faceless: MutableMap<String, Boolean> = mutableStateMapOf()
+
+    /** Photos picked, then left without being saved: deleted from the server as soon as they're on it. */
+    private val discarded: MutableSet<String> = mutableSetOf()
+
+    /**
+     * Picked photos on the server whose verdict couldn't be read (no connection): still being checked,
+     * never taken as approved, read again as soon as the connection is back ([recheck]).
+     */
+    private val unresolved: MutableSet<String> = mutableSetOf()
+
+    init {
+        // Back online: the verdicts missed meanwhile are read again (on the main thread, like every change here).
+        network.onAvailable { scope.launch { recheck() } }
+    }
+
+    /**
+     * What a photo is known by: a picked file by its path, a photo on the server by its object key (its
+     * signed link changes every few minutes, the photo doesn't).
+     */
+    private fun slot(path: String): String {
+        if (!path.startsWith("http")) return path
+        return MediaURL.key(path) ?: MediaURL.canonical(path)
+    }
+
     /** The server id of a photo, once registered. */
-    fun id(path: String): String? = mediaIDs[path] ?: serverIDs[path]
+    fun id(path: String): String? = mediaIDs[path] ?: serverIDs[slot(path)]
 
     /**
      * Where a photo stands, as the grid and the profile read it. Null: nothing to say (a photo on the
      * server moderation approved, or one never sent).
      */
-    fun state(path: String): State? = states[path]
+    fun state(path: String): State? = states[slot(path)]
+
+    /** Whether the server found no face on a photo read back from it (never checked: false). */
+    fun isFaceless(path: String): Boolean = faceless[slot(path)] == true
 
     /**
      * Whether a photo may show as the profile, to the person themselves included: only once approved. A
      * photo read back from the server with no state was approved (the others are tracked below).
      */
     fun isShown(path: String): Boolean {
-        val state = states[path] ?: return !path.startsWith("/")
+        val state = state(path) ?: return !path.startsWith("/")
         return state == State.Approved
     }
 
@@ -131,17 +167,15 @@ class PhotoModeration(
      */
     fun track(photos: List<ProfileSync.OwnPhoto>) {
         for (photo in photos) {
-            // One link per photo: the previous signed link of the same photo goes.
-            serverIDs.entries.filter { it.value == photo.id && it.key != photo.link }.map { it.key }.forEach {
-                serverIDs.remove(it)
-                states.remove(it)
-            }
-            // Its id stays known whatever the verdict: a later refusal (the team, a second look) must reach it.
-            serverIDs[photo.link] = photo.id
+            val key = slot(photo.link)
+            // Its id stays known once approved: a later refusal (the team, a second look) must still reach it.
+            serverIDs[key] = photo.id
+            links[key] = photo.link
+            if (photo.faceless) faceless[key] = true else faceless.remove(key)
             when (photo.status) {
-                "approved" -> states.remove(photo.link)
-                "rejected" -> states[photo.link] = State.Refused
-                else -> states[photo.link] = State.InReview
+                "approved" -> states.remove(key)
+                "rejected" -> states[key] = State.Refused
+                else -> states[key] = State.InReview
             }
         }
     }
@@ -151,43 +185,61 @@ class PhotoModeration(
      * its verdict read again, or the photo sent again if the server never got it.
      */
     fun ensureChecked(path: String) {
-        if (!path.startsWith("/") || states[path] != null) return
+        if (!path.startsWith("/") || states[slot(path)] != null) return
         val id = mediaIDs[path] ?: return submit(path)
-        states[path] = State.Checking
-        scope.launch {
-            val status = try {
-                backend.select("profile_media?id=eq.$id&select=status").jsonArray().firstOrNull()
-                    ?.requireObject()?.optString("status")
-            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                states[path] = State.Failed(failure(e))
-                return@launch
-            }
-            when (status) {
-                "approved" -> settle(path, State.Approved)
-                "rejected" -> states[path] = State.Refused
-                "pending" -> {
-                    val verdict = runCatching { verdict(id) }.getOrDefault(State.InReview)
-                    if (states[path] == State.Checking) settle(path, verdict)
-                }
-                else -> {
-                    // Gone from the server: sent again.
-                    mediaIDs.remove(path)
-                    saveIDs()
-                    states.remove(path)
-                    submit(path)
-                }
-            }
+        states[slot(path)] = State.Checking
+        scope.launch { follow(path, id) }
+    }
+
+    /**
+     * Reads again the verdict of every picked photo still waiting for one: back online, back in the app.
+     * One the server has settled meanwhile takes its word; the others keep waiting.
+     */
+    fun recheck() {
+        val waiting = mediaIDs.filter { (path, _) ->
+            path in unresolved || states[slot(path)] == State.InReview
+        }
+        for ((path, id) in waiting) {
+            val state = states[slot(path)]
+            if (state == State.Refused || state == State.Approved) continue
+            unresolved.remove(path)
+            states[slot(path)] = if (state == State.InReview) State.InReview else State.Checking
+            scope.launch { follow(path, id) }
+        }
+    }
+
+    /**
+     * Follows a registered photo's verdict. Only the server's word settles it: without a connection it
+     * stays being checked (never approved by default) until [recheck] reads it again.
+     */
+    private suspend fun follow(path: String, id: String) {
+        val verdict = try {
+            verdict(id)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            unresolved.add(path)
+            return
+        }
+        if (verdict != null) {
+            // A live `media` event may have settled it already (apply): only a newer word counts.
+            val state = states[slot(path)]
+            if (state == State.Checking || state == State.InReview) settle(path, verdict)
+        } else {
+            // Gone from the server: sent again.
+            mediaIDs.remove(path)
+            saveIDs()
+            states.remove(slot(path))
+            submit(path)
         }
     }
 
     /** Waits for a picked photo to be uploaded and registered (moderation may still be running). Null if it failed. */
     suspend fun waitForID(path: String): String? {
-        if (states[path] == null && mediaIDs[path] == null) submit(path)
+        if (states[slot(path)] == null && mediaIDs[path] == null) submit(path)
         repeat(600) {
             mediaIDs[path]?.let { return it }
-            if (states[path] is State.Failed) return null
+            if (states[slot(path)] is State.Failed) return null
             delay(100.milliseconds)
         }
         return null
@@ -195,21 +247,21 @@ class PhotoModeration(
 
     /** Clears a failed attempt and sends the photo again. */
     fun retry(path: String) {
-        states.remove(path)
+        states.remove(slot(path))
         // Already on the server (only its verdict couldn't be read): read it again, never a second upload.
         if (mediaIDs[path] != null) ensureChecked(path) else submit(path)
     }
 
     /** The failure reason for a photo, in plain words when we know the cause. */
-    fun reason(path: String): String = (states[path] as? State.Failed)?.message ?: ""
+    fun reason(path: String): String = (states[slot(path)] as? State.Failed)?.message ?: ""
 
     /**
      * Compress, upload to the media bucket, register it (add_profile_media), then follow its moderation
      * status until it's decided.
      */
     fun submit(path: String) {
-        if (states[path] != null) return
-        states[path] = State.Uploading
+        if (states[slot(path)] != null) return
+        states[slot(path)] = State.Uploading
         scope.launch {
             try {
                 val data = withContext(Dispatchers.IO) { File(path).readBytes() }
@@ -220,24 +272,30 @@ class PhotoModeration(
                 val uploaded = MediaUploads.photo(data, tickets = tickets)
                 // The session exists now: this device can receive the "refused" push.
                 syncPushToken()
-                states[path] = State.Checking
+                states[slot(path)] = State.Checking
+                // A draft: on the profile only once the person saves (save_profile_media).
                 val args = buildMap {
                     put("p_key", JsonPrimitive(uploaded.key))
                     put("p_width", JsonPrimitive(uploaded.width))
                     put("p_height", JsonPrimitive(uploaded.height))
                     uploaded.thumbHash?.let { put("p_thumbhash", JsonPrimitive(it)) }
+                    put("p_draft", JsonPrimitive(true))
                 }
                 val row = backend.rpc("add_profile_media", JsonObject(args))
                 val id = DrafftJson.parseToJsonElement(row.decodeToString()).requireObject().string("id")
+                // Left without saving while it was on its way: it goes at once.
+                if (discarded.remove(path)) {
+                    states.remove(slot(path))
+                    scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
+                    return@launch
+                }
                 mediaIDs[path] = id
                 saveIDs()
-                val verdict = verdict(id)
-                // A live `media` event may have settled it already (apply): only a newer word counts.
-                if (states[path] == State.Checking) settle(path, verdict)
-            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                follow(path, id)
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                states[path] = State.Failed(failure(e))
+                states[slot(path)] = State.Failed(failure(e))
             }
         }
     }
@@ -247,19 +305,43 @@ class PhotoModeration(
         // Not uploaded (yet): nothing the team could look at, so never say it was sent.
         val id = id(path) ?: throw Backend.BackendError.Http(404, "photo not on the server")
         backend.rpc("request_media_review", JsonObject(mapOf("p_media" to JsonPrimitive(id))))
-        states[path] = State.InReview
+        states[slot(path)] = State.InReview
     }
 
-    /** Takes a refused photo off the profile: from the grid, and from the server. */
+    /**
+     * Takes a refused photo off the profile: from the grid, and from the server. Its state stays refused
+     * while a screen still holds it (a photo that's gone never passes for an approved one).
+     */
     fun remove(path: String) {
         removeRequest = path
         id(path)?.let { id ->
             scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
         }
-        states.remove(path)
         mediaIDs.remove(path)
-        serverIDs.remove(path)
+        serverIDs.remove(slot(path))
         saveIDs()
+    }
+
+    /**
+     * Photos picked but not saved (the person left, or took them off the grid): drafts, never on the
+     * profile, deleted from the server now, or as soon as their upload registers them. The server deletes
+     * the ones this misses after a few days.
+     */
+    fun discard(paths: List<String>) {
+        for (path in paths) {
+            if (!path.startsWith("/")) continue
+            val id = mediaIDs[path]
+            when {
+                id != null -> {
+                    scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
+                    mediaIDs.remove(path)
+                    saveIDs()
+                    states.remove(slot(path))
+                }
+                states[slot(path)]?.isWorking == true -> discarded.add(path)
+                else -> states.remove(slot(path))
+            }
+        }
     }
 
     /**
@@ -276,19 +358,20 @@ class PhotoModeration(
                 status == "approved" -> settle(path, State.Approved)
                 status == "rejected" -> settle(path, State.Refused, announce = path == paths.first())
                 // Back to pending: a second look was asked (here or on another device).
-                status == "pending" && states[path] == State.Refused -> settle(path, State.InReview)
+                status == "pending" && states[slot(path)] == State.Refused -> settle(path, State.InReview)
             }
         }
     }
 
     /** Every path a server id is known by: picked on this device, and read back from the server. */
     private fun paths(mediaID: String): List<String> =
-        mediaIDs.filterValues { it == mediaID }.keys.toList() + serverIDs.filterValues { it == mediaID }.keys
+        mediaIDs.filterValues { it == mediaID }.keys.toList() +
+            serverIDs.filterValues { it == mediaID }.keys.mapNotNull { links[it] }
 
     /** Sets a photo's verdict; announces a refusal once, when it becomes one. */
     private fun settle(path: String, state: State, announce: Boolean = true) {
-        val was = states[path]
-        states[path] = state
+        val was = states[slot(path)]
+        states[slot(path)] = state
         if (state == State.Refused && was != State.Refused && announce) announceRefusal(path)
     }
 
@@ -299,7 +382,7 @@ class PhotoModeration(
     fun openRefusal(mediaID: String) {
         val paths = paths(mediaID)
         val path = paths.firstOrNull() ?: return
-        paths.forEach { states[it] = State.Refused }
+        paths.forEach { states[slot(it)] = State.Refused }
         refusalBanner = null
         scope.launch {
             repeat(30) {
@@ -323,13 +406,15 @@ class PhotoModeration(
 
     /**
      * Polls the status (every second, up to 30 s). Still pending after that: a person decides, and their
-     * decision arrives as a `media` event ([apply]).
+     * decision arrives as a `media` event ([apply]) or on the next [recheck]. Null: the photo is no longer
+     * on the server. Throws when the server can't be reached: nothing is decided then.
      */
-    private suspend fun verdict(id: String): State {
-        repeat(30) {
-            delay(1.seconds)
+    private suspend fun verdict(id: String): State? {
+        repeat(30) { round ->
+            if (round > 0) delay(1.seconds)
             val data = backend.select("profile_media?id=eq.$id&select=status")
-            when (data.jsonArray().firstOrNull()?.requireObject()?.optString("status")) {
+            val row = data.jsonArray().firstOrNull() ?: return null
+            when (row.requireObject().optString("status")) {
                 "approved" -> return State.Approved
                 "rejected" -> return State.Refused
             }

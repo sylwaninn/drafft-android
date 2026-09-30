@@ -240,7 +240,7 @@ fun ReorderablePhotoGrid(
                                 name = name,
                                 index = i,
                                 count = currentPhotos.size,
-                                state = moderation.states[name],
+                                state = moderation.state(name),
                                 dragging = dragging != null,
                                 canRemove = (currentPhotos.size > 1 || canRemoveLast) && dragging == null,
                                 onRemove = {

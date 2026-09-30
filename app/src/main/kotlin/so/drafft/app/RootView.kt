@@ -190,6 +190,8 @@ fun RootView(app: AppModel) {
         foreground.returns.collect {
             if (app.phase == AppModel.Phase.WELCOME) return@collect
             scope.launch { moderation.load() }
+            // Photo verdicts given while away (a missed live event): read again, never assumed.
+            app.photoModeration.recheck()
             scope.launch { appOpens.report() }
             scope.launch { app.loadWallet() }
             purchaseCredit.resume(app)

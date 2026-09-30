@@ -131,6 +131,8 @@ class UserChannel(
                 on(channel.status) { s ->
                     if (s != RealtimeChannel.Status.SUBSCRIBED) return@on
                     joined.set(true)
+                    // Joined (again): photo verdicts given while it was down are read, not waited for.
+                    photoModeration.recheck()
                     app.refreshAccount(force = true)
                     app.loadWallet()
                     purchaseCredit.resume(app)
