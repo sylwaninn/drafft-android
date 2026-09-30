@@ -72,7 +72,7 @@ All text comes from the iPhone app's catalog (`Localizable.xcstrings`), shared k
 seven languages. After a wording change on the iPhone side:
 
 ```sh
-python3 scripts/sync-strings.py ../drafft/Drafft/Resources/Localizable.xcstrings
+python3 scripts/sync-strings.py ../drafft-ios/Drafft/Resources/Localizable.xcstrings
 ```
 
 The few sentences the iPhone writes about its own platform (App Store, Apple Account, iPhone Settings)
