@@ -24,7 +24,12 @@ data class OnboardingProgress(
     val name: String = "",
     val language: String? = null,
     @Serializable(with = InstantSerializer::class) val birthday: Instant? = null,
-    val acceptedTerms: Boolean = false,
+    /**
+     * The terms version recorded on the server with the consent (`TermsConsent`), null until then.
+     * It alone says the consent was given: progress saved before it (with an `acceptedTerms` flag,
+     * now ignored) still decodes, and the rules step asks again.
+     */
+    val termsVersion: String? = null,
     val verifiedPhone: String? = null,
     val identity: String? = null,
     val interestedIn: List<String> = emptyList(),

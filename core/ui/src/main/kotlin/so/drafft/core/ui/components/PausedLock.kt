@@ -133,7 +133,7 @@ private fun PausedNotice(onResume: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Text(
-            L("Nobody sees you and discovery waits until you resume. Your chats and sessions carry on."),
+            L("You're hidden from Discover, and discovery waits until you resume. Your chats and sessions carry on."),
             style = TextStyles.body,
             color = p.body,
             textAlign = TextAlign.Center,

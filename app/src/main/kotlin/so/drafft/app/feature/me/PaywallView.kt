@@ -65,7 +65,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.LegalDoc
-import so.drafft.app.feature.auth.LegalDocSheet
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
@@ -144,7 +143,7 @@ fun PaywallView(
     var restoring by remember { mutableStateOf(false) }
     // Outcome of a purchase or restore that didn't unlock anything, said plainly.
     var notice by remember { mutableStateOf<String?>(null) }
-    var legal by remember { mutableStateOf<LegalDoc?>(null) }
+    val uriHandler = LocalUriHandler.current
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
     InteractiveDismissDisabled(purchasing || receipt != null)
     val scroll = rememberScrollState()
@@ -232,7 +231,7 @@ fun PaywallView(
     }
 
     val perks = listOf(
-        Perk("arrow.uturn.backward", L("Undo any swipe"), L("Swiped too fast? Bring them back.")),
+        Perk("arrow.uturn.backward", L("Undo your last swipe"), L("Swiped too fast? Bring them back.")),
         Perk("heart.text.square", L("See who liked you"), L("Match instantly with people already into you.")),
         Perk("infinity", L("Unlimited likes"), L("No daily cap, like everyone you'd train with.")),
         Perk("bolt.fill", L("Weekly boost"), L("One free boost every week: 30 minutes at the top of decks near you.")),
@@ -253,7 +252,7 @@ fun PaywallView(
                         notice = notice,
                         onPurchase = ::purchase,
                         onRestore = ::restore,
-                        onLegal = { legal = it },
+                        onLegal = { uriHandler.openUri(it.url()) },
                     )
                 },
             ) { padding ->
@@ -322,9 +321,6 @@ fun PaywallView(
         }
     }
 
-    legal?.let { doc ->
-        DrafftSheet(onDismissRequest = { legal = null }) { LegalDocSheet(doc = doc) }
-    }
     // Over the paywall; closing it closes both, then the unlocked action runs.
     receipt?.let { r ->
         DrafftSheet(
@@ -692,7 +688,6 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
     var managing by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
     var restoreResult by remember { mutableStateOf<String?>(null) }
-    var legal by remember { mutableStateOf<LegalDoc?>(null) }
     val scroll = rememberScrollState()
 
     // What the store reports. Expired closes the page, since the drafft tempo row only shows while
@@ -789,15 +784,12 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                     restoreResult = restoreResult,
                     onOpenStore = { uriHandler.openUri(PLAY_SUBSCRIPTIONS_URL) },
                     onRestore = ::restore,
-                    onLegal = { legal = it },
+                    onLegal = { uriHandler.openUri(it.url()) },
                 )
             }
         }
     }
 
-    legal?.let { doc ->
-        DrafftSheet(onDismissRequest = { legal = null }) { LegalDocSheet(doc = doc) }
-    }
 }
 
 @Composable
@@ -847,7 +839,7 @@ private fun SubscriptionStatus(sub: TempoSubscription) {
 private fun Included() {
     val p = DS.palette
     val perks = listOf(
-        IncludedPerk("arrow.uturn.backward", L("Undo any swipe")),
+        IncludedPerk("arrow.uturn.backward", L("Undo your last swipe")),
         IncludedPerk("heart.text.square", L("See who liked you")),
         IncludedPerk("infinity", L("Unlimited likes")),
         IncludedPerk("bolt.fill", L("One free boost every week")),
