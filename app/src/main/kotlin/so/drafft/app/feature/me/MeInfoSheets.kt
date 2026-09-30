@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import so.drafft.app.feature.auth.LegalDoc
+import so.drafft.app.feature.verification.HelpTopics
+import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -61,7 +63,9 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
+import so.drafft.core.ui.components.DrafftButtonKind
 import so.drafft.core.ui.components.DrafftConfirm
+import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EdgeBars
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.Photo
@@ -69,6 +73,7 @@ import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetBlock
 import so.drafft.core.ui.components.SheetNavBar
 import so.drafft.core.ui.components.draftBlock
+import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
@@ -297,6 +302,22 @@ object SafetyTips {
 
     val report: Tip
         get() = Tip("flag", L("Report anything off"), L("Tap Report or block on their profile or in the chat. Reports are confidential."))
+
+    /** While you chat, before you've met. */
+    val chatting: List<Tip>
+        get() = listOf(
+            Tip("incognito", L("Keep personal details private"), L("Your address, workplace and last name can wait until you trust them.")),
+            Tip("danger-triangle", L("Watch for red flags"), L("Asking for money, pushing to leave the app, a story that keeps changing.")),
+            Tip("key", L("Keep your codes to yourself"), L("drafft never asks for your password or a login code in a chat.")),
+        )
+
+    /** When something went wrong, during or after. */
+    val afterwards: List<Tip>
+        get() = listOf(
+            report,
+            Tip("user-block", L("Block anytime"), L("They can't see your profile or message you, and you won't see them.")),
+            Tip("forbidden-circle", L("It's never your fault"), L("Pressure or harassment is on them, never on you. Report it, even if you're unsure.")),
+        )
 }
 
 /** Tips as rows: round badge, title, one line of detail, hairlines between. */
@@ -327,11 +348,73 @@ fun SafetyTipRows(
     }
 }
 
+/**
+ * The Safety tips page: who to call first, then the advice by moment (chatting, meeting,
+ * afterwards), then a way to reach the team.
+ */
 @Composable
 fun SafetyTipsSheet(modifier: Modifier = Modifier) {
+    var showSupport by remember { mutableStateOf(false) }
     MeInfoSheet(L("Safety tips"), modifier) {
+        SafetyEmergency()
+        SheetBlock(title = L("While you chat")) {
+            SafetyTipRows(tips = SafetyTips.chatting)
+        }
         SheetBlock(title = L("Meeting someone for the first time")) {
-            SafetyTipRows(tips = SafetyTips.meeting + SafetyTips.report)
+            SafetyTipRows(tips = SafetyTips.meeting)
+        }
+        SheetBlock(title = L("If something feels wrong")) {
+            SafetyTipRows(tips = SafetyTips.afterwards)
+            DrafftButton(
+                onClick = {
+                    Haptics.tap()
+                    showSupport = true
+                },
+                kind = DrafftButtonKind.SECONDARY,
+            ) {
+                DrafftIcon("letter", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                Text(L("Contact the team"), maxLines = 2)
+            }
+        }
+    }
+    DrafftSheet(visible = showSupport, onDismissRequest = { showSupport = false }) {
+        SupportSheet(topic = HelpTopics.safety)
+    }
+}
+
+/**
+ * First, in case someone opens this in a hurry. 112 reaches emergency services all over Europe,
+ * where drafft runs; the phone app opens with the number typed in, the person taps call.
+ */
+@Composable
+private fun SafetyEmergency() {
+    val dial = LocalPlatformUi.current.rememberDial()
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .draftBlock(DS.palette.night)
+            .padding(DS.Space.xl),
+        verticalArrangement = Arrangement.spacedBy(DS.Space.md),
+    ) {
+        NightSurface {
+            Column(
+                Modifier.semantics(mergeDescendants = true) { },
+                verticalArrangement = Arrangement.spacedBy(DS.Space.xs),
+            ) {
+                Text(L("In danger? Call 112."), style = display(24f), color = Color.White)
+                Text(
+                    L("Get somewhere safe first, then report them in the app."),
+                    style = TextStyles.subheadline,
+                    color = Color.White.copy(alpha = 0.72f),
+                )
+            }
+            DrafftButton(onClick = {
+                Haptics.tap()
+                dial("112")
+            }) {
+                DrafftIcon("phone", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                Text(L("Call 112"), maxLines = 2)
+            }
         }
     }
 }
@@ -399,6 +482,7 @@ fun SessionSafetySheet(
 
 // MARK: - Legal documents
 
+/** The legal documents, each opened on getdrafft.com in the browser, over this list. */
 @Composable
 fun LegalDocsListSheet(modifier: Modifier = Modifier) {
     val uriHandler = LocalUriHandler.current
@@ -408,9 +492,10 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
         LegalDoc.TERMS -> "document-text"
         LegalDoc.PRIVACY -> "lock-keyhole-minimalistic"
         LegalDoc.COMMUNITY -> "users-group-rounded"
+        LegalDoc.NOTICE -> "info-circle"
     }
 
-    MeInfoSheet(L("Terms & privacy"), modifier) {
+    MeInfoSheet(L("Legal information"), modifier) {
         SheetBlock {
             Column {
                 LegalDoc.entries.forEachIndexed { index, doc ->
