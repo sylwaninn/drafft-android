@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- sports-gymnastics: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12.48,21.5 L12.289,11.75 L7.385,10.5 L0.923,10.5 L0.923,9.5 L7.153,9.5 L14.827,4.096 L15.473,4.852 L10.766,8.212 L14.442,9.077 L21.685,4.634 L22.269,5.323 L14.269,11.403 L13.519,21.5 Z M6.193,7.692 L6.192,7.692 Q5.495,7.692 4.998,7.195 Q4.501,6.698 4.5,6 Q4.499,5.302 4.997,4.805 Q5.495,4.308 6.192,4.308 Q6.889,4.308 7.387,4.805 Q7.885,5.302 7.884,6 Q7.883,6.698 7.387,7.195 Q6.891,7.692 6.193,7.692 Z" />
+</vector>

@@ -13,7 +13,7 @@ data class ProfilePrompt(
 
     companion object {
         val library: List<PromptCategory> = listOf(
-            PromptCategory(id = "move", icon = "figure.run", questions = listOf(
+            PromptCategory(id = "move", icon = "running", questions = listOf(
                 "My ideal Sunday session",
                 "After a workout you'll find me",
                 "A stat I'm weirdly proud of",
@@ -27,7 +27,7 @@ data class ProfilePrompt(
                 "The piece of gear I'd save in a fire",
                 "I've never been as sore as the day I",
             )),
-            PromptCategory(id = "dating", icon = "heart.fill", questions = listOf(
+            PromptCategory(id = "dating", icon = "heart", questions = listOf(
                 "We'll get along if",
                 "The way to win me over",
                 "I'll know it's a match if",
@@ -39,7 +39,7 @@ data class ProfilePrompt(
                 "My love language is basically",
                 "Together we could finally",
             )),
-            PromptCategory(id = "fun", icon = "face.smiling.inverse", questions = listOf(
+            PromptCategory(id = "fun", icon = "smile-circle", questions = listOf(
                 "My most irrational fear",
                 "My most controversial opinion",
                 "I will never shut up about",
@@ -51,7 +51,7 @@ data class ProfilePrompt(
                 "Unpopular opinion about stretching",
                 "Karaoke song, no hesitation",
             )),
-            PromptCategory(id = "deep", icon = "sparkles", questions = listOf(
+            PromptCategory(id = "deep", icon = "stars", questions = listOf(
                 "Something I'm training for outside of sport",
                 "The best advice a coach ever gave me",
                 "What keeps me going on hard days",

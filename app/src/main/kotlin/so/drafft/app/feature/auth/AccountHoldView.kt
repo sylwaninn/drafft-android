@@ -104,18 +104,18 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
     }
     val points: List<Pair<String, String>> = when (hold) {
         AccountHold.REVIEW -> listOf(
-            "eye.slash.fill" to L("Your profile is hidden while we check."),
-            "bubble.left.and.bubble.right.fill" to L("Your matches and chats are kept."),
-            "lock.open.fill" to L("The app opens again by itself once it's done."),
+            "eye-closed" to L("Your profile is hidden while we check."),
+            "dialog-2" to L("Your matches and chats are kept."),
+            "lock-keyhole-minimalistic-unlocked" to L("The app opens again by itself once it's done."),
         )
         AccountHold.SELFIE -> listOf(
-            "person.crop.square.fill" to L("Just your face, well lit, nothing covering it."),
-            "lock.fill" to L("Only the drafft team sees it, never other members."),
-            "eye.slash.fill" to L("Your profile is hidden until then."),
+            "face-scan-circle" to L("Just your face, well lit, nothing covering it."),
+            "lock-keyhole-minimalistic" to L("Only the drafft team sees it, never other members."),
+            "eye-closed" to L("Your profile is hidden until then."),
         )
         AccountHold.BANNED -> listOf(
-            "eye.slash.fill" to L("Your profile and chats are no longer visible."),
-            "person.crop.circle.badge.xmark" to L("You can't create a new drafft account."),
+            "eye-closed" to L("Your profile and chats are no longer visible."),
+            "user-cross-rounded" to L("You can't create a new drafft account."),
         )
     }
     val art = when (hold) {
@@ -183,21 +183,21 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
                     when (hold) {
                         AccountHold.SELFIE -> {
                             DrafftButton(onClick = { takingSelfie = true }) {
-                                ButtonIcon("camera.fill")
+                                ButtonIcon("camera")
                                 Text(L("Take my selfie"), maxLines = 2)
                             }
                             LogOutLink { confirmingLogOut = true }
                         }
                         AccountHold.REVIEW -> {
                             DrafftButton(onClick = { askingHelp = true }, kind = DrafftButtonKind.SECONDARY) {
-                                ButtonIcon("questionmark.bubble.fill")
+                                ButtonIcon("chat-round-question-mark")
                                 Text(L("Get help"), maxLines = 2)
                             }
                             LogOutLink { confirmingLogOut = true }
                         }
                         AccountHold.BANNED -> {
                             DrafftButton(onClick = { app.signOut() }, kind = DrafftButtonKind.SECONDARY) {
-                                ButtonIcon("rectangle.portrait.and.arrow.right")
+                                ButtonIcon("logout-2")
                                 Text(L("Log out"), maxLines = 2)
                             }
                             TextLinkButton(
@@ -226,7 +226,7 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
     DrafftConfirm(
         visible = confirmingLogOut,
         onDismissRequest = { confirmingLogOut = false },
-        icon = "rectangle.portrait.and.arrow.right",
+        icon = "logout-2",
         title = L("Log out?"),
         message = if (hold == AccountHold.SELFIE) {
             L("Log back in any time to send your selfie.")
@@ -271,8 +271,8 @@ private fun ButtonIcon(symbol: String) {
 
 private object HoldArt {
     val review = EmptyStateArt(symbol = "hourglass")
-    val closed = EmptyStateArt(symbol = "nosign")
-    val selfie = EmptyStateArt(symbol = "faceid")
+    val closed = EmptyStateArt(symbol = "forbidden-circle")
+    val selfie = EmptyStateArt(symbol = "face-scan-square")
 }
 
 /** Entrance of the blocking screens (hold, location): each part rises into place a beat after the one above it. */

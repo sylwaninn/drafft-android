@@ -232,7 +232,7 @@ fun OneTimeCodeEntry(
                 }
                 is CodeStatus.Problem -> Column {
                     Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                        DrafftIcon("exclamationmark.circle.fill", size = 16.dp, tint = p.negative)
+                        DrafftIcon("danger-circle", size = 16.dp, tint = p.negative)
                         Text(s.text, style = TextStyles.footnote.medium, color = p.negative)
                     }
                     if (s.needsHelp) GetHelpButton(helpTopic)
@@ -283,7 +283,7 @@ fun CodeVerifiedCard(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(44.dp).background(p.lime, CircleShape), contentAlignment = Alignment.Center) {
-            DrafftIcon("checkmark", size = 20.dp, tint = p.onLime)
+            DrafftIcon("check", size = 20.dp, tint = p.onLime)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = TextStyles.headline, color = p.ink)
@@ -304,7 +304,7 @@ fun CodeLockedCard(message: String?, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(DS.Space.sm),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
-            DrafftIcon("lock.fill", size = 20.dp, tint = p.negative)
+            DrafftIcon("lock-keyhole-minimalistic", size = 20.dp, tint = p.negative)
             Text(L("Verification paused"), style = TextStyles.headline, color = p.negative)
         }
         Text(message ?: L("Too many tries."), style = TextStyles.subheadline, color = p.body)

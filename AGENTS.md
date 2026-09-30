@@ -206,9 +206,10 @@ comments that say what the code plainly does.
 - Type: `display(size)` (Inter Display Black), `displayBold(size)`, `TextStyles.body/.subheadline/...`
   (the iPhone text styles, in sp) with `.semibold`, `.bold`, `.heavy`.
 - Spacing `DS.Space.*`, radius `DS.Radius.*`, motion `Motion.snappy()/bouncy()/gentle()/select()`.
-- Icons: `DrafftIcon("sf.symbol.name")` / `Symbols.vector(name)`. The SF Symbol names stay in data and
-  code; `Symbols` maps each to a Material glyph. A symbol missing from the table: add it there (one
-  glyph per meaning).
+- Icons: `DrafftIcon("heart")` / `Symbols.vector(name)`, by the same Solar names as the iPhone app
+  (`Assets.xcassets/Icons`). Each name is a vector drawable `core/ui/res/drawable/ic_<name>.xml`
+  listed in `Symbols`; a new icon comes from the iOS symbol's source, drawable and table entry
+  together (rules in DESIGN.md, Icons).
 - Photos: bundled ones by name through `BundledImages`, remote ones through the design system's photo
   component (Coil), sized to where they're drawn.
 - Haptics: `Haptics.tap()/thump()/success()/warning()/select()`.
@@ -234,7 +235,7 @@ is:
 | `.sheet` + `.sheetSurface()` | `DrafftSheet` + `SheetSurface { }` |
 | `ViewThatFits` | `FirstThatFits` |
 | `Tokens.swift` (`DS.Palette`) | `DS.palette` in core:ui |
-| SF Symbols | `Symbols` / `DrafftIcon` |
+| `Image("name")` (Icons catalog) | `Symbols` / `DrafftIcon("name")` |
 | keyboard safe area | IME insets (`WindowInsets.ime`, `imePadding`) |
 | App Store, Apple Account, Apple ID, "Apple emails your receipt" | Google Play, Google account. The wording is in `i18n/android/` |
 | `manageSubscriptionsSheet`, App Store subscriptions | Google Play's subscriptions page (`play.google.com/store/account/subscriptions`) |

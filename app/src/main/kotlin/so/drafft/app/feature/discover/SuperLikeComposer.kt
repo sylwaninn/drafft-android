@@ -217,7 +217,7 @@ fun SuperLikeComposer(
                     .background(Color.White.copy(alpha = 0.18f), CircleShape),
                 contentDescription = L("Cancel"),
             ) {
-                DrafftIcon("xmark", size = (17f * 1.2f).dp, tint = Color.White)
+                DrafftIcon("close", size = (17f * 1.2f).dp, tint = Color.White)
             }
         }
 

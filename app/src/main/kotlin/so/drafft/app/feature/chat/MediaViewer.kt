@@ -239,7 +239,7 @@ private fun MediaPage(
             val loadable = data != null || bundled != null || asset?.startsWith("http") == true || asset?.startsWith("/") == true
             if (!loadable) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    DrafftIcon("photo", size = 40.dp, tint = Color.White.copy(alpha = 0.5f))
+                    DrafftIcon("gallery", size = 40.dp, tint = Color.White.copy(alpha = 0.5f))
                 }
                 return
             }
@@ -267,7 +267,7 @@ private fun MediaPage(
                     .pointerInput(kind.url) { detectTapGestures { runCatching { uriHandler.openUri(kind.url) } } },
                 contentAlignment = Alignment.Center,
             ) {
-                DrafftIcon("doc.fill", size = 56.dp, tint = Color.White.copy(alpha = 0.7f))
+                DrafftIcon("file", size = 56.dp, tint = Color.White.copy(alpha = 0.7f))
             }
         }
     }
@@ -399,7 +399,7 @@ private fun TopChrome(items: List<MediaItem>, index: Int, onClose: () -> Unit) {
             .padding(top = DS.Space.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChromeButton("xmark", L("Close"), onClose)
+        ChromeButton("close", L("Close"), onClose)
         Spacer(Modifier.weight(1f))
         if (items.size > 1) {
             Box(
@@ -414,7 +414,7 @@ private fun TopChrome(items: List<MediaItem>, index: Int, onClose: () -> Unit) {
         }
         Spacer(Modifier.weight(1f))
         if (shareable != null) {
-            ChromeButton("square.and.arrow.up", L("Share")) { share(shareable) }
+            ChromeButton("upload-minimalistic", L("Share")) { share(shareable) }
         } else {
             Spacer(Modifier.size(44.dp))
         }

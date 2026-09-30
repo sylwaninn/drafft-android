@@ -122,9 +122,9 @@ object ExtrasSheet {
 
         val symbol: String
             get() = when (this) {
-                BOOST -> "bolt.fill"
-                SUPER_LIKE -> "heart.fill"
-                LIKES -> "heart.text.square.fill"
+                BOOST -> "bolt"
+                SUPER_LIKE -> "heart"
+                LIKES -> "user-heart"
             }
     }
 
@@ -426,7 +426,7 @@ private fun StorePage(
                 SheetNavBar(
                     if (tab == ExtrasSheet.Tab.BOOST) L("Get more boosts") else L("Get more super likes"),
                     onClose = onClose,
-                    leading = { GlassCircleButton("chevron.left", onClick = onBack, contentDescription = L("Back")) },
+                    leading = { GlassCircleButton("alt-arrow-left", onClick = onBack, contentDescription = L("Back")) },
                 )
             }
         } else {
@@ -463,7 +463,7 @@ private fun LaunchButton(onLaunch: () -> Unit) {
     val now = rememberSecondTicker(app.boostEndsAt)
     val running = app.isBoosting(now)
     DrafftButton(onClick = onLaunch, enabled = !running && app.boosts != 0) {
-        DrafftIcon("bolt.fill", size = (17f * 1.2f).dp, tint = LocalContentColor.current)
+        DrafftIcon("bolt", size = (17f * 1.2f).dp, tint = LocalContentColor.current)
         Text(if (running) L("Boost running") else L("Boost now"), maxLines = 2)
     }
 }
@@ -504,7 +504,7 @@ private fun Hero(tab: ExtrasSheet.Tab, lifted: () -> Float, onClose: () -> Unit)
                 Spacer(Modifier.weight(1f))
                 PressScaleButton(onClick = onClose, modifier = Modifier.size(44.dp), contentDescription = L("Close")) {
                     Box(Modifier.size(40.dp).background(Color.White.copy(alpha = 0.14f), CircleShape), contentAlignment = Alignment.Center) {
-                        DrafftIcon("xmark", size = (17f * 1.2f).dp, tint = Color.White)
+                        DrafftIcon("close", size = (17f * 1.2f).dp, tint = Color.White)
                     }
                 }
             }

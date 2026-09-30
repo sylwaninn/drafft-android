@@ -152,13 +152,13 @@ fun SuperLikeMark(
     Box(modifier.padding(start = size * 0.48f).clearAndSetSemantics { }) {
         for (i in listOf(2, 1)) {
             DrafftIcon(
-                "heart.fill",
+                "heart",
                 Modifier.offset(x = -size * 0.24f * i),
                 size = box,
                 tint = color.copy(alpha = color.alpha * if (i == 1) 0.55f else 0.25f),
             )
         }
-        DrafftIcon("heart.fill", size = box, tint = color)
+        DrafftIcon("heart", size = box, tint = color)
     }
 }
 

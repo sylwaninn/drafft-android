@@ -97,11 +97,11 @@ import so.drafft.core.ui.theme.Motion
 private data class TabItem(val tab: AppModel.Tab, val title: () -> String, val symbol: String, val filled: String)
 
 private val tabs = listOf(
-    TabItem(AppModel.Tab.DISCOVER, { L("Discover") }, "flame", "flame.fill"),
-    TabItem(AppModel.Tab.LIKES, { L("Likes") }, "heart", "heart.fill"),
-    TabItem(AppModel.Tab.SESSIONS, { L("Sessions") }, "flag.2.crossed", "flag.2.crossed.fill"),
-    TabItem(AppModel.Tab.CHATS, { L("Chats") }, "bubble.left.and.bubble.right", "bubble.left.and.bubble.right.fill"),
-    TabItem(AppModel.Tab.ME, { L("You") }, "person.crop.circle", "person.crop.circle.fill"),
+    TabItem(AppModel.Tab.DISCOVER, { L("Discover") }, "fire", "fire-bold"),
+    TabItem(AppModel.Tab.LIKES, { L("Likes") }, "heart", "heart-bold"),
+    TabItem(AppModel.Tab.SESSIONS, { L("Sessions") }, "stopwatch-play", "stopwatch-play-bold"),
+    TabItem(AppModel.Tab.CHATS, { L("Chats") }, "dialog-2", "dialog-2-bold"),
+    TabItem(AppModel.Tab.ME, { L("You") }, "user-circle", "user-circle-bold"),
 )
 
 /** Height of the floating bar itself, without its bottom margin and the system navigation bar. */

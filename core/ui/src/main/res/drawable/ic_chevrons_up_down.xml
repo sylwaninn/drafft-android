@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- chevrons-up-down: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M18.53,15.53 L12.53,21.53 Q12.311,21.75 12,21.75 Q11.689,21.75 11.47,21.53 L5.47,15.53 Q5.25,15.311 5.25,15 Q5.25,14.689 5.47,14.47 Q5.689,14.25 6,14.25 Q6.311,14.25 6.53,14.47 L12,19.939 L17.47,14.47 Q17.689,14.25 18,14.25 Q18.311,14.25 18.53,14.47 Q18.75,14.689 18.75,15 Q18.75,15.311 18.53,15.53 Z M17.47,9.53 L12,4.061 L6.53,9.53 Q6.311,9.75 6,9.75 Q5.689,9.75 5.47,9.53 Q5.25,9.311 5.25,9 Q5.25,8.689 5.47,8.47 L11.47,2.47 Q11.689,2.25 12,2.25 Q12.311,2.25 12.53,2.47 L18.53,8.47 Q18.75,8.689 18.75,9 Q18.75,9.311 18.53,9.53 Q18.311,9.75 18,9.75 Q17.689,9.75 17.47,9.53 Z" />
+</vector>

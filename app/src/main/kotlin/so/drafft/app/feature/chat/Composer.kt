@@ -373,7 +373,7 @@ private fun AttachMenu(onCamera: (() -> Unit)?, onLibrary: () -> Unit) {
                 .glass(CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("plus", size = 22.dp, tint = DS.palette.ink)
+            DrafftIcon("add", size = 22.dp, tint = DS.palette.ink)
         }
         ChatMenu(expanded = open, onDismiss = { open = false }) {
             if (onCamera != null) {
@@ -382,7 +382,7 @@ private fun AttachMenu(onCamera: (() -> Unit)?, onLibrary: () -> Unit) {
                     onCamera()
                 }
             }
-            ChatMenuItem(L("Choose from library"), "photo.on.rectangle.angled") {
+            ChatMenuItem(L("Choose from library"), "gallery") {
                 open = false
                 onLibrary()
             }
@@ -488,7 +488,7 @@ private fun Field(
                         .semantics { contentDescription = cancel },
                     contentAlignment = Alignment.Center,
                 ) {
-                    DrafftIcon("xmark.circle.fill", size = 20.dp, tint = p.mute)
+                    DrafftIcon("close-circle", size = 20.dp, tint = p.mute)
                 }
             }
         }
@@ -537,7 +537,7 @@ private fun LimeCircle(label: String, pressable: Boolean, onClick: () -> Unit) {
             .glass(CircleShape, tint = DS.palette.lime),
         contentAlignment = Alignment.Center,
     ) {
-        DrafftIcon("arrow.up", size = 22.dp, tint = DS.palette.onLime)
+        DrafftIcon("arrow-up", size = 22.dp, tint = DS.palette.onLime)
     }
 }
 
@@ -621,7 +621,7 @@ private fun MicButton(
                 .clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("mic.fill", size = 22.dp, tint = if (isRecording) p.onLime else p.ink)
+            DrafftIcon("microphone", size = 22.dp, tint = if (isRecording) p.onLime else p.ink)
         }
     }
 }
@@ -651,10 +651,10 @@ private fun LockRail(p: Float) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Crossfade(targetState = p >= 1f, animationSpec = tween(150), label = "padlock") { closed ->
-            DrafftIcon(if (closed) "lock.fill" else "lock.open.fill", size = 18.dp, tint = DS.palette.ink)
+            DrafftIcon(if (closed) "lock-keyhole-minimalistic" else "lock-keyhole-minimalistic-unlocked", size = 18.dp, tint = DS.palette.ink)
         }
         DrafftIcon(
-            "chevron.up",
+            "alt-arrow-up",
             Modifier
                 .graphicsLayer { translationY = -3.dp.toPx() * bounce }
                 .alpha(1f - p),
@@ -689,7 +689,7 @@ private fun RecordingBar(
                     .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDiscard)
                     .semantics { contentDescription = discard },
                 contentAlignment = Alignment.Center,
-            ) { DrafftIcon("trash", size = 20.dp, tint = p.negative) }
+            ) { DrafftIcon("trash-bin-minimalistic", size = 20.dp, tint = p.negative) }
         } else {
             Box(
                 Modifier
@@ -707,7 +707,7 @@ private fun RecordingBar(
                 horizontalArrangement = Arrangement.spacedBy(DS.Space.xxs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DrafftIcon("chevron.left", size = 15.dp, tint = p.body)
+                DrafftIcon("alt-arrow-left", size = 15.dp, tint = p.body)
                 Text(L("Slide to cancel"), style = TextStyles.footnote.semibold, color = p.body, maxLines = 1, softWrap = false)
             }
         }

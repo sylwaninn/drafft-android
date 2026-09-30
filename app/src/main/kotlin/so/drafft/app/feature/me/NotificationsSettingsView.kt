@@ -62,21 +62,21 @@ fun NotificationsSettingsView(modifier: Modifier = Modifier) {
         ) {
             StatusBlock(notifications)
             SettingsGroup(L("Activity"), allowed) {
-                ToggleRow(L("New matches"), "heart.fill", notifications.matches, { notifications.matches = it })
+                ToggleRow(L("New matches"), "heart", notifications.matches, { notifications.matches = it })
                 Divider()
-                ToggleRow(L("Likes you"), "heart.circle.fill", notifications.likes, { notifications.likes = it })
+                ToggleRow(L("Likes you"), "user-heart", notifications.likes, { notifications.likes = it })
                 Divider()
-                ToggleRow(L("Messages"), "bubble.left.fill", notifications.messages, { notifications.messages = it })
+                ToggleRow(L("Messages"), "chat-round-line", notifications.messages, { notifications.messages = it })
                 Divider()
                 ToggleRow(
-                    L("Show message previews"), "text.bubble.fill",
+                    L("Show message previews"), "chat-square-line",
                     notifications.messagePreviews, { notifications.messagePreviews = it },
                     detail = L("Off: notifications only say who wrote, not what."),
                     enabled = notifications.messages,
                 )
                 Divider()
                 ToggleRow(
-                    L("Reactions"), "face.smiling.inverse",
+                    L("Reactions"), "smile-circle",
                     notifications.reactions, { notifications.reactions = it },
                     detail = L("When someone reacts to one of your messages."),
                     enabled = notifications.messages,
@@ -84,18 +84,18 @@ fun NotificationsSettingsView(modifier: Modifier = Modifier) {
             }
             SettingsGroup(L("Sessions"), allowed) {
                 ToggleRow(
-                    L("The evening before"), "moon.fill",
+                    L("The evening before"), "moon",
                     notifications.sessionEvening, { notifications.sessionEvening = it },
                     detail = L("At %s, a reminder of tomorrow's session.", eveningTime()),
                 )
                 Divider()
-                ToggleRow(L("An hour before"), "alarm.fill", notifications.sessionHourBefore, { notifications.sessionHourBefore = it })
+                ToggleRow(L("An hour before"), "alarm", notifications.sessionHourBefore, { notifications.sessionHourBefore = it })
             }
             // The weekly boost comes with drafft tempo: its notification only makes sense then.
             if (app.isPremium) {
                 SettingsGroup(Brand.TIER_NAME, allowed) {
                     ToggleRow(
-                        L("Weekly boost"), "bolt.fill",
+                        L("Weekly boost"), "bolt",
                         notifications.weeklyBoost, { notifications.weeklyBoost = it },
                         detail = L("When your free boost of the week is added."),
                     )
@@ -119,7 +119,7 @@ private fun StatusBlock(notifications: NotificationService) {
                     contentAlignment = Alignment.Center,
                 ) {
                     DrafftIcon(
-                        if (allowed) "bell.badge.fill" else "bell.slash.fill",
+                        if (allowed) "bell-ring" else "bell-off",
                         size = 24.dp,
                         tint = if (allowed) p.onAccentOnNight else Color.White,
                     )
@@ -142,7 +142,7 @@ private fun StatusBlock(notifications: NotificationService) {
                 }
             }
             if (notifications.permission != PermissionStatus.ALLOWED) {
-                PermissionButton(permission = notifications, askTitle = L("Turn on notifications"), symbol = "bell.fill")
+                PermissionButton(permission = notifications, askTitle = L("Turn on notifications"), symbol = "bell")
             }
         }
     }

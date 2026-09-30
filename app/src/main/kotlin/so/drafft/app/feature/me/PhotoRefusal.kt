@@ -142,7 +142,7 @@ private fun RefusalContent(refusal: PhotoModeration.Refusal, dismiss: () -> Unit
                 contentAlignment = Alignment.Center,
             ) {
                 Crossfade(sent, animationSpec = Motion.snappy(), label = "refusalGlyph") { isSent ->
-                    DrafftIcon(if (isSent) "hourglass" else "nosign", size = 16.dp, tint = Color.White)
+                    DrafftIcon(if (isSent) "hourglass" else "forbidden-circle", size = 16.dp, tint = Color.White)
                 }
             }
         }
@@ -264,7 +264,7 @@ fun PhotoRefusalBanner(
                             .background(p.negative, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        DrafftIcon("nosign", size = 13.dp, tint = Color.White)
+                        DrafftIcon("forbidden-circle", size = 13.dp, tint = Color.White)
                     }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

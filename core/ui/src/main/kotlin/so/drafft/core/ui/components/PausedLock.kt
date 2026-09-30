@@ -123,7 +123,7 @@ private fun PausedNotice(onResume: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.size(48.dp).background(p.lime, CircleShape), contentAlignment = Alignment.Center) {
-            DrafftIcon("pause.fill", size = symbolBox(20f), tint = p.onLime)
+            DrafftIcon("pause", size = symbolBox(20f), tint = p.onLime)
         }
         Text(
             L("Your profile is paused"),

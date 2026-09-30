@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- fence: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M5.5,19.5 L5.5,15.5 L4.5,15.5 L4.5,14.5 L5.5,14.5 L5.5,11.5 L4.5,11.5 L4.5,10.5 L5.5,10.5 L5.5,7.212 L8,4.712 L10,6.712 L12.025,4.712 L14.025,6.712 L16.025,4.712 L18.525,7.212 L18.525,10.5 L19.5,10.5 L19.5,11.5 L18.525,11.5 L18.525,14.5 L19.5,14.5 L19.5,15.5 L18.525,15.5 L18.525,19.5 Z M6.5,10.5 L9.5,10.5 L9.5,7.614 L8,6.114 L6.5,7.614 Z M10.5,10.5 L13.5,10.5 L13.5,7.614 L12,6.114 L10.5,7.614 Z M14.525,10.5 L17.5,10.5 L17.5,7.614 L16,6.114 L14.525,7.608 Z M6.5,14.5 L9.5,14.5 L9.5,11.5 L6.5,11.5 Z M10.5,14.5 L13.5,14.5 L13.5,11.5 L10.5,11.5 Z M6.5,18.5 L9.5,18.5 L9.5,15.5 L6.5,15.5 Z M10.5,18.5 L13.5,18.5 L13.5,15.5 L10.5,15.5 Z M14.525,14.5 L17.5,14.5 L17.5,11.5 L14.525,11.5 Z M14.525,18.5 L17.5,18.5 L17.5,15.5 L14.525,15.5 Z" />
+</vector>

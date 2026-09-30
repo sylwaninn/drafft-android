@@ -107,7 +107,7 @@ fun ReportSheet(
     AccountSheet(
         title = L("Report or block"),
         actionTitle = L("Report and block"),
-        actionIcon = "flag.fill",
+        actionIcon = "flag",
         destructive = true,
         enabled = reason != null && !sending,
         loading = sending,
