@@ -206,7 +206,12 @@ class ProfileSync(
      * (instead of one read per piece); it's also what the local cache keeps.
      */
     data class Account(
+        /**
+         * Every photo the person has, refused ones included: they stay on the person's own grid (to ask
+         * for a second look), and only approved ones show as the profile (`PhotoModeration`).
+         */
         val profile: Profile,
+        val photos: List<OwnPhoto> = emptyList(),
         val paused: Boolean,
         val hold: AccountHold?,
         val onboarded: Boolean,
@@ -214,6 +219,12 @@ class ProfileSync(
         /** Whether the consent is on record for the current terms: only a fresh read may say `REQUIRED`. */
         val consent: TermsConsent.Gate,
     )
+
+    /**
+     * One of the account's photos as the server has it: its link (as the grids show it), its id and
+     * moderation's word (`approved`, `pending`, `rejected`).
+     */
+    data class OwnPhoto(val link: String, val id: String, val status: String)
 
     /**
      * The account as saved on the server (a new device, a reinstall, another device's changes), in
@@ -296,10 +307,10 @@ class ProfileSync(
             AccountRow(o) to o
         }
 
-        /** The media keys a row shows (photos not refused, the voice intro), to sign in one request. */
+        /** The media keys a row shows (every photo, the voice intro), to sign in one request. */
         private fun mediaKeys(data: ByteArray): List<String> {
             val (row) = row(data) ?: return emptyList()
-            return (row.media ?: emptyList()).filter { it.kind == "photo" && it.status != "rejected" }.map { it.key } +
+            return (row.media ?: emptyList()).filter { it.kind == "photo" }.map { it.key } +
                 listOfNotNull(row.voiceIntroKey)
         }
 
@@ -313,8 +324,10 @@ class ProfileSync(
             fun link(key: String): String? = signed[key] ?: mediaBase?.let { appendingPath(it, key) }
             // Each photo's blurred preview, shown while it loads.
             for (m in row.media ?: emptyList()) MediaPreviews.register(m.thumbhash, key = m.key)
-            val photos = (row.media ?: emptyList()).filter { it.kind == "photo" && it.status != "rejected" }.map { it.key }
-                .mapNotNull(::link)
+            val own = (row.media ?: emptyList()).filter { it.kind == "photo" }.mapNotNull { m ->
+                link(m.key)?.let { OwnPhoto(link = it, id = m.id, status = m.status) }
+            }
+            val photos = own.map { it.link }
             val birthday = row.birthdate?.let(::parseDay)
             val age = birthday?.let {
                 Period.between(it.atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now()).years
@@ -343,7 +356,7 @@ class ProfileSync(
                 promptsOverride = row.prompts ?: emptyList(),
             )
             return Account(
-                profile = profile, paused = row.paused, hold = row.moderation, onboarded = row.onboardedAt != null,
+                profile = profile, photos = own, paused = row.paused, hold = row.moderation, onboarded = row.onboardedAt != null,
                 notifications = attemptOrNull { DrafftJson.decodeFromJsonElement(NotificationSettings.serializer(), obj) },
                 consent = TermsConsent.gate(onboarded = row.onboardedAt != null, carriesConsent = row.carriesConsent, record = row.consent),
             )

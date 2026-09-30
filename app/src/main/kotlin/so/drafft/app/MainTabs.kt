@@ -233,7 +233,7 @@ fun MainTabs(
             if (match != null) {
                 MatchView(
                     profile = match,
-                    me = app.me,
+                    me = app.publicMe,
                     onChat = { app.openChatWith(match.id) },
                     onClose = { app.matchScreen = null },
                 )
