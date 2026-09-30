@@ -14,7 +14,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.drag as trackDrag
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -508,7 +508,7 @@ private fun DeckCard(
                     if (isTop) {
                         Modifier.pointerInput(id) {
                             swipeGesture(
-                                drag = drag,
+                                offset = drag,
                                 threshold = threshold,
                                 coordinates = { coordinates[0] },
                                 launch = { block -> scope.launch(start = CoroutineStart.UNDISPATCHED) { block() } },
@@ -576,7 +576,7 @@ private val ZeroProgress: () -> Float = { 0f }
  * never feeds back into the drag.
  */
 private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swipeGesture(
-    drag: Animatable<Offset, *>,
+    offset: Animatable<Offset, *>,
     threshold: Float,
     coordinates: () -> LayoutCoordinates?,
     launch: (suspend () -> Unit) -> Unit,
@@ -587,7 +587,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swipeGes
         val down = awaitFirstDown(requireUnconsumed = false)
         val coords = coordinates() ?: return@awaitEachGesture
         val startRoot = coords.localToRoot(down.position)
-        val startDrag = drag.value
+        val startDrag = offset.value
         tracker.resetTracking()
         tracker.addPosition(down.uptimeMillis, startRoot)
         val slop = awaitTouchSlopOrCancellation(down.id) { change, _ -> change.consume() } ?: return@awaitEachGesture
@@ -597,19 +597,19 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swipeGes
             val root = c.localToRoot(change.position)
             tracker.addPosition(change.uptimeMillis, root)
             val target = startDrag + (root - startRoot)
-            val crossedBefore = abs(drag.value.x) >= threshold
+            val crossedBefore = abs(offset.value.x) >= threshold
             if (crossedBefore != (abs(target.x) >= threshold)) Haptics.select()
-            launch { drag.snapTo(target) }
+            launch { offset.snapTo(target) }
         }
 
         follow(slop)
-        val completed = drag(slop.id) { change ->
+        val completed = trackDrag(slop.id) { change ->
             change.consume()
             follow(change)
         }
-        val translation = drag.value.x
+        val translation = offset.value.x
         if (!completed) {
-            launch { drag.animateTo(Offset.Zero, Motion.bouncy()) }
+            launch { offset.animateTo(Offset.Zero, Motion.bouncy()) }
             return@awaitEachGesture
         }
         // Where the fling would come to rest: UIKit's projection at the normal deceleration rate
@@ -619,7 +619,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swipeGes
         if (abs(translation) > threshold || abs(predicted) > threshold * 2.4f) {
             onCommit((if (abs(predicted) > abs(translation)) predicted else translation) > 0)
         } else {
-            launch { drag.animateTo(Offset.Zero, Motion.bouncy()) }
+            launch { offset.animateTo(Offset.Zero, Motion.bouncy()) }
         }
     }
 }
