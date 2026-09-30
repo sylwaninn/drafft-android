@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.media.FaceDetector
+import kotlinx.coroutines.runBlocking
+import so.drafft.core.data.verification.AndroidFaceCheck
+import so.drafft.core.data.verification.FaceCheck
 import android.os.Handler
 import android.os.Looper
 import androidx.camera.core.CameraSelector
@@ -28,7 +30,7 @@ import kotlinx.coroutines.withContext
 import so.drafft.core.data.platform.PermissionPrompter
 
 // Ports SelfieCamera (Drafft/Features/Verification/SelfieCaptureView.swift): AVFoundation and Vision
-// become CameraX and the platform's on-device face detector (`android.media.FaceDetector`).
+// become CameraX and ML Kit's on-device face detector (`AndroidFaceCheck`).
 
 /**
  * The front camera: frames for the live face check, and one photo when asked. Analysis runs on its
@@ -131,28 +133,16 @@ internal class AndroidFrontCamera(
     }
 
     companion object {
-        /** The detector works on a small copy: faces that fill an oval don't need more. */
-        private const val DETECTION_WIDTH = 320
-
-        /** A face is about this many eye distances wide (the detector only gives the eyes). */
-        private const val FACE_WIDTH_IN_EYES = 2.3f
-
-        /** The faces in [bitmap], in 0...1 of its frame. */
+        /**
+         * The faces in [bitmap], in 0...1 of its frame (origin top left), found by ML Kit on the device
+         * (`AndroidFaceCheck`, the same detector the first photo's face check uses). Runs on the camera's
+         * analysis thread.
+         */
         fun faces(bitmap: Bitmap): List<FaceBox> {
-            val scale = DETECTION_WIDTH.toFloat() / bitmap.width
-            // FaceDetector wants RGB_565 and an even width.
-            val width = (DETECTION_WIDTH / 2) * 2
-            val height = (bitmap.height * scale).toInt().coerceAtLeast(2)
-            val small = Bitmap.createScaledBitmap(bitmap, width, height, true).copy(Bitmap.Config.RGB_565, false)
-            val found = arrayOfNulls<FaceDetector.Face>(4)
-            val count = runCatching { FaceDetector(width, height, found.size).findFaces(small, found) }.getOrDefault(0)
-            val mid = android.graphics.PointF()
-            return found.take(count).filterNotNull().map { face ->
-                face.getMidPoint(mid)
-                val w = face.eyesDistance() * FACE_WIDTH_IN_EYES
-                val h = w * 1.25f
-                FaceBox((mid.x - w / 2) / width, (mid.y - h * 0.4f) / height, w / width, h / height)
-            }
+            val detector = FaceCheck.engine as? AndroidFaceCheck ?: return emptyList()
+            // AndroidFaceCheck answers like Vision (origin bottom left): flip back.
+            return runBlocking { detector.faces(bitmap, 0) }
+                .map { r -> FaceBox(r.left, 1f - r.bottom, r.width(), r.height()) }
         }
     }
 }
