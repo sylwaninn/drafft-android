@@ -14,6 +14,7 @@
 %d people like you. See who
 %d people like you. Unlock with drafft tempo
 %d photos
+%d refused
 %d selected
 %d super likes
 %d super likes added.
@@ -81,6 +82,7 @@
 1 month
 1 person likes you.
 1 photo
+1 refused
 1 super like
 1 super like left
 1 super like left after this
@@ -105,6 +107,7 @@ A goal that scares me a little
 A long-term relationship
 A mistake? Contact us
 A photo couldn't be sent. Tap it to see why, then try again.
+A photo is no longer there, so nothing was saved. Close and try again.
 A photo wasn't approved
 A sport photo and a voice intro help. New likes land here.
 A stat I'm weirdly proud of
@@ -230,7 +233,6 @@ Check your inbox, and your spam folder. The code works for 1 hour.
 Check your messages. The code works for 10 minutes.
 Checking the code…
 Checking this photo
-Checking your photos…
 Choose a new password
 Choose a pack
 Choose a prompt
@@ -296,6 +298,7 @@ Disagree
 Discard changes
 Discard recording
 Discard your changes?
+Discard your photo changes?
 Discover
 Discovery
 Discovery: %s shows you the ropes
@@ -729,6 +732,7 @@ Photo %d of %d
 Photos
 Photos & voice
 Photos of %s, %d total
+Photos you added will be deleted, and the others go back as they were.
 Pick 1 to 3 times that haven't passed.
 Pick While Using the App
 Pick a format for your interactive prompt. Matches play it and reply in one tap.
