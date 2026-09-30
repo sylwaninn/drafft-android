@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.discover.FiltersSheet
+import so.drafft.app.feature.discover.NameAgeLine
+import so.drafft.app.feature.discover.SportChipsLine
 import so.drafft.app.feature.profile.ProfileDetailMode
 import so.drafft.app.feature.profile.ProfileDetailView
 import so.drafft.app.feature.verification.ChangePhoneSheet
@@ -74,15 +76,14 @@ import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
 import so.drafft.core.ui.components.DrafftSheet
-import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.LocalSheetDismiss
+import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetDetent
 import so.drafft.core.ui.components.SparkPlus
-import so.drafft.core.ui.components.SportBadgeStack
 import so.drafft.core.ui.components.TopBar
 import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
@@ -373,15 +374,17 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                         side = 84.dp,
                     )
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(L("%s, %d", me.name, me.age), style = display(26f), color = Color.White)
-                    // White discs, ink glyphs: a grey disc disappeared into the night card.
-                    SportBadgeStack(
-                        me.sports.map { it.sport },
-                        Modifier.padding(top = 2.dp),
-                        fill = Color.White,
-                        glyph = p.night,
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
+                    // Same line as your profile page: display name, the age set apart without a comma.
+                    NameAgeLine(
+                        profile = me,
+                        nameSize = 32f,
+                        nameColor = Color.White,
+                        ageColor = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.semantics { heading() },
                     )
+                    // Named chips on one line: what fits, then "+X".
+                    SportChipsLine(me.sports.map { it.sport }, Modifier.padding(top = 2.dp))
                     AnimatedVisibility(
                         app.profilePaused,
                         enter = scaleIn(Motion.snappy()) + fadeIn(Motion.snappy()),

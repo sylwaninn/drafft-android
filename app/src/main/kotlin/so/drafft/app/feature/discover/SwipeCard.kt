@@ -47,6 +47,7 @@ import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -289,6 +290,73 @@ fun SportChipsPreview(
                 maxLines = 1,
                 softWrap = false,
             )
+        }
+    }
+}
+
+/**
+ * Sports as named chips on a single line, never two: as many as fit in order, then "+X" for the
+ * rest. When not even one chip and its "+X" fit, the shortest name leads instead, cut short if it
+ * still doesn't fit (the one place a sport name is truncated). Port of SportChipsLine
+ * (Drafft/DesignSystem/Components.swift).
+ */
+@Composable
+fun SportChipsLine(sports: List<Sport>, modifier: Modifier = Modifier) {
+    val label = sports.joinToString(", ") { it.displayName }
+    Layout(
+        content = {
+            // design-lint: allow truncation - the lead sport alone, last resort asked by the user (DESIGN.md, You card)
+            sports.forEach { SportChip(it, onDark = true, overflow = TextOverflow.Ellipsis) }
+            // One candidate "+X" per possible count; the layout shows the one it needs.
+            for (hidden in 1 until max(sports.size, 1)) {
+                Text(
+                    "+$hidden",
+                    Modifier
+                        .background(Color.White.copy(alpha = 0.16f), CircleShape)
+                        .padding(horizontal = DS.Space.md, vertical = DS.Space.sm),
+                    style = TextStyles.subheadline.bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        },
+        modifier = modifier.clearAndSetSemantics { contentDescription = label },
+    ) { measurables, constraints ->
+        val gap = (DS.Space.xs + 2.dp).roundToPx()
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
+        val count = sports.size
+        // Ideal widths from intrinsics: each measurable is measured once, only if it's placed.
+        val ideal = measurables.map { it.maxIntrinsicWidth(Constraints.Infinity) }
+        fun badge(hidden: Int) = if (hidden > 0) count + hidden - 1 else null
+
+        var entries: List<Pair<Int, Int?>> = emptyList()
+        for (shown in count downTo 1) {
+            val row = (0 until shown).map { it to null as Int? } + listOfNotNull(badge(count - shown)?.let { it to null })
+            val total = row.sumOf { ideal[it.first] } + gap * (row.size - 1)
+            if (total <= width) {
+                entries = row
+                break
+            }
+        }
+        if (entries.isEmpty() && count > 0) {
+            // Not even one chip with its badge: the shortest sport leads, cut to the room left.
+            val lead = (0 until count).minBy { ideal[it] }
+            val b = badge(count - 1)
+            val room = width - (b?.let { ideal[it] + gap } ?: 0)
+            entries = listOf(lead to room.coerceIn(0, ideal[lead])) + listOfNotNull(b?.let { it to null })
+        }
+        val placeables = entries.map { (i, w) ->
+            i to measurables[i].measure(if (w != null) Constraints(maxWidth = w) else Constraints())
+        }
+        val height = placeables.maxOfOrNull { it.second.height } ?: 0
+        val rowWidth = placeables.sumOf { it.second.width } + gap * (placeables.size - 1).coerceAtLeast(0)
+        layout(if (constraints.hasBoundedWidth) constraints.maxWidth else rowWidth, height) {
+            var x = 0
+            placeables.forEach { (_, pl) ->
+                pl.place(x, (height - pl.height) / 2)
+                x += pl.width + gap
+            }
         }
     }
 }
