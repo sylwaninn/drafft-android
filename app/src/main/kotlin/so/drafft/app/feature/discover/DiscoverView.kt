@@ -57,7 +57,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -452,6 +451,7 @@ private fun DeckCard(
     LaunchedEffect(index) { depth.animateTo(index.toFloat(), deckSpring()) }
     LaunchedEffect(Unit) { appear.animateTo(1f, deckSpring()) }
     val currentIndex by rememberUpdatedState(index)
+    val commitNow by rememberUpdatedState(onCommit)
     val id = profile.id
     fun visualDepth(): Float {
         val d = depth.value
@@ -512,7 +512,7 @@ private fun DeckCard(
                                 threshold = threshold,
                                 coordinates = { coordinates[0] },
                                 launch = { block -> scope.launch(start = CoroutineStart.UNDISPATCHED) { block() } },
-                                onCommit = { liked -> onCommit(profile, liked) },
+                                onCommit = { liked -> commitNow(profile, liked) },
                             )
                         }
                     } else {
