@@ -1,13 +1,15 @@
 package so.drafft.app.feature.me
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,6 +48,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -53,7 +57,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.discover.FiltersSheet
@@ -88,6 +95,7 @@ import so.drafft.core.ui.components.TopBar
 import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
+import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
@@ -137,10 +145,17 @@ fun MeView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (app.profileLoad == AppModel.ProfileLoad.LOADED) {
-                LoadedProfileCard(onEdit = { sheet = MeSheet.EDIT }, onPreview = { sheet = MeSheet.PREVIEW })
-            } else {
-                ProfileLoadCard()
+            // While paused, a strip slides out from under the card: the card and what it says about
+            // you, then that no one sees it for now.
+            Column(Modifier.fillMaxWidth()) {
+                Box(Modifier.zIndex(1f)) {
+                    if (app.profileLoad == AppModel.ProfileLoad.LOADED) {
+                        LoadedProfileCard(onEdit = { sheet = MeSheet.EDIT }, onPreview = { sheet = MeSheet.PREVIEW })
+                    } else {
+                        ProfileLoadCard()
+                    }
+                }
+                PausedStrip(app.profilePaused)
             }
             if (!app.isPremium) PlusCard { sheet = MeSheet.PAYWALL }
 
@@ -150,13 +165,11 @@ fun MeView(modifier: Modifier = Modifier) {
                 ToggleSettingsRow(
                     L("Pause my profile"),
                     "pause",
-                    detail = if (app.profilePaused) {
-                        L("Hidden from Discover and likes. Your chats and sessions carry on.")
-                    } else {
-                        L("Hide from Discover for a while. Your chats stay open.")
-                    },
+                    // One text, on or off: the strip under the card says it's on.
+                    detail = L("Hides you from Discover and likes. Your chats and sessions carry on."),
                     isOn = app.profilePaused,
                     onChange = { app.profilePaused = it },
+                    tint = p.paused,
                 )
             }
             Group(L("Preferences")) {
@@ -385,21 +398,6 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                     )
                     // Named chips on one line: what fits, then "+X".
                     SportChipsLine(me.sports.map { it.sport }, Modifier.padding(top = 2.dp))
-                    AnimatedVisibility(
-                        app.profilePaused,
-                        enter = scaleIn(Motion.snappy()) + fadeIn(Motion.snappy()),
-                        exit = scaleOut(Motion.snappy()) + fadeOut(Motion.snappy()),
-                    ) {
-                        IconLabel(
-                            L("Paused"),
-                            "pause",
-                            Modifier
-                                .background(Color.White, CircleShape)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                            style = TextStyles.caption.bold,
-                            color = p.night,
-                        )
-                    }
                 }
             }
 
@@ -507,6 +505,68 @@ private fun Spark(color: Color, modifier: Modifier) {
     )
 }
 
+// MARK: Paused strip
+
+/**
+ * While the profile is paused, the strip under the You card: the same colour as the switch that
+ * paused it, and what it means in one line. The switch in Discovery is the way back.
+ *
+ * It sits under the card's bottom by the card's radius, drawn behind it (the card is above in z), so
+ * it reads as another card continuing beneath.
+ */
+@Composable
+private fun PausedStrip(visible: Boolean) {
+    val p = DS.palette
+    val reduceMotion = LocalReduceMotion.current
+    // The strip comes and goes with the pause (the switch or the server): it slides out from under the
+    // card while its height opens, both on one curve, so its bottom edge and the blocks under it move
+    // together. No bounce: a spring overshooting read as a jolt.
+    val sizeSpec = if (reduceMotion) tween<IntSize>(200, easing = Motion.EaseInOut) else Motion.springOf(0.35, 1f, IntSize.VisibilityThreshold)
+    val offsetSpec = Motion.springOf(0.35, 1f, IntOffset.VisibilityThreshold)
+    AnimatedVisibility(
+        visible,
+        Modifier.fillMaxWidth(),
+        enter = if (reduceMotion) {
+            fadeIn(tween(200, easing = Motion.EaseInOut)) + expandVertically(sizeSpec, Alignment.Top, clip = false)
+        } else {
+            expandVertically(sizeSpec, Alignment.Top, clip = false) + slideInVertically(offsetSpec) { -it }
+        },
+        exit = if (reduceMotion) {
+            fadeOut(tween(200, easing = Motion.EaseInOut)) + shrinkVertically(sizeSpec, Alignment.Top, clip = false)
+        } else {
+            shrinkVertically(sizeSpec, Alignment.Top, clip = false) + slideOutVertically(offsetSpec) { -it }
+        },
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                // Tucked under the card by its radius: laid out that much shorter, drawn that much higher.
+                .layout { measurable, constraints ->
+                    val tuck = DS.Radius.xl.roundToPx()
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, (placeable.height - tuck).coerceAtLeast(0)) { placeable.place(0, -tuck) }
+                }
+                // Square at the top: it continues the card rather than sitting behind it.
+                .background(p.paused, RoundedCornerShape(bottomStart = DS.Radius.xl, bottomEnd = DS.Radius.xl))
+                .padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Radius.xl + DS.Space.md, bottom = DS.Space.md)
+                .semantics(mergeDescendants = true) { },
+            horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // As tall as the title's line, centred in it: the icon stays by the title when a
+            // translation wraps.
+            val titleLine = with(LocalDensity.current) { TextStyles.subheadline.lineHeight.toDp() }
+            Box(Modifier.height(titleLine), contentAlignment = Alignment.Center) {
+                DrafftIcon("pause", Modifier.clearAndSetSemantics { }, size = symbolSize(TextStyles.footnote), tint = p.onPaused)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(L("Profile paused"), style = TextStyles.subheadline.copy(fontWeight = FontWeight.Bold), color = p.onPaused)
+                Text(L("No one sees you in Discover."), style = TextStyles.footnote, color = p.onPaused)
+            }
+        }
+    }
+}
+
 // MARK: Rows
 
 @Composable
@@ -599,7 +659,14 @@ private fun InfoRow(title: String, icon: String, value: String) {
 }
 
 @Composable
-private fun ToggleSettingsRow(title: String, icon: String, detail: String?, isOn: Boolean, onChange: (Boolean) -> Unit) {
+private fun ToggleSettingsRow(
+    title: String,
+    icon: String,
+    detail: String?,
+    isOn: Boolean,
+    onChange: (Boolean) -> Unit,
+    tint: Color = DS.palette.lime,
+) {
     val p = DS.palette
     Row(
         Modifier
@@ -612,13 +679,7 @@ private fun ToggleSettingsRow(title: String, icon: String, detail: String?, isOn
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(title, style = TextStyles.body.semibold, color = p.ink)
             if (detail != null) {
-                AnimatedContent(
-                    targetState = detail,
-                    transitionSpec = { fadeIn(Motion.snappy()) togetherWith fadeOut(Motion.snappy()) },
-                    label = "toggleDetail",
-                ) { text ->
-                    Text(text, style = TextStyles.footnote, color = p.body)
-                }
+                Text(detail, style = TextStyles.footnote, color = p.body)
             }
         }
         DrafftSwitch(
@@ -627,6 +688,7 @@ private fun ToggleSettingsRow(title: String, icon: String, detail: String?, isOn
                 onChange(it)
                 Haptics.select()
             },
+            tint = tint,
         )
     }
 }

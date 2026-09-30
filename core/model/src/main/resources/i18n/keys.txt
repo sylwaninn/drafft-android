@@ -414,10 +414,9 @@ Hear %s
 Hear about matches, messages and sessions right away.
 Help
 Help center
-Hidden from Discover and likes. Your chats and sessions carry on.
 Hide My Email
-Hide from Discover for a while. Your chats stay open.
 Hide password
+Hides you from Discover and likes. Your chats and sessions carry on.
 Hiking
 Hill repeats and a view?
 Hockey
@@ -629,6 +628,7 @@ No one\nhere.
 No one blocked.
 No one here
 No one new for now.
+No one sees you in Discover.
 No pitch yet
 No profiles right now.
 No prompt matches “%s”.
@@ -716,7 +716,6 @@ Pause my profile
 Pause my profile instead
 Pause voice intro
 Pause voice message
-Paused
 Pausing hides you from Discover and keeps your matches and chats.
 Payment is charged to your Apple Account. The subscription renews automatically at the same price unless you cancel it at least 24 hours before the end of the period. Manage or cancel it in your App Store settings.
 People nearby see you first for 30 minutes.
@@ -771,6 +770,7 @@ Privacy Policy
 Profile
 Profile %d percent complete
 Profile %d%% complete
+Profile paused
 Project night, you spot me?
 Prompts
 Propose a session
