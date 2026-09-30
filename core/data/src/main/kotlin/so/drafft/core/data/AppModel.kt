@@ -196,6 +196,8 @@ class AppModel(
         get() = languageState
         set(value) {
             Localization.use(value)
+            // Kept on the phone so the first screen of the next launch is already in it.
+            defaults.putString(LANGUAGE_KEY, value.code)
             notifications.language = value
             languageState = value
         }
@@ -1375,6 +1377,8 @@ class AppModel(
 
     private class WalletRow(val boosts: Int, val superLikes: Int, val premiumUntil: String?, val boostEndsAt: String?) {
         companion object {
+        /** The language picked last, read at launch before the first screen (`DrafftApplication`). */
+        const val LANGUAGE_KEY = "appLanguage"
             fun from(o: JsonObject?): WalletRow? = o?.let {
                 attemptOrNull { WalletRow(it.int("boosts"), it.int("super_likes"), it.optString("premium_until"), it.optString("boost_ends_at")) }
             }
