@@ -26,9 +26,12 @@ android {
 }
 
 kotlin {
-    jvmToolchain(libs.versions.java.get().toInt())
-    // supabase-kt 3.2 exposes kotlin.time.Instant (session expiry, user dates), still experimental in Kotlin 2.2.
-    compilerOptions { optIn.add("kotlin.time.ExperimentalTime") }
+    compilerOptions {
+        // Bytecode for Java 17 from whichever JDK runs Gradle (a toolchain would require a JDK 17 install).
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.java.get()))
+        // supabase-kt 3.2 exposes kotlin.time.Instant (session expiry, user dates), still experimental in Kotlin 2.2.
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
 }
 
 dependencies {
@@ -58,7 +61,10 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.lifecycle.process)
+    // Video compression (AndroidVideoCompressor): Transformer, its effects (Presentation) and MediaItem.
     implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
+    implementation(libs.androidx.media3.common)
     // Location (AndroidLocationProvider): the fused provider, awaited as coroutines.
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.play.services)
