@@ -25,7 +25,11 @@ android {
     }
 }
 
-kotlin { jvmToolchain(libs.versions.java.get().toInt()) }
+kotlin {
+    jvmToolchain(libs.versions.java.get().toInt())
+    // supabase-kt 3.2 exposes kotlin.time.Instant (session expiry, user dates), still experimental in Kotlin 2.2.
+    compilerOptions { optIn.add("kotlin.time.ExperimentalTime") }
+}
 
 dependencies {
     api(project(":core:model"))

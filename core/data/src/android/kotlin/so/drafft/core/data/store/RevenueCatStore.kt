@@ -62,15 +62,18 @@ class RevenueCatStore(
     fun configure() {
         if (isDebugBuild) Purchases.logLevel = LogLevel.DEBUG
         // Public SDK key (safe in the app): RevenueCat project "drafft" or "drafft staging".
-        if (!Purchases.isConfigured) {
-            Purchases.configure(PurchasesConfiguration.Builder(context, backend.config.revenueCatAPIKey).build())
+        val key = backend.config.revenueCatAPIKey
+        // Without a key (not in local.properties) the SDK refuses to configure and would stop the app at
+        // launch: purchases stay off instead (the store reads as unavailable).
+        if (!Purchases.isConfigured && key.isNotBlank()) {
+            runCatching { Purchases.configure(PurchasesConfiguration.Builder(context, key).build()) }
         }
         (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(ActivityTracker())
     }
 
     override suspend fun link(): Boolean {
         val id = backend.userID?.toString()?.lowercase()
-        if (id == null) {
+        if (id == null || !Purchases.isConfigured) {
             linkedUserID = null
             return false
         }
@@ -96,7 +99,7 @@ class RevenueCatStore(
     override suspend fun unlink() {
         linkGeneration += 1
         linkedUserID = null
-        if (purchases.isAnonymous) return
+        if (!Purchases.isConfigured || purchases.isAnonymous) return
         try {
             purchases.awaitLogOut()
         } catch (e: CancellationException) {
@@ -152,6 +155,10 @@ class RevenueCatStore(
     override suspend fun customerInfo(): CustomerInfo = purchases.awaitCustomerInfo().toInfo()
 
     override val customerInfoStream: Flow<CustomerInfo> = callbackFlow {
+        if (!Purchases.isConfigured) {
+            awaitClose()
+            return@callbackFlow
+        }
         purchases.updatedCustomerInfoListener = com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener { info ->
             trySend(info.toInfo())
         }
