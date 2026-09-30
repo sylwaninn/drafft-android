@@ -109,7 +109,7 @@ private fun termsText(): AnnotatedString {
     return remember(sentence, styles) {
         buildAnnotatedString {
             append(sentence)
-            LegalDoc.entries.forEach { doc -> link(sentence, doc.title, doc.url(), styles) }
+            LegalDoc.accepted.forEach { doc -> link(sentence, doc.title, doc.url(), styles) }
         }
     }
 }

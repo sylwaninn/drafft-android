@@ -11,7 +11,7 @@ import so.drafft.core.model.Localization
  * browser: the app never keeps a copy that could say something else.
  */
 enum class LegalDoc(val rawValue: String) {
-    TERMS("terms"), PRIVACY("privacy"), COMMUNITY("community");
+    TERMS("terms"), PRIVACY("privacy"), COMMUNITY("community"), NOTICE("notice");
 
     val id: LegalDoc get() = this
 
@@ -20,6 +20,7 @@ enum class LegalDoc(val rawValue: String) {
             TERMS -> L("Terms of Use")
             PRIVACY -> L("Privacy Policy")
             COMMUNITY -> L("Community Guidelines")
+            NOTICE -> L("Legal Notice")
         }
 
     /** The page in [language], the app's by default. The community guidelines are a section of the terms. */
@@ -27,10 +28,17 @@ enum class LegalDoc(val rawValue: String) {
         TERMS -> page("terms", language = language)
         PRIVACY -> page("privacy", language = language)
         COMMUNITY -> page("terms", section = "community", language = language)
+        NOTICE -> page("legal", language = language)
     }
 
     companion object {
         fun fromRaw(raw: String?): LegalDoc? = entries.firstOrNull { it.rawValue == raw }
+
+        /**
+         * The documents someone accepts to use drafft, named in the sign-up consent. The legal notice
+         * only says who publishes the app.
+         */
+        val accepted: List<LegalDoc> = listOf(TERMS, PRIVACY, COMMUNITY)
 
         /** The privacy policy's section on sensitive data, linked from the consent to it. */
         fun sensitiveData(language: AppLanguage = Localization.language): String =

@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -60,6 +61,7 @@ import java.time.Instant
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.AuthProblem
+import so.drafft.app.feature.auth.LegalDoc
 import so.drafft.app.feature.auth.PasswordRule
 import so.drafft.app.feature.auth.Validation
 import so.drafft.app.feature.verification.CodeLockedCard
@@ -275,7 +277,7 @@ internal fun ChoiceChip(text: String, on: Boolean, onClick: () -> Unit, modifier
                 .padding(horizontal = DS.Space.md),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text, style = TextStyles.footnote.semibold, color = fg, maxLines = 1, softWrap = false)
+            Text(branded(text), style = TextStyles.footnote.semibold, color = fg, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -698,8 +700,13 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
 
 // MARK: - Delete
 
+/**
+ * [withdrawsConsent]: opened from the sensitive data consent. drafft can't work without the gender,
+ * so withdrawing the consent is deleting the account. The page says so, and offers no pause (it keeps
+ * the data) and no reasons to pick (the reason is known).
+ */
 @Composable
-fun DeleteAccountSheet(modifier: Modifier = Modifier) {
+fun DeleteAccountSheet(withdrawsConsent: Boolean = false, modifier: Modifier = Modifier) {
     val app = LocalAppModel.current
     val dismiss = LocalSheetDismiss.current
     val scope = rememberCoroutineScope()
@@ -709,10 +716,8 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
     var failure by remember { mutableStateOf<String?>(null) }
     val p = DS.palette
 
-    val reasons = listOf(L("I met someone"), L("I need a break"), L("Not enough people nearby"), L("Something else"))
-
     AccountSheet(
-        title = L("Delete account"),
+        title = if (withdrawsConsent) L("Sensitive data consent") else L("Delete account"),
         actionTitle = L("Delete my account"),
         actionIcon = "trash-bin-minimalistic",
         destructive = true,
@@ -740,42 +745,19 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
         },
         modifier = modifier,
     ) {
-        SheetBlock {
-            Text(L("We're sorry to see you go."), style = display(26f), color = p.ink)
-            Text(
-                L("Deleting removes your profile, photos, matches and messages for good. Your matches won't be able to reach you."),
-                style = TextStyles.subheadline,
-                color = p.body,
-            )
-        }
-
-        SheetBlock(title = L("Just need a break?")) {
-            Text(L("Pausing hides you from Discover and keeps your matches and chats."), style = TextStyles.subheadline, color = p.body)
-            DrafftButton(
-                onClick = {
-                    Haptics.success()
-                    app.profilePaused = true
-                    dismiss()
-                },
-                kind = DrafftButtonKind.SECONDARY,
-                enabled = !app.profilePaused,
-            ) {
-                DrafftIcon("pause", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
-                Text(if (app.profilePaused) L("Your profile is paused") else L("Pause my profile instead"), maxLines = 2)
+        if (withdrawsConsent) {
+            ConsentBlock()
+        } else {
+            SheetBlock {
+                Text(L("Here's what deleting removes."), style = display(26f), color = p.ink)
+                Text(
+                    L("Deleting removes your profile, photos, matches and messages for good. Your matches won't be able to reach you."),
+                    style = TextStyles.subheadline,
+                    color = p.body,
+                )
             }
-        }
-
-        SheetBlock(title = L("Why are you leaving?")) {
-            FlowLayout(spacing = DS.Space.sm) {
-                reasons.forEach { r ->
-                    val on = reason == r
-                    ChoiceChip(r, on, onClick = {
-                        Haptics.select()
-                        reason = if (on) null else r
-                    })
-                }
-            }
-            Text(branded(L("Optional. It helps us make drafft better.")), style = TextStyles.footnote, color = p.mute)
+            PauseBlock()
+            ReasonsBlock(reason, onReasonChange = { reason = it })
         }
 
         SheetBlock {
@@ -803,3 +785,69 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+private fun ReasonsBlock(reason: String?, onReasonChange: (String?) -> Unit) {
+    val reasons = listOf(L("I met someone"), L("I need a break"), L("Not enough people nearby"), L("Something else"))
+    SheetBlock(title = L("Why are you leaving?")) {
+        FlowLayout(spacing = DS.Space.sm) {
+            reasons.forEach { r ->
+                val on = reason == r
+                ChoiceChip(r, on, onClick = {
+                    Haptics.select()
+                    onReasonChange(if (on) null else r)
+                })
+            }
+        }
+        Text(branded(L("Optional. It helps us make drafft better.")), style = TextStyles.footnote, color = DS.palette.mute)
+    }
+}
+
+@Composable
+private fun ConsentBlock() {
+    val uriHandler = LocalUriHandler.current
+    val p = DS.palette
+    SheetBlock {
+        Text(L("Withdrawing your consent means deleting your account."), style = display(26f), color = p.ink)
+        Text(
+            branded(L("drafft needs your gender and the genders you want to see to suggest anyone.")),
+            style = TextStyles.subheadline,
+            color = p.body,
+        )
+        Text(
+            L("Deleting removes them with your profile, photos, matches and messages, for good."),
+            style = TextStyles.subheadline,
+            color = p.body,
+        )
+        DrafftButton(
+            onClick = {
+                Haptics.tap()
+                uriHandler.openUri(LegalDoc.sensitiveData())
+            },
+            kind = DrafftButtonKind.TERTIARY,
+        ) {
+            DrafftIcon("arrow-right-up", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+            Text(branded(L("How drafft uses this data")), maxLines = 2)
+        }
+    }
+}
+
+@Composable
+private fun PauseBlock() {
+    val app = LocalAppModel.current
+    val dismiss = LocalSheetDismiss.current
+    SheetBlock(title = L("Just need a break?")) {
+        Text(L("Pausing hides you from Discover and keeps your matches and chats."), style = TextStyles.subheadline, color = DS.palette.body)
+        DrafftButton(
+            onClick = {
+                Haptics.success()
+                app.profilePaused = true
+                dismiss()
+            },
+            kind = DrafftButtonKind.SECONDARY,
+            enabled = !app.profilePaused,
+        ) {
+            DrafftIcon("pause", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+            Text(if (app.profilePaused) L("Your profile is paused") else L("Pause my profile instead"), maxLines = 2)
+        }
+    }
+}

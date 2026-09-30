@@ -134,6 +134,18 @@ object AndroidPlatformUi : PlatformUi {
     }
 
     @Composable
+    override fun rememberDial(): (number: String) -> Unit {
+        val context = LocalContext.current
+        return remember(context) {
+            { number ->
+                val intent = android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null))
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            }
+        }
+    }
+
+    @Composable
     override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit {
         val context = LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
