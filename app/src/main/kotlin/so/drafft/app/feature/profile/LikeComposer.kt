@@ -2,6 +2,7 @@ package so.drafft.app.feature.profile
 
 // Ports Drafft/Features/Profile/LikeComposer.swift.
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
@@ -121,6 +122,9 @@ fun LikeComposer(
         Haptics.tap()
         close(onCancel)
     }
+
+    // System back is Cancel (over a profile sheet, it would otherwise close the whole sheet).
+    BackHandler { cancel() }
 
     Box(modifier.fillMaxSize()) {
         Box(

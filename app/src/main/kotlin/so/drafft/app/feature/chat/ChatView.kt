@@ -124,6 +124,7 @@ import so.drafft.core.ui.components.Avatar
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EdgeBars
 import so.drafft.core.ui.components.FullScreenCover
+import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.MessageImage
 import so.drafft.core.ui.components.MessagePhoto
@@ -224,7 +225,11 @@ fun ChatView(
     val convo = app.conversation(conversationID)
     var draft by rememberSaveable(conversationID) { mutableStateOf("") }
 
-    DisposableEffect(conversationID) {
+    // Open only while its tab is the one on screen (SwiftUI's onAppear/onDisappear on a tab switch):
+    // left open in a tab behind, new messages must still count as unread.
+    val onScreen = LocalTabIsCurrent.current
+    DisposableEffect(conversationID, onScreen) {
+        if (!onScreen) return@DisposableEffect onDispose { }
         app.openChatID = conversationID
         chat.open(conversationID)
         app.markRead(conversationID)

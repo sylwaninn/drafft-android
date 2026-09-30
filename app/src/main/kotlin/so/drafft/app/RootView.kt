@@ -41,6 +41,7 @@ import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftConfirm
+import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
@@ -68,6 +69,11 @@ fun RootView(app: AppModel) {
     // The saved session has been checked (signed in straight away, or the welcome screen).
     var sessionChecked by remember { mutableStateOf(false) }
     var splashShown by remember { mutableStateOf(true) }
+    // Each tab has been built once (MainTabs). A signed-in launch lands on the tabs: the splash stays
+    // until they're built, so the first tap on a tab never builds it.
+    var tabsBuilt by remember { mutableStateOf(false) }
+    // The hold's own window is up (while held, and during the fade once it lifts).
+    var holdWindow by remember { mutableStateOf(false) }
     val inMain = app.phase == AppModel.Phase.MAIN
 
     CompositionLocalProvider(LocalAppModel provides app) {
@@ -83,7 +89,13 @@ fun RootView(app: AppModel) {
                             .alpha(if (inMain) 1f else 0f)
                             .then(if (inMain) Modifier else Modifier.clearAndSetSemantics { }),
                     ) {
-                        MainTabs(isActive = inMain && moderation.hold == null, isVisible = inMain)
+                        MainTabs(
+                            isActive = inMain && moderation.hold == null,
+                            isVisible = inMain,
+                            // Hidden under the splash, the welcome screen or sign-up: tabs may be built.
+                            mayPrebuild = splashShown || !inMain,
+                            onBuilt = { tabsBuilt = true },
+                        )
                     }
                 }
             }
@@ -109,16 +121,19 @@ fun RootView(app: AppModel) {
                 }
             }
             // A moderation hold: the hold screen covers everything, at once, and lifts the same way.
-            // (Always placed once signed in, so the hold fades out as well as in.)
-            if (app.phase != AppModel.Phase.WELCOME) {
-                Box(Modifier.fillMaxSize().zIndex(5f)) { HoldLayer() }
+            // In its own window (the iPhone's HoldWindow), above the sheets and covers already open;
+            // kept a moment after the hold lifts, for the fade.
+            if (app.phase != AppModel.Phase.WELCOME && holdWindow) {
+                LocalPlatformUi.current.FullScreenWindow(onDismissRequest = {}) { HoldLayer() }
             }
             // The launch: it covers the first screen until it's ready, then fades onto it.
             if (splashShown) {
                 Box(Modifier.fillMaxSize().zIndex(10f)) {
-                    SplashView(isReady = sessionChecked && tabsMounted, onFinished = { splashShown = false })
+                    SplashView(isReady = sessionChecked && (if (inMain) tabsBuilt else tabsMounted), onFinished = { splashShown = false })
                 }
             }
+            // Banners in their own window above everything, whatever the phase.
+            WindowBanners()
             DrafftConfirm(
                 visible = app.sessionEndedNotice,
                 onDismissRequest = { app.sessionEndedNotice = false },
@@ -146,6 +161,20 @@ fun RootView(app: AppModel) {
     LaunchedEffect(Unit) { app.watchSession() }
     LaunchedEffect(Unit) { app.followServerRefusals() }
     LaunchedEffect(app.phase) { if (app.phase == AppModel.Phase.WELCOME) moderation.clear() }
+    // The hold paused the profile; lifting it gave the person's own pause back.
+    var heldBefore by remember { mutableStateOf(moderation.hold != null) }
+    LaunchedEffect(moderation.hold) {
+        val held = moderation.hold != null
+        if (heldBefore && !held && app.phase != AppModel.Phase.WELCOME) scope.launch { app.refreshAccount(force = true) }
+        heldBefore = held
+        if (held) {
+            holdWindow = true
+        } else {
+            // After the fade: back to the app, where the person was.
+            delay(400)
+            holdWindow = false
+        }
+    }
     // Signed in or launched: this opening, for the team's safety checks; a purchase confirmed earlier but
     // not credited yet; chat (one connection for the account); the account's live channel.
     LaunchedEffect(app.phase == AppModel.Phase.WELCOME, app.sessionID) {

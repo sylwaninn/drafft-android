@@ -1,5 +1,6 @@
 package so.drafft.app.feature.me
 
+import androidx.activity.compose.BackHandler
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -122,6 +123,8 @@ fun AccountSheet(
     var confirmDiscard by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
     val p = DS.palette
+    // System back is Close: with something typed, it asks before discarding it.
+    BackHandler(enabled = hasChanges && !confirmDiscard) { confirmDiscard = true }
 
     SheetPage(
         title = title,
