@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Photos and videos taken with the camera, and files shared from chat. -->
+<paths>
+    <cache-path name="captures" path="captures/" />
+    <cache-path name="shared" path="shared/" />
+</paths>
