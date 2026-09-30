@@ -111,7 +111,9 @@ A stat I'm weirdly proud of
 About %d sessions a week
 About 1 session a week
 About you
+Accept and continue
 Accept the rules and terms to continue.
+Accept the terms and give your consent to continue.
 Accepted
 Account
 Account check
@@ -171,11 +173,10 @@ Bad joke
 Badminton
 Barre
 Basketball
-Be real
-Be respectful
 Be yourself
 Beach tennis
 Beach volley
+Before you carry on.
 Before you go
 Beginner-friendly %s, I'll bring the gear?
 Best of three, winner picks dinner?
@@ -289,6 +290,7 @@ Delete account
 Delete my account
 Delete recording
 Deleting removes your profile, photos, matches and messages for good. Your matches won't be able to reach you.
+Deleting your account doesn't cancel drafft tempo. Cancel it in the App Store to stop it renewing.
 Demo only: %s
 Disagree
 Discard changes
@@ -311,7 +313,6 @@ Drinks post-race only
 Drinks rarely
 Drinks socially
 Each boost puts you first in decks near you for 30 minutes. Use them when you like: they never expire.
-Each time you open drafft, your area follows you: home, work, a weekend away.
 Early bird
 Early bird or night owl?
 Early lengths at the outdoor pool?
@@ -329,7 +330,6 @@ Email or password is incorrect. Try again or reset your password.
 Email sent again
 Email updated
 Ending
-Ending your account
 Ends %s
 Enter the 6-digit code we sent you.
 Enter the 6-digit code.
@@ -344,7 +344,6 @@ Everything you've uploaded
 Expired
 Explains why and what you can do
 Export my data
-Export or delete your data at any time from You › Privacy & data. Contact our data protection officer through support.
 Export requested
 Face
 Face on the first photo
@@ -365,7 +364,6 @@ First 10k
 First name
 First name only. It's what your matches see.
 First sessions happen in public places: a park, a club, a court.
-First sessions in public places. Tell a friend where you're going.
 First trail race
 Flexitarian
 Football
@@ -416,8 +414,9 @@ Hear %s
 Hear about matches, messages and sessions right away.
 Help
 Help center
-Hidden from everyone. Your chats and sessions carry on.
+Hidden from Discover and likes. Your chats and sessions carry on.
 Hide My Email
+Hide from Discover for a while. Your chats stay open.
 Hide password
 Hiking
 Hill repeats and a view?
@@ -432,24 +431,23 @@ Hot take. Agree?
 Hot yoga
 How %s moves
 How do you move?
-How long we keep it
 How often
 How often?
 How you eat
 How you move
 Hyrox
+I agree that drafft uses my %s: my gender, the genders I want to see and my lifestyle, if I fill it in.
 I can do a muscle-up
 I feel most like myself when
 I met someone
 I need a break
 I said %s… so it's %s? Tell me more
-I understand my account and all my data will be permanently deleted.
+I understand my account will be deleted for good.
 I was SO sure that was the lie. Tell me it's not true
 I will never shut up about
 I'd drop everything to watch
 I'll know it's a match if
 I'm 18 or older and I accept the %s, the %s and the %s.
-I'm 18 or older and I accept the Terms of Use, the Privacy Policy and the Community Guidelines
 I'm looking for someone who
 I've confirmed my email
 I've never been as sore as the day I
@@ -621,7 +619,6 @@ No chats yet
 No daily cap, like everyone you'd train with.
 No drafft tempo purchase on this Apple ID.
 No face
-No harassment, hate or sexual content without consent.
 No likes yet.
 No limit
 No name
@@ -639,7 +636,6 @@ No sessions yet.
 No sport called “%s”. Try another word.
 Nobody can see your profile yet, so a boost wouldn't reach anyone.
 Nobody nearby fits your filters right now. Loosen them a little and new people will show up.
-Nobody sees you and discovery waits until you resume. Your chats and sessions carry on.
 Non-binary
 Non-binary people
 None
@@ -706,7 +702,6 @@ Paddleboard
 Padel
 Padel and a terrace?
 Paid
-Paid features
 Parkour
 Partner workout, then tacos?
 Pass
@@ -791,9 +786,9 @@ React %s
 Reaction %s
 Reactions
 Read
+Read once, not tracked
 Ready to update.
 Real check
-Recent photos of you, your own voice, your real age.
 Record a voice intro
 Record again
 Record voice intro
@@ -818,10 +813,8 @@ Renews on %s
 Reply
 Replying to %s
 Replying to yourself
-Report
 Report and block
 Report anything off
-Report anything that feels wrong. Reports are confidential.
 Report or block
 Report or block %s
 Report or block %s?
@@ -889,6 +882,7 @@ Send to support
 Send voice message
 Sending the SMS
 Sends
+Sensitive data consent
 Sent
 Sent to you by email
 Session confirmed
@@ -971,7 +965,6 @@ Swimming
 Swiped too fast? Bring them back.
 Table tennis
 Tai chi
-Take a break from discovery: you disappear, your chats stay open.
 Take a photo or video
 Take it back.
 Take my selfie
@@ -1034,6 +1027,7 @@ They tap for the punchline
 They won't be notified, and you won't see each other again. Reports go to our safety team.
 They won't be notified. The chat closes and you won't see each other again. Reports go to our safety team.
 This %s account is
+This can reveal your sexual orientation, health or beliefs, so drafft asks first.
 This can't be undone.
 This code has expired. Send a new one.
 This file is too large.
@@ -1098,11 +1092,11 @@ Unblock %s
 Unblock %s?
 Unblock?
 Under 18
-Undo any swipe
 Undo is part of drafft tempo, along with a few things that get you to a first session faster.
 Undo last swipe
 Undo my last swipe
-Undo swipes, see who liked you, unlimited likes.
+Undo your last swipe
+Undo your last swipe, see who likes you, unlimited likes.
 Undo, see who liked you, unlimited likes and a free boost every week. Everything is on, starting now.
 Unlimited likes
 Unlimited likes come with drafft tempo, along with a free boost every week.
@@ -1115,7 +1109,6 @@ Unmute notifications
 Unpopular opinion about stretching
 Unread
 Unsend
-Until you delete your account, then 30 days in backups.
 Up for a sprint
 Up to %d km
 Up to %d times
@@ -1124,7 +1117,6 @@ Up to 3
 Up to 3 short answers on your profile. People like one to start a chat.
 Up to 5
 Update password
-Updates as you move
 Upload failed
 Upper and lower case
 Use it next time you log in on another device.
@@ -1179,8 +1171,6 @@ What happened?
 What keeps me going on hard days
 What others see
 What should we call you?
-What we collect
-What we never show
 What you changed since your last save will be lost.
 What you typed here will be lost.
 What you write is what they see
@@ -1196,7 +1186,6 @@ When's your birthday?
 Where do you train?
 Where should we reply?
 Which describes you best?
-Who can use drafft
 Who do you want to meet?
 Who you liked and matched with
 Why are you leaving?
@@ -1206,6 +1195,7 @@ Widen to any distance
 Win the club tournament
 Wing foil
 With %s
+Withdrawing it means deleting your account.
 Within %s
 Woman
 Women
@@ -1229,27 +1219,25 @@ You already offer this time.
 You and %s both do %s. Say hi, then plan a first session.
 You and %s liked each other. Say hi, then plan a first session.
 You can block someone from their profile or a chat.
-You can change it anytime in You.
 You can close this. We'll switch as soon as you confirm.
-You can delete your account at any time from You › Delete account.
 You can end a session anytime, no explanation needed.
 You can replace your number, not remove it: it keeps your account secure.
+You can't change it later. If it's ever wrong, write to the help center in You.
 You can't create a new drafft account.
 You choose what you hear about in You › Notifications.
 You do it too
 You matched with %s
-You must be 18 or older and use your real identity. One account per person.
 You need to be 18 or older to use drafft.
 You now have
 You should not go out with me if
 You sign in with %s, no password
 You sign in with %s. Changing your email here only affects notifications.
-You verify a phone number. Keep your login details private.
 You'll see each other in Discover again. Your old chat doesn't come back.
 You'll stay logged in on this iPhone.
 You'll use it to log in from now on.
 You're at the front
 You're boosted
+You're hidden from Discover, and discovery waits until you resume. Your chats and sessions carry on.
 You're logged out, so nothing was deleted. Log in again, then delete your account.
 You're on drafft tempo.
 You're out of likes for today.
@@ -1265,20 +1253,20 @@ You've seen everyone within %s.
 You've sent several messages already. Try again in an hour.
 You've sent several reports already. Try again later.
 You: 
-Your account
 Your account has been closed.
 Your account is on hold.
 Your answer
 Your answers won't be kept. You'll start over next time.
 Your area
+Your area comes from where you are right now. drafft doesn't follow your moves or track you in the background.
 Your area, like a district, and a distance rounded to the kilometre. Never your address.
 Your bio
 Your birthday can't be changed.
 Your chat ends for both of you, and you won't see each other in Discover again.
+Your consent couldn't be saved. Check your connection and try again.
 Your conversations with matches
 Your current password is incorrect.
 Your email stays private. Matches only see your first name.
-Your exact location and your phone number.
 Your face is too small on your first photo. Use a closer one first.
 Your first photo needs to show your face clearly.
 Your last super like
@@ -1305,16 +1293,15 @@ Your profile is paused
 Your profile is up to date.
 Your profile shows your age, never the date.
 Your profile will show %d.
-Your profile, photos, voice intro, messages, your phone number and an approximate area.
 Your purchase is on your account.
 Your report couldn't be sent. Check your connection and try again.
 Your request couldn't be sent. Check your connection and try again.
-Your rights
 Your routine
 Your selfie couldn't be sent. Try again.
 Your session ended on this iPhone. Log in again to pick up where you left off.
 Your sport
 Your sports
+Your subscription
 Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
 Your subscription is up to date.
 Your turn
@@ -1339,13 +1326,15 @@ doing parkour
 doing tai chi
 doing yoga
 drafft 0.1, demo build
+drafft has newer terms. Update the app to continue.
 drafft is for people 18 and over.
 drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.
 drafft needs the camera for your selfie. Allow it in Settings.
+drafft needs your consent to use your gender. Tick it to continue.
 drafft needs your location to show people near you. We show your area, never your address.
+drafft now keeps a record of your consent. Tick both to keep using the app.
 drafft tempo
 drafft tempo has no daily limit.
-drafft tempo renews until you cancel. Boosts and super likes are one-time purchases.
 drafft tempo shows everyone who already liked you, so you can match in one tap.
 drafft works because everyone plays fair.
 e.g. Sub-4h marathon in Berlin
@@ -1386,6 +1375,7 @@ rowing
 running
 running long
 sailing
+sensitive data
 skating
 ski touring
 skiing
