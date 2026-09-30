@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -117,12 +118,14 @@ fun SwipeCard(
             )
 
             // The whole card opens the full profile; photos are browsed there.
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onOpen)
-                    .clearAndSetSemantics { },
-            )
+            if (LocalCardInteractive.current) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onOpen)
+                        .clearAndSetSemantics { },
+                )
+            }
 
             Row(
                 Modifier
@@ -163,14 +166,7 @@ private fun VoicePill(profile: Profile) {
     val p = DS.palette
     val playing = audio.isCurrent(url) && audio.isPlaying
     val ink = if (playing) p.onAccentOnNight else Color.White
-    PressScaleButton(
-        onClick = {
-            Haptics.tap()
-            audio.toggle(url)
-        },
-        modifier = Modifier.defaultMinSize(minHeight = 44.dp),
-        contentDescription = if (playing) L("Pause voice intro") else L("Play %s's voice intro", profile.name),
-    ) {
+    val pill: @Composable () -> Unit = {
         Row(
             Modifier
                 .defaultMinSize(minHeight = 36.dp)
@@ -197,7 +193,26 @@ private fun VoicePill(profile: Profile) {
             )
         }
     }
+    if (!LocalCardInteractive.current) {
+        Box(Modifier.defaultMinSize(minHeight = 44.dp), contentAlignment = Alignment.Center) { pill() }
+        return
+    }
+    PressScaleButton(
+        onClick = {
+            Haptics.tap()
+            audio.toggle(url)
+        },
+        modifier = Modifier.defaultMinSize(minHeight = 44.dp),
+        contentDescription = if (playing) L("Pause voice intro") else L("Play %s's voice intro", profile.name),
+    ) { pill() }
 }
+
+/**
+ * False for cards that must let every touch through (`.allowsHitTesting(false)`): the cards
+ * waiting behind the top one and the ones finishing their flight. They then carry no touch target
+ * at all, so a tap reaches whatever lies under them.
+ */
+internal val LocalCardInteractive = compositionLocalOf { true }
 
 @Composable
 private fun Stamps(progress: () -> Float, modifier: Modifier = Modifier) {

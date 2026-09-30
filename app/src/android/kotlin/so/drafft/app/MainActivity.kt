@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.key
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -77,8 +76,7 @@ class MainActivity : ComponentActivity() {
                     if (!config.isConfigured) {
                         MissingConfigView(config.missing)
                     } else {
-                        // The whole tree redraws in a newly picked language at once.
-                        key(app.language) { RootView(app) }
+                        RootView(app)
                     }
                 }
             }
