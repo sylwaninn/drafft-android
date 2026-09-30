@@ -13,16 +13,54 @@ val hasFirebaseConfig = listOf("production", "staging", "local").any { file("src
     file("google-services.json").exists()
 if (hasFirebaseConfig) apply(plugin = libs.plugins.google.services.get().pluginId)
 
-// Machine-specific values (never committed): the local Supabase URL and key written by
-// drafft-backend's scripts/local-backend.sh, and RevenueCat's Google Play public SDK keys.
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use(::load)
+// Each flavor's values live in config/<flavor>.properties, committed, like the iPhone's
+// Config/*.xcconfig: public keys only (Supabase publishable key, RevenueCat public SDK key,
+// Turnstile site key). The local Supabase depends on the machine: scripts/local-backend.sh writes
+// its URL and key to local.private.properties (gitignored), like the iPhone's Local.private.xcconfig.
+val flavors = listOf("production", "staging", "local")
+val machineKeys = setOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY")
+val secretLike = Regex("sb_secret_|service_role|PRIVATE KEY")
+
+fun readProperties(path: String): Map<String, String>? {
+    val file = rootProject.file(path)
+    if (!file.exists()) return null
+    val properties = Properties().apply { file.reader(Charsets.UTF_8).use(::load) }
+    return properties.stringPropertyNames().associateWith { properties.getProperty(it).trim() }
 }
-fun local(key: String, fallback: String = ""): String =
-    (localProperties.getProperty(key) ?: providers.gradleProperty(key).orNull ?: fallback)
+
+fun flavorConfig(flavor: String): Map<String, String> {
+    val committed = readProperties("config/$flavor.properties")
+        ?: throw GradleException("config/$flavor.properties is missing.")
+    val machine = if (flavor == "local") readProperties("local.private.properties").orEmpty().filterKeys { it in machineKeys } else emptyMap()
+    val values = committed + machine
+    // Refused at configuration, before anything builds: a secret in the app, or a remote backend over http.
+    values.forEach { (key, value) ->
+        if (secretLike.containsMatchIn(value)) throw GradleException("$key ($flavor) looks like a secret: only public keys go in the app.")
+    }
+    val url = values["SUPABASE_URL"].orEmpty()
+    if (flavor != "local" && url.isNotEmpty() && !url.startsWith("https://")) {
+        throw GradleException("SUPABASE_URL ($flavor) must be https.")
+    }
+    return values
+}
+
+val flavorValues = flavors.associateWith(::flavorConfig)
+// A release build lacking one of these fails; a debug build stops at launch and says what's missing.
+val releaseRequired = listOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "REVENUECAT_API_KEY")
 
 fun String.quoted() = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+fun com.android.build.api.dsl.VariantDimension.flavorFields(flavor: String) {
+    val v = flavorValues.getValue(flavor)
+    resValue("string", "app_name", v["APP_DISPLAY_NAME"] ?: "drafft")
+    buildConfigField("String", "SUPABASE_URL", v["SUPABASE_URL"].orEmpty().quoted())
+    buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", v["SUPABASE_PUBLISHABLE_KEY"].orEmpty().quoted())
+    buildConfigField("String", "REVENUECAT_API_KEY", v["REVENUECAT_API_KEY"].orEmpty().quoted())
+    buildConfigField("String", "TURNSTILE_SITE_KEY", v["TURNSTILE_SITE_KEY"].orEmpty().quoted())
+    buildConfigField("int", "SMS_CODE_LIFETIME", (v["SMS_CODE_LIFETIME"]?.toIntOrNull() ?: 600).toString())
+    buildConfigField("boolean", "MEDIA_IMAGE_RESIZING", (v["MEDIA_IMAGE_RESIZING"] == "true").toString())
+    buildConfigField("String", "ENVIRONMENT", (if (flavor == "production") "" else flavor).quoted())
+}
 
 android {
     namespace = "so.drafft.app"
@@ -36,49 +74,17 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
-        // Cloudflare Turnstile public site key (support form sent signed out); allowed for getdrafft.com.
-        buildConfigField("String", "TURNSTILE_SITE_KEY", "0x4AAAAAAFF4RVStAyff4tQU".quoted())
-        // Photos sized by the media domain (Cloudflare Image Resizing, /cdn-cgi/image/) once it's enabled there.
-        buildConfigField("boolean", "MEDIA_IMAGE_RESIZING", "false")
         buildConfigField("boolean", "HAS_PUSH", hasFirebaseConfig.toString())
     }
 
     flavorDimensions += "env"
     productFlavors {
-        // Production backend. Publishable keys only: they identify the project, row-level security does the rest.
-        create("production") {
-            dimension = "env"
-            resValue("string", "app_name", "drafft")
-            buildConfigField("String", "SUPABASE_URL", "https://wrcpgnqwjmnirjfxpcux.supabase.co".quoted())
-            buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_VBj4h4XxRDB-Ky5mK0d_ag_dj86XO22".quoted())
-            buildConfigField("String", "REVENUECAT_API_KEY", local("drafft.revenuecat.production").quoted())
-            // How long an SMS code works, in seconds: Auth > Providers > Phone > SMS OTP Expiry.
-            buildConfigField("int", "SMS_CODE_LIFETIME", "600")
-            buildConfigField("String", "ENVIRONMENT", "".quoted())
-        }
-        // Staging backend: the persistent Supabase branch `staging` of drafft-backend.
-        create("staging") {
-            dimension = "env"
-            resValue("string", "app_name", "drafft β")
-            buildConfigField("String", "SUPABASE_URL", "https://rjlghcuspdtrmbimyioe.supabase.co".quoted())
-            buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "sb_publishable_W_B8sz0iJ29s3NvbBlRDLQ_VMsaunzy".quoted())
-            buildConfigField("String", "REVENUECAT_API_KEY", local("drafft.revenuecat.staging").quoted())
-            buildConfigField("int", "SMS_CODE_LIFETIME", "600")
-            buildConfigField("String", "ENVIRONMENT", "staging".quoted())
-        }
-        // Local Supabase (drafft-backend `supabase start`) with the staging services. The URL and key
-        // depend on the machine: set drafft.local.supabaseUrl and drafft.local.supabaseKey in
-        // local.properties (an emulator reaches the Mac at 10.0.2.2). Without them the app stops at
-        // launch and says what's missing.
-        create("local") {
-            dimension = "env"
-            resValue("string", "app_name", "drafft local")
-            buildConfigField("String", "SUPABASE_URL", local("drafft.local.supabaseUrl").quoted())
-            buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", local("drafft.local.supabaseKey").quoted())
-            buildConfigField("String", "REVENUECAT_API_KEY", local("drafft.revenuecat.staging").quoted())
-            // The local Auth's SMS OTP expiry (GOTRUE_SMS_OTP_EXP).
-            buildConfigField("int", "SMS_CODE_LIFETIME", "6000")
-            buildConfigField("String", "ENVIRONMENT", "local".quoted())
+        // The iPhone's schemes: Drafft, Drafft Staging, Drafft Local. Values: config/<flavor>.properties.
+        flavors.forEach { flavor ->
+            create(flavor) {
+                dimension = "env"
+                flavorFields(flavor)
+            }
         }
     }
 
@@ -109,6 +115,21 @@ android {
         resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "/META-INF/INDEX.LIST", "/META-INF/io.netty.versions.properties")
     }
     testOptions { unitTests.isReturnDefaultValues = true }
+}
+
+androidComponents {
+    // The local flavor talks to a machine on the network over http: debug only, never shipped.
+    beforeVariants(selector().withFlavor("env" to "local").withBuildType("release")) { it.enable = false }
+    // A release build whose config lacks a required value fails before compiling anything.
+    onVariants(selector().withBuildType("release")) { variant ->
+        val flavor = variant.flavorName.orEmpty()
+        val missing = releaseRequired.filter { flavorValues[flavor]?.get(it).isNullOrBlank() }
+        if (missing.isEmpty()) return@onVariants
+        val name = variant.name.replaceFirstChar(Char::uppercase)
+        val message = "$name: missing from config/$flavor.properties: ${missing.joinToString()}"
+        val check = tasks.register("check${name}Config") { doLast { throw GradleException(message) } }
+        tasks.matching { it.name == "pre${name}Build" }.configureEach { dependsOn(check) }
+    }
 }
 
 kotlin {
