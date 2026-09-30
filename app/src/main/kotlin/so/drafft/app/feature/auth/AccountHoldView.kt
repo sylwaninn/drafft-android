@@ -275,9 +275,9 @@ private object HoldArt {
     val selfie = EmptyStateArt(symbol = "faceid")
 }
 
-/** Entrance: each part rises into place a beat after the one above it. */
+/** Entrance of the blocking screens (hold, location): each part rises into place a beat after the one above it. */
 @Composable
-private fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean): Modifier {
+internal fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean): Modifier {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(appeared) {
         if (!appeared) return@LaunchedEffect

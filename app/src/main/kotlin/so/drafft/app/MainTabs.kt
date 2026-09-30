@@ -68,6 +68,7 @@ import so.drafft.core.ui.components.LocalTabBarVisibility
 import so.drafft.core.ui.components.TabBarVisibility
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.navigation.LocalNavBackEnabled
+import so.drafft.core.ui.platform.LocalPlatformUi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -206,20 +207,23 @@ fun MainTabs(
             }
         }
 
-        // Location is required: if it's turned off, block until it's back on.
-        // The permission is a flow, not Compose state: followed here so the cover comes and goes with it.
+        // Location is required: while it's off (or never answered), a screen in its own window blocks
+        // everything, sheets included, until it's back on. The permission and the phone's location
+        // switch are flows, not Compose state: followed here so the screen comes and goes with them.
         val locationAuthorization by location.authorization.collectAsState()
-        FullScreenCover(
-            visible = isActive && locationAuthorization == so.drafft.core.data.platform.LocationProvider.Authorization.DENIED,
-            onDismissRequest = {},
-        ) { LocationRequiredView() }
+        val locationServicesOff by location.servicesOff.collectAsState()
+        val locationAllowed = locationAuthorization == so.drafft.core.data.platform.LocationProvider.Authorization.ALLOWED &&
+            !locationServicesOff
+        if (isActive && !locationAllowed) {
+            LocalPlatformUi.current.FullScreenWindow(onDismissRequest = {}) { LocationRequiredView() }
+        }
 
         // A fresh read found no record of the current terms and the consent to sensitive data: asked
         // at each open until accepted, after the location gate. Unknown (no read yet, offline) asks
         // nothing: the read is retried until it says (refreshAccount), and a sign-up can't finish
         // without the consent on the server (complete_onboarding).
         FullScreenCover(
-            visible = isActive && locationAuthorization != so.drafft.core.data.platform.LocationProvider.Authorization.DENIED &&
+            visible = isActive && locationAllowed &&
                 app.termsConsent == so.drafft.core.model.TermsConsent.Gate.REQUIRED,
             onDismissRequest = {},
         ) { TermsConsentView() }

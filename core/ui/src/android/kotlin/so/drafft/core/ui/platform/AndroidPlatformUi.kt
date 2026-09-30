@@ -122,6 +122,18 @@ object AndroidPlatformUi : PlatformUi {
     }
 
     @Composable
+    override fun rememberOpenLocationSettings(): () -> Unit {
+        val context = LocalContext.current
+        return remember(context) {
+            {
+                val intent = android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            }
+        }
+    }
+
+    @Composable
     override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit {
         val context = LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()

@@ -184,21 +184,36 @@ class AreaLocator(
 }
 
 /**
- * Location is required to use drafft (at least "While using the app"). Watches the permission;
- * when it's off, the app shows a blocking screen until it's back on. One for the app.
+ * Location is required to use drafft: "While using the app" or more, precise or approximate. Watches
+ * the permission and the phone's location switch; while either is off (or the permission was never
+ * answered), the app shows a blocking screen until it's back on. One for the app.
  */
 class LocationGate(private val location: LocationProvider) {
     /** The permission, for screens to observe (`collectAsState`). */
     val authorization: kotlinx.coroutines.flow.StateFlow<Authorization> get() = location.authorization
 
+    /** The phone's location turned off for every app. */
+    val servicesOff: kotlinx.coroutines.flow.StateFlow<Boolean> get() = location.servicesOff
+
+    /** Whether the button can still show the system prompt (else it opens Settings). */
+    val canPrompt: kotlinx.coroutines.flow.StateFlow<Boolean> get() = location.canPrompt
+
     val status: Authorization get() = location.authorization.value
 
-    val isAllowed: Boolean get() = status == Authorization.ALLOWED
-    val isBlocked: Boolean get() = status == Authorization.DENIED
+    /** The only state the app may be used in. */
+    val isAllowed: Boolean get() = status == Authorization.ALLOWED && !location.servicesOff.value
 
-    /** Re-read on launch and each time the app comes back (e.g. from Settings). */
+    /**
+     * Re-read on launch and each time the app comes back (e.g. from Settings). Never answered: the
+     * system prompt shows over the blocking screen.
+     */
     fun refresh() {
         location.refreshAuthorization()
         if (status == Authorization.NOT_DETERMINED) location.requestWhenInUseAuthorization()
+    }
+
+    /** The system prompt, from the blocking screen's button. */
+    fun request() {
+        location.requestWhenInUseAuthorization()
     }
 }

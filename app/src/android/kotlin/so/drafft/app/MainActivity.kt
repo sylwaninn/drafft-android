@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
         location.requester = {
             askLocation.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION))
         }
+        location.rationale = {
+            ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
         val reduceMotion = runCatching {
             Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
         }.getOrDefault(false)
@@ -114,6 +117,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         location.requester = null
+        location.rationale = null
         PermissionPrompter.engine = PermissionPrompter.Engine { PermissionPrompter.Result.DENIED }
         super.onDestroy()
     }
