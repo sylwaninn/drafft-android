@@ -69,15 +69,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -109,6 +104,7 @@ import so.drafft.core.data.OnboardingStore
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.backend.hasLifestyle
 import so.drafft.core.data.location.Area
 import so.drafft.core.data.location.AreaLocator
@@ -126,8 +122,10 @@ import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Audience
 import so.drafft.core.model.Icebreaker
+import so.drafft.core.model.ConsentDraft
 import so.drafft.core.model.L
 import so.drafft.core.model.Localization
+import so.drafft.core.model.TermsConsent
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.model.Sport
@@ -274,10 +272,14 @@ private class OnboardingState(
     var step by mutableIntStateOf(0)
     var forward by mutableStateOf(true)
     var birthday by mutableStateOf<Instant?>(null)
-    var acceptedTerms by mutableStateOf(false)
+    var consent by mutableStateOf(ConsentDraft())
+
+    /** The terms version the server recorded with the consent this sign-up (`accept_terms`). */
+    var recordedTerms by mutableStateOf<String?>(null)
+    var recordingConsent by mutableStateOf(false)
+    var consentError by mutableStateOf<String?>(null)
     // The language the app is drawn in now (the saved one, else the phone's), so the check matches the screen.
     var language by mutableStateOf(Localization.language)
-    var legalDoc by mutableStateOf<LegalDoc?>(null)
     var identity by mutableStateOf<String?>(null)
     var interestedIn by mutableStateOf<Set<String>>(emptySet())
     var showHelp by mutableStateOf<HelpTopic?>(null)
@@ -329,7 +331,8 @@ private class OnboardingState(
     /** `resuming`: photos kept from last time count as checked until the photos step checks them again. */
     fun complete(s: OnboardingStep, resuming: Boolean = false): Boolean = when (s) {
         OnboardingStep.LANGUAGE -> true
-        OnboardingStep.RULES -> acceptedTerms
+        // Once the server holds the consent for these terms, the boxes no longer matter.
+        OnboardingStep.RULES -> consent.isComplete || TermsConsent.isCurrent(recordedTerms)
         OnboardingStep.PHONE -> phone.stage == PhoneVerificationModel.Stage.VERIFIED
         OnboardingStep.NAME -> name.isNotBlank()
         OnboardingStep.BIRTHDAY -> birthday != null && isAdult
@@ -350,9 +353,10 @@ private class OnboardingState(
     val blockedReason: Pair<String, Boolean>?
         get() {
             finishError?.let { if (step == steps.size - 1) return it to true }
+            consentError?.let { if (current == OnboardingStep.RULES) return it to true }
             return when (current) {
                 OnboardingStep.LANGUAGE -> null
-                OnboardingStep.RULES -> if (acceptedTerms) null else L("Accept the rules and terms to continue.") to false
+                OnboardingStep.RULES -> if (complete(OnboardingStep.RULES)) null else L("Accept the rules and terms to continue.") to false
                 OnboardingStep.PHONE -> {
                     // Sending or checking: the spinner says it, no reason needed.
                     if (phone.busy || phone.primaryEnabled) return null
@@ -403,12 +407,40 @@ private class OnboardingState(
     }
 
     fun advance() {
+        if (current == OnboardingStep.RULES && !TermsConsent.isCurrent(recordedTerms)) {
+            recordConsent()
+            return
+        }
         if (step >= steps.size - 1) {
             finish()
             return
         }
         if (steps[step + 1].chapter != current.chapter) Haptics.success() else Haptics.tap()
         go(step + 1)
+    }
+
+    /** Both consents go to the server before anything personal is asked; the step moves on once they're recorded, or says why not. */
+    private fun recordConsent() {
+        consentError = null
+        recordingConsent = true
+        scope.launch {
+            try {
+                profileSync.acceptTerms()
+                recordedTerms = TermsConsent.VERSION
+                recordingConsent = false
+                advance()
+            } catch (e: CancellationException) {
+                recordingConsent = false
+                throw e
+            } catch (e: Exception) {
+                Haptics.warning()
+                recordingConsent = false
+                when (val f = profileSync.termsFailure(e)) {
+                    TermsConsent.Failure.SignOut -> app.endSession()
+                    is TermsConsent.Failure.Message -> consentError = f.text
+                }
+            }
+        }
     }
 
     fun phonePrimary() {
@@ -429,7 +461,7 @@ private class OnboardingState(
                 name = name,
                 language = language.code,
                 birthday = birthday,
-                acceptedTerms = acceptedTerms,
+                termsVersion = recordedTerms,
                 verifiedPhone = if (phone.stage == PhoneVerificationModel.Stage.VERIFIED) phone.displayNumber else null,
                 identity = identity,
                 interestedIn = interestedIn.toList(),
@@ -460,7 +492,9 @@ private class OnboardingState(
             restoredLanguage = l
         }
         birthday = p.birthday
-        acceptedTerms = p.acceptedTerms
+        // Ticked again only if the server recorded them for the terms shown now.
+        recordedTerms = p.termsVersion
+        consent = ConsentDraft.restored(recordedVersion = p.termsVersion)
         p.verifiedPhone?.let(phone::restoreVerified)
         identity = p.identity
         interestedIn = p.interestedIn.toSet()
@@ -527,6 +561,20 @@ private class OnboardingState(
             } catch (e: CancellationException) {
                 finishing = false
                 throw e
+            } catch (e: ProfileSync.SyncError.Refused) {
+                finishing = false
+                Haptics.warning()
+                if (e.code == "terms_required") {
+                    // The server has no consent on record (the one noted on this phone was lost there):
+                    // back to the rules step, unticked, to record it again.
+                    recordedTerms = null
+                    consent = ConsentDraft()
+                    consentError = ServerMessage.text(forCode = "terms_required")
+                    go(OnboardingStep.RULES.rawValue)
+                } else {
+                    finishError = e.message
+                }
+                return@launch
             } catch (e: Exception) {
                 Haptics.warning()
                 finishError = when (e) {
@@ -671,8 +719,12 @@ private fun PrimaryButton(state: OnboardingState, modifier: Modifier) {
         }
         state.current == OnboardingStep.NOTIFICATIONS && state.notifications.permission != PermissionStatus.ALLOWED ->
             PermissionButton(state.notifications, askTitle = L("Turn on notifications"), symbol = "bell.fill", modifier = modifier)
-        else -> DrafftButton(onClick = state::advance, modifier = modifier, enabled = state.canContinue && !state.finishing) {
-            if (state.finishing) {
+        else -> DrafftButton(
+            onClick = state::advance,
+            modifier = modifier,
+            enabled = state.canContinue && !state.finishing && !state.recordingConsent,
+        ) {
+            if (state.finishing || state.recordingConsent) {
                 ButtonSpinner()
             } else {
                 Text(if (state.step == state.steps.size - 1) L("Start swiping") else L("Continue"), maxLines = 2)
@@ -712,7 +764,7 @@ private fun Hint(text: String, error: Boolean = false) {
 }
 
 /** A white block on the page. */
-private fun Modifier.block(color: androidx.compose.ui.graphics.Color, radius: Dp = DS.Radius.xl): Modifier =
+internal fun Modifier.block(color: androidx.compose.ui.graphics.Color, radius: Dp = DS.Radius.xl): Modifier =
     fillMaxWidth().background(color, RoundedCornerShape(radius))
 
 @Composable
@@ -796,7 +848,7 @@ private fun BirthdayStep(state: OnboardingState) {
     }
 }
 
-/** Community rules, then the required consent (unchecked by default), before anything personal is asked. */
+/** Community rules, then the two required consents (unchecked by default), before anything personal is asked. */
 @Composable
 private fun RulesStep(state: OnboardingState) {
     StepTitle(L("A few ground rules"), L("drafft works because everyone plays fair."))
@@ -809,67 +861,11 @@ private fun RulesStep(state: OnboardingState) {
         Fact("figure.run", L("Meet where others train"), L("First sessions happen in public places: a park, a club, a court."))
         Fact("flag.fill", L("Report anything off"), L("Two taps from any profile or chat. Every report is reviewed."))
     }
-    Box(Modifier.block(DS.palette.canvas).padding(vertical = DS.Space.sm, horizontal = DS.Space.lg)) {
-        Consent(state)
-    }
-}
-
-/**
- * Required consent, unchecked by default. The checkbox toggles; the document names in the
- * sentence are links that open each document.
- */
-@Composable
-private fun Consent(state: OnboardingState) {
-    val p = DS.palette
-    val label = L("I'm 18 or older and I accept the Terms of Use, the Privacy Policy and the Community Guidelines")
-    // One sentence for translators; the document names in it become the links.
-    val sentence = L("I'm 18 or older and I accept the %s, the %s and the %s.", LegalDoc.TERMS.title, LegalDoc.PRIVACY.title, LegalDoc.COMMUNITY.title)
-    val linkStyle = TextLinkStyles(SpanStyle(color = p.accentInk, fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline))
-    val text = remember(sentence, linkStyle) {
-        buildAnnotatedString {
-            append(sentence)
-            LegalDoc.entries.forEach { doc ->
-                val at = sentence.indexOf(doc.title)
-                if (at < 0) return@forEach
-                addLink(LinkAnnotation.Clickable(doc.rawValue, linkStyle) { state.legalDoc = doc }, at, at + doc.title.length)
-            }
-        }
-    }
-    Row(
-        Modifier.leadingOutset(DS.Space.sm),
-        horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
-        verticalAlignment = Alignment.Top,
-    ) {
-        DrafftCheckbox(
-            state.acceptedTerms,
-            Modifier
-                .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Checkbox) {
-                    Haptics.select()
-                    state.acceptedTerms = !state.acceptedTerms
-                }
-                .semantics {
-                    contentDescription = label
-                    selected = state.acceptedTerms
-                },
-        )
-        Text(
-            text,
-            // Level with the box on top, the same room under the last line.
-            Modifier.padding(vertical = 11.dp),
-            style = TextStyles.subheadline,
-            color = p.ink,
-        )
-    }
-    val doc = state.legalDoc
-    val shown = remember { arrayOfNulls<LegalDoc>(1) }
-    if (doc != null) shown[0] = doc
-    DrafftSheet(visible = doc != null, onDismissRequest = { state.legalDoc = null }) {
-        shown[0]?.let { LegalDocSheet(it) }
-    }
+    ConsentChecks(draft = state.consent, onDraftChange = { state.consent = it; state.consentError = null })
 }
 
 /** Reaches [amount] past the leading edge (SwiftUI's negative leading padding). */
-private fun Modifier.leadingOutset(amount: Dp): Modifier = layout { measurable, constraints ->
+internal fun Modifier.leadingOutset(amount: Dp): Modifier = layout { measurable, constraints ->
     val extra = amount.roundToPx()
     val wide = if (constraints.hasBoundedWidth) constraints.copy(maxWidth = constraints.maxWidth + extra, minWidth = constraints.minWidth) else constraints
     val placeable = measurable.measure(wide)
@@ -935,7 +931,7 @@ private fun NotificationsStep(state: OnboardingState) {
 
 @Composable
 private fun GenderStep(state: OnboardingState) {
-    StepTitle(L("Which describes you best?"), L("You can change it anytime in You."))
+    StepTitle(L("Which describes you best?"), L("You can't change it later. If it's ever wrong, write to the help center in You."))
     ChoiceRows(listOf("Woman", "Man", "Non-binary"), isOn = { state.identity == it }) { o ->
         state.identity = if (state.identity == o) null else o
     }
@@ -1081,7 +1077,7 @@ private fun LocationFacts() {
         Modifier.block(DS.palette.canvas).padding(DS.Space.xl),
         verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
     ) {
-        Fact("arrow.triangle.2.circlepath", L("Updates as you move"), L("Each time you open drafft, your area follows you: home, work, a weekend away."))
+        Fact("arrow.triangle.2.circlepath", L("Read once, not tracked"), L("Your area comes from where you are right now. drafft doesn't follow your moves or track you in the background."))
         Fact("circle.dotted.circle", L("Blurred before it leaves your phone"), L("Your position is rounded to about 1 km. Your exact spot is never sent or stored."))
         Fact("eye", L("What others see"), L("Your area, like a district, and a distance rounded to the kilometre. Never your address."))
     }

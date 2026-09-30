@@ -14,6 +14,9 @@ enum class AppLanguage(val code: String, val displayName: String) {
     PT("pt", "Português"),
     NL("nl", "Nederlands");
 
+    /** The language's folder on getdrafft.com, English at the root. */
+    val sitePath: String get() = if (this == EN) "" else "/$code"
+
     /** Portuguese is European Portuguese (see NotificationText). */
     val locale: Locale get() = if (this == PT) Locale.forLanguageTag("pt-PT") else Locale.forLanguageTag(code)
 

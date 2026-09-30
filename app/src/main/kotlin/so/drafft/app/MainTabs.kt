@@ -44,6 +44,7 @@ import androidx.compose.ui.zIndex
 import java.util.UUID
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.LocationRequiredView
+import so.drafft.app.feature.auth.TermsConsentView
 import so.drafft.app.feature.chat.CalendarAccessBanner
 import so.drafft.app.feature.chat.CalendarAccessNotice
 import so.drafft.app.feature.chat.ConversationsView
@@ -212,6 +213,16 @@ fun MainTabs(
             visible = isActive && locationAuthorization == so.drafft.core.data.platform.LocationProvider.Authorization.DENIED,
             onDismissRequest = {},
         ) { LocationRequiredView() }
+
+        // A fresh read found no record of the current terms and the consent to sensitive data: asked
+        // at each open until accepted, after the location gate. Unknown (no read yet, offline) asks
+        // nothing: the read is retried until it says (refreshAccount), and a sign-up can't finish
+        // without the consent on the server (complete_onboarding).
+        FullScreenCover(
+            visible = isActive && locationAuthorization != so.drafft.core.data.platform.LocationProvider.Authorization.DENIED &&
+                app.termsConsent == so.drafft.core.model.TermsConsent.Gate.REQUIRED,
+            onDismissRequest = {},
+        ) { TermsConsentView() }
 
         val match = app.matchScreen
         FullScreenCover(visible = match != null, onDismissRequest = { app.matchScreen = null }) {

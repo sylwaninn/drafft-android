@@ -785,7 +785,7 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    L("I understand my account and all my data will be permanently deleted."),
+                    L("I understand my account will be deleted for good."),
                     Modifier.weight(1f),
                     style = TextStyles.subheadline.semibold,
                     color = p.ink,

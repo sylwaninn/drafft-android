@@ -150,9 +150,9 @@ fun MeView(modifier: Modifier = Modifier) {
                     L("Pause my profile"),
                     "pause.fill",
                     detail = if (app.profilePaused) {
-                        L("Hidden from everyone. Your chats and sessions carry on.")
+                        L("Hidden from Discover and likes. Your chats and sessions carry on.")
                     } else {
-                        L("Take a break from discovery: you disappear, your chats stay open.")
+                        L("Hide from Discover for a while. Your chats stay open.")
                     },
                     isOn = app.profilePaused,
                     onChange = { app.profilePaused = it },
@@ -197,6 +197,13 @@ fun MeView(modifier: Modifier = Modifier) {
                     "square.and.arrow.down.fill",
                     if (app.dataExportRequestedAt == null) L("Sent to you by email") else L("Requested, check your inbox"),
                 ) { sheet = MeSheet.EXPORT }
+                Separator()
+                // drafft can't work without the gender: withdrawing the consent is deleting the account.
+                SettingsRow(
+                    L("Sensitive data consent"),
+                    "checkmark.shield.fill",
+                    L("Withdrawing it means deleting your account."),
+                ) { sheet = MeSheet.DELETE }
             }
             Group(L("Help")) {
                 SettingsRow(L("Safety tips"), "shield.lefthalf.filled", L("Meeting someone for the first time")) { sheet = MeSheet.SAFETY }
@@ -478,7 +485,7 @@ private fun PlusCard(onClick: () -> Unit) {
                     color = p.onLime,
                 )
                 // White on the accent only in semibold or bolder, at full strength.
-                Text(L("Undo swipes, see who liked you, unlimited likes."), style = TextStyles.footnote.semibold, color = p.onLime)
+                Text(L("Undo your last swipe, see who likes you, unlimited likes."), style = TextStyles.footnote.semibold, color = p.onLime)
             }
             DrafftIcon("chevron.right", size = symbolSize(TextStyles.footnote), tint = p.onLime)
         }

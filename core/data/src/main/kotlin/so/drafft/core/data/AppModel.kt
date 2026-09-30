@@ -21,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
@@ -77,6 +78,7 @@ import so.drafft.core.model.MessageContent
 import so.drafft.core.model.PackPhotos
 import so.drafft.core.model.Profile
 import so.drafft.core.model.SessionProposal
+import so.drafft.core.model.TermsConsent
 import so.drafft.core.model.Vitals
 
 // Ports Drafft/Services/AppModel.swift and its extensions: AppModel+Account, +AccountSync,
@@ -236,6 +238,20 @@ class AppModel(
 
     /** Data export: requested here, sent by email as a download link (server side). */
     var dataExportRequestedAt by mutableStateOf<Instant?>(null)
+
+    /**
+     * Whether this account's consent to the current terms and to the use of its sensitive data is
+     * on record. `REQUIRED`, from a fresh read only: `TermsConsentView` asks at each open until
+     * it's accepted, after the location gate. `UNKNOWN` until a read says (account sync).
+     */
+    var termsConsent by mutableStateOf(TermsConsent.Gate.UNKNOWN)
+
+    /**
+     * The account read failed while the consent was unknown: read again after a pause, longer each
+     * time (`refreshAccount`).
+     */
+    private var accountRetry: Job? = null
+    private var accountReadFailures = 0
 
     /** 0...1, with the next thing worth adding. */
     data class ProfileCompletion(val value: Double, val next: String?)
@@ -639,7 +655,7 @@ class AppModel(
     }
 
     /** The saved session is no good any more: dropped from this phone, with the same message. */
-    private suspend fun endSession() {
+    suspend fun endSession() {
         backend.signOut()
         if (!leavingOnPurpose) sessionEndedNotice = true
     }
@@ -710,6 +726,7 @@ class AppModel(
         sessionStore.reset()
         blocked = emptyList()
         dataExportRequestedAt = null
+        termsConsent = TermsConsent.Gate.UNKNOWN
         filters = DiscoverFilters()
         clearWallet()
         me = nobody
@@ -754,12 +771,14 @@ class AppModel(
                 openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.PROFILE) } }
                 lastAccountRead = Instant.now() to account
                 apply(account)
+                applyConsent(fromServer = account.consent)
                 account
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (session != sessionID) return@async null
                 if (profileLoad != ProfileLoad.LOADED) profileLoad = ProfileLoad.FAILED
+                retryWhileConsentUnknown()
                 null
             }
         }
@@ -773,7 +792,36 @@ class AppModel(
         val entry = openLocalCache()?.entry(LocalCache.Kind.PROFILE) ?: return null
         val account = ProfileSync.decodeAccount(entry.data, mediaBase = MediaURL.saved) ?: return null
         apply(account)
+        // A cached "accepted" holds (the consent is only withdrawn by deleting the account); a
+        // cached "required" may be out of date: only the server's read asks.
+        if (account.consent == TermsConsent.Gate.ACCEPTED && termsConsent == TermsConsent.Gate.UNKNOWN) termsConsent = TermsConsent.Gate.ACCEPTED
         return account
+    }
+
+    /** The gate from a fresh read. A backend without the consent columns leaves it as it was. */
+    private fun applyConsent(fromServer: TermsConsent.Gate) {
+        accountReadFailures = 0
+        accountRetry?.cancel()
+        accountRetry = null
+        if (fromServer != TermsConsent.Gate.UNKNOWN) termsConsent = fromServer
+    }
+
+    /**
+     * While the consent is unknown, a failed read is tried again after 5 s, then 10, 20... up to 5
+     * minutes, until one succeeds or the account changes: an account that never consented isn't
+     * left unasked because the first read failed.
+     */
+    private fun retryWhileConsentUnknown() {
+        if (termsConsent != TermsConsent.Gate.UNKNOWN || accountRetry != null) return
+        val delaySeconds = minOf(300L, 5L shl minOf(accountReadFailures, 6))
+        accountReadFailures += 1
+        val session = sessionID
+        accountRetry = scope.launch {
+            delay(delaySeconds * 1000)
+            if (session != sessionID) return@launch
+            accountRetry = null
+            refreshAccount(force = true)
+        }
     }
 
     private fun apply(account: ProfileSync.Account) {
@@ -799,6 +847,9 @@ class AppModel(
     fun eraseLocalCache() {
         accountRefresh?.cancel()
         accountRefresh = null
+        accountRetry?.cancel()
+        accountRetry = null
+        accountReadFailures = 0
         lastAccountRead = null
         localCache = null
         write { LocalCache.eraseAll(cacheDirectory) }

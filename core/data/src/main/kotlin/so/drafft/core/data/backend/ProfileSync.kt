@@ -26,6 +26,7 @@ import so.drafft.core.data.platform.Coordinate
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Audience
 import so.drafft.core.model.Icebreaker
+import so.drafft.core.model.TermsConsent
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
@@ -134,6 +135,34 @@ class ProfileSync(
         loadedAccount = backend.userID
     }
 
+    // Terms and consent
+
+    /**
+     * Records both, now: the terms at [TermsConsent.VERSION] and the consent (always given, so the
+     * server's `sensitive_consent_required` can't come back from here). Throws on a network error
+     * or the server's refusal (`unauthenticated`, `not_found`, `invalid_terms_version`);
+     * [termsFailure] says what to do with it.
+     */
+    suspend fun acceptTerms() {
+        backend.rpc("accept_terms", mapOf("p_version" to TermsConsent.VERSION, "p_sensitive_consent" to true))
+    }
+
+    /** What to do after [acceptTerms] threw: the code or error never reaches the screen. */
+    fun termsFailure(error: Throwable): TermsConsent.Failure {
+        if (error is Backend.BackendError.SignedOut) {
+            log.severe("accept_terms without a session")
+            return TermsConsent.Failure.SignOut
+        }
+        val code = ServerMessage.code(error)
+        log.severe("accept_terms failed: ${code ?: error}")
+        return TermsConsent.failure(
+            code = code,
+            offline = error is java.io.IOException,
+            textForCode = { ServerMessage.text(forCode = it) },
+            generic = ServerMessage.generic,
+        )
+    }
+
     // Edit profile
 
     /** Saves Edit profile's changes (the birthday stays as set at sign-up). */
@@ -182,6 +211,8 @@ class ProfileSync(
         val hold: AccountHold?,
         val onboarded: Boolean,
         val notifications: NotificationSettings?,
+        /** Whether the consent is on record for the current terms: only a fresh read may say `REQUIRED`. */
+        val consent: TermsConsent.Gate,
     )
 
     /**
@@ -192,10 +223,18 @@ class ProfileSync(
      */
     suspend fun loadAccount(): Pair<Account, ByteArray>? {
         val id = backend.userID ?: return null
-        val data = backend.select(
-            "profiles?id=eq.$id&select=$accountColumns" +
+        suspend fun read(withConsent: Boolean): ByteArray = backend.select(
+            "profiles?id=eq.$id&select=${accountColumns(withConsent)}" +
                 "&profile_sports.order=position&profile_prompts.order=position&profile_media.order=position",
         )
+        val data = try {
+            read(withConsent = true)
+        } catch (e: Backend.BackendError.Http) {
+            // A backend from before the consent columns (42703, the column doesn't exist): the
+            // account is read without them, and the consent stays unknown until it has them.
+            if (e.status != 400 || consentColumns.none { it in e.serverMessage }) throw e
+            read(withConsent = false)
+        }
         val keys = mediaKeys(data)
         val signed = MediaURL.signed(keys)
         // A backend from before signed links: the public base URL + key.
@@ -206,12 +245,17 @@ class ProfileSync(
     }
 
     companion object {
-        private val accountColumns = listOf(
+        private val log = java.util.logging.Logger.getLogger("so.drafft.consent")
+
+        /** Filled by `accept_terms`; drafft-backend #48 adds them. */
+        private val consentColumns = listOf("terms_version", "terms_accepted_at", "sensitive_consent_at")
+
+        private fun accountColumns(withConsent: Boolean): String = (listOf(
             "name", "birthdate", "pronouns", "gender", "neighborhood", "bio", "goal", "favorite_spot",
             "drinks", "smokes", "diet", "chronotype", "icebreaker", "voice_intro_key", "voice_duration",
             "paused", "moderation", "onboarded_at", NotificationSettings.columns,
             "profile_sports(sport_id,per_week)", "profile_prompts(question,answer)", "profile_media(id,key,kind,status,thumbhash)",
-        ).joinToString(",")
+        ) + if (withConsent) consentColumns else emptyList()).joinToString(",")
 
         private class MediaRow(val id: String, val key: String, val kind: String, val status: String, val thumbhash: String?)
 
@@ -238,6 +282,8 @@ class ProfileSync(
                 AccountHold.entries.firstOrNull { it.rawValue == raw } ?: throw JsonShapeException("moderation")
             }
             val onboardedAt = o.optString("onboarded_at")
+            val carriesConsent = consentColumns.all { it in o }
+            val consent = TermsConsent.Record.from(o.optString("terms_version"), o.optString("terms_accepted_at"), o.optString("sensitive_consent_at"))
             val sports = o.optList("profile_sports") { e -> e.requireObject().let { it.string("sport_id") to it.int("per_week") } }
             val prompts = o.optList("profile_prompts") { e -> e.requireObject().let { ProfilePrompt(it.string("question"), it.string("answer")) } }
             val media = o.optList("profile_media") { e ->
@@ -299,6 +345,7 @@ class ProfileSync(
             return Account(
                 profile = profile, paused = row.paused, hold = row.moderation, onboarded = row.onboardedAt != null,
                 notifications = attemptOrNull { DrafftJson.decodeFromJsonElement(NotificationSettings.serializer(), obj) },
+                consent = TermsConsent.gate(onboarded = row.onboardedAt != null, carriesConsent = row.carriesConsent, record = row.consent),
             )
         }
 

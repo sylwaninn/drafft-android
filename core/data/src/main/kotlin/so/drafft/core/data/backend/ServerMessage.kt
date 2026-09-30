@@ -36,6 +36,10 @@ object ServerMessage {
         "birthdate_locked" -> L("Your birthday can't be changed.")
         "email_unconfirmed" -> L("Confirm your email first.")
         "phone_required" -> L("Verify your phone number first.")
+        // complete_onboarding without accept_terms, and accept_terms without the consent (the app
+        // always sends it, so only another client gets sensitive_consent_required)
+        "terms_required" -> L("Accept the terms and give your consent to continue.")
+        "sensitive_consent_required" -> L("drafft needs your consent to use your gender. Tick it to continue.")
         // Photos and videos (add_profile_media, request_media_review, media-upload-url)
         "media_limit" -> L("You've reached the photo limit. Remove one, then try again.")
         "not_reviewable" -> L("This photo has already been reviewed.")
