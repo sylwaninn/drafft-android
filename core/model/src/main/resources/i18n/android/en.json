@@ -3,12 +3,16 @@
  "Apple emails your receipt. Manage your subscription anytime in You.": "Google Play emails your receipt. Manage your subscription anytime in You.",
  "Change plan or cancel in Apple's subscription settings.": "Change or cancel it in your Google Play subscriptions.",
  "Couldn't reach the App Store. Try again.": "Couldn't reach Google Play. Try again.",
+ "Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.": "Location is off on this phone. Turn it on in the quick settings or in Settings, Location.",
  "No drafft tempo purchase on this Apple ID.": "No drafft tempo purchase on this Google account.",
  "Notifications are off in iPhone Settings. Skip for now.": "Notifications are off in your phone's settings. Skip for now.",
  "Notifications are off. You can turn them on later in iPhone Settings.": "Notifications are off. You can turn them on later in your phone's settings.",
  "Open App Store subscriptions": "Open Google Play subscriptions",
  "Payment is charged to your Apple Account. The subscription renews automatically at the same price unless you cancel it at least 24 hours before the end of the period. Manage or cancel it in your App Store settings.": "Payment is charged to your Google account. The subscription renews automatically at the same price unless you cancel it at least 24 hours before the end of the period. Manage or cancel it in your Google Play subscriptions.",
+ "Pick While Using the App": "Pick Allow only while using the app",
+ "Tap Location": "Tap Permissions, then Location",
  "Turn them on in iPhone Settings to hear about matches and sessions.": "Turn them on in your phone's settings to hear about matches and sessions.",
  "Your session ended on this iPhone. Log in again to pick up where you left off.": "Your session ended on this phone. Log in again to pick up where you left off.",
- "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "Your subscription is billed through your Google account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your Google Play subscriptions. Deleting drafft doesn't cancel it."
+ "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "Your subscription is billed through your Google account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your Google Play subscriptions. Deleting drafft doesn't cancel it.",
+ "drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.": "drafft needs it to show people near you. Allowing it only while using the app is enough, and only your area is ever shown."
 }

@@ -230,7 +230,7 @@ Check your inbox, and your spam folder. The code works for 1 hour.
 Check your messages. The code works for 10 minutes.
 Checking the code…
 Checking this photo
-Checking your first photo…
+Checking your photos…
 Choose a new password
 Choose a pack
 Choose a prompt
@@ -526,6 +526,7 @@ Loading packs
 Loading plans
 Loading profiles
 Loading your profile
+Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.
 Location is off for drafft. Turn it on in Settings (While Using the App is enough) to continue.
 Location not shared yet
 Log back in any time to see where the check is.
@@ -693,6 +694,7 @@ Or steal one of these
 Other times suggested
 Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
 Our team can unlock it for you.
+Our team is checking your first photo. Put another one first, or wait.
 Our team needs a little time to make sure your account follows the drafft rules. It usually takes less than 48 hours.
 Our team needs a quick selfie to check that your photos are really you.
 Out of likes.
@@ -729,6 +731,7 @@ Photos
 Photos & voice
 Photos of %s, %d total
 Pick 1 to 3 times that haven't passed.
+Pick While Using the App
 Pick a format for your interactive prompt. Matches play it and reply in one tap.
 Pick a plan to continue.
 Pick a prompt
@@ -969,6 +972,7 @@ Take a photo or video
 Take it back.
 Take my selfie
 Take the selfie
+Tap Location
 Tap Report or block on their profile or in the chat. Reports are confidential.
 Tap a prompt to select it.
 Tap a time to change it. %s picks one, or suggests others.
@@ -1269,6 +1273,7 @@ Your current password is incorrect.
 Your email stays private. Matches only see your first name.
 Your face is too small on your first photo. Use a closer one first.
 Your first photo needs to show your face clearly.
+Your first photo wasn't approved. Put another one first.
 Your last super like
 Your likes refill at midnight, or go unlimited with drafft tempo.
 Your matches and chats are kept.
