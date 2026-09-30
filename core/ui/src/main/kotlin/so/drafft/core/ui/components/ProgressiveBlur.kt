@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.theme.DS
+import so.drafft.core.ui.theme.LocalIsNightSurface
 import so.drafft.core.ui.theme.Motion
 import kotlin.math.ceil
 import kotlin.math.max
@@ -55,8 +56,13 @@ enum class VerticalEdge { TOP, BOTTOM }
 /**
  * A progressive blur of this content's own band along [edge]: the band ([band], in pixels) shows a
  * blurred copy of what scrolls there, opaque at the edge and fading out toward the inside, with no
- * tint and no colour band. Compose has no backdrop filter, so the content under a bar blurs itself:
- * put it on the scrolling content, under the bar (`EdgeBars` does it for you).
+ * colour band. Compose has no backdrop filter, so the content under a bar blurs itself: put it on
+ * the scrolling content, under the bar (`EdgeBars` does it for you).
+ *
+ * With a [veil] (the surface's own tone), the blur replaces the sharp content instead of laying over
+ * it, as the iPhone's backdrop blur does, and a light veil keeps a bar's text readable whatever
+ * scrolls under it. The first [solid] pixels from the edge (a bar's own height) are at full
+ * strength: only the margin past the bar fades.
  *
  * Android 12+ blurs with a RenderEffect (only the band is blurred, from one recorded display list);
  * older versions ([so.drafft.core.ui.platform.PlatformUi.blursEdges] false) fade the band into a
@@ -70,10 +76,12 @@ fun Modifier.progressiveBlur(
     alpha: () -> Float = { 1f },
     maxRadius: Dp = 14.dp,
     probe: EdgeToneProbe? = null,
+    solid: () -> Float = { 0f },
+    veil: Color? = null,
 ): Modifier {
     val blurs = LocalPlatformUi.current.blursEdges
-    val page = DS.palette.canvasSoft
-    return this then ProgressiveBlurElement(edge, band, alpha, maxRadius, blurs, page, probe)
+    val page = veil ?: DS.palette.canvasSoft
+    return this then ProgressiveBlurElement(edge, band, alpha, maxRadius, blurs, page, probe, solid, veil != null)
 }
 
 private data class ProgressiveBlurElement(
@@ -84,8 +92,10 @@ private data class ProgressiveBlurElement(
     val blurs: Boolean,
     val page: Color,
     val probe: EdgeToneProbe?,
+    val solid: () -> Float,
+    val veiled: Boolean,
 ) : ModifierNodeElement<ProgressiveBlurNode>() {
-    override fun create() = ProgressiveBlurNode(edge, band, alpha, maxRadius, blurs, page, probe)
+    override fun create() = ProgressiveBlurNode(edge, band, alpha, maxRadius, blurs, page, probe, solid, veiled)
 
     override fun update(node: ProgressiveBlurNode) {
         node.edge = edge
@@ -95,6 +105,8 @@ private data class ProgressiveBlurElement(
         node.blurs = blurs
         node.page = page
         node.probe = probe
+        node.solid = solid
+        node.veiled = veiled
         node.invalidateDraw()
     }
 
@@ -111,6 +123,8 @@ private class ProgressiveBlurNode(
     var blurs: Boolean,
     var page: Color,
     var probe: EdgeToneProbe?,
+    var solid: () -> Float,
+    var veiled: Boolean,
 ) : androidx.compose.ui.Modifier.Node(), DrawModifierNode {
     private var content: GraphicsLayer? = null
     private var blurred: GraphicsLayer? = null
@@ -140,7 +154,8 @@ private class ProgressiveBlurNode(
         val gc = requireGraphicsContext()
         val layer = content ?: gc.createGraphicsLayer().also { content = it }
         layer.record { this@draw.drawContent() }
-        drawLayer(layer)
+        val replaces = veiled && blurs && shows
+        if (!replaces) drawLayer(layer)
         if (p != null) {
             p.layer = layer
             p.graphics = gc
@@ -169,6 +184,25 @@ private class ProgressiveBlurNode(
             translate(0f, -sourceTop) { drawLayer(layer) }
         }
         val rect = Rect(0f, top, size.width, top + bandPx)
+        if (veiled) {
+            // The blur replaces the sharp content in the band: the sharp copy is erased by the mask,
+            // the veiled blur takes its place. At any alpha the two add up to a whole.
+            val outside = if (edge == VerticalEdge.TOP) Rect(0f, rect.bottom, size.width, size.height) else Rect(0f, 0f, size.width, rect.top)
+            clipRect(outside.left, outside.top, outside.right, outside.bottom) { drawLayer(layer) }
+            paint.alpha = 1f
+            drawContext.canvas.saveLayer(rect, paint)
+            clipRect(rect.left, rect.top, rect.right, rect.bottom) { drawLayer(layer) }
+            drawRect(mask(Color.Black.copy(alpha = a), top, bandPx), topLeft = rect.topLeft, size = rect.size, blendMode = BlendMode.DstOut)
+            drawContext.canvas.restore()
+            drawContext.canvas.saveLayer(rect, paint)
+            drawRect(page.copy(alpha = VEIL), topLeft = rect.topLeft, size = rect.size)
+            clipRect(rect.left, rect.top, rect.right, rect.bottom) {
+                translate(0f, sourceTop) { drawLayer(blur) }
+            }
+            drawRect(mask(Color.Black.copy(alpha = a), top, bandPx), topLeft = rect.topLeft, size = rect.size, blendMode = BlendMode.DstIn)
+            drawContext.canvas.restore()
+            return
+        }
         paint.alpha = a
         drawContext.canvas.saveLayer(rect, paint)
         clipRect(rect.left, rect.top, rect.right, rect.bottom) {
@@ -183,18 +217,22 @@ private class ProgressiveBlurNode(
     private fun ContentDrawScope.drawScrim(bandPx: Float, a: Float) {
         val top = if (edge == VerticalEdge.TOP) 0f else size.height - bandPx
         drawRect(
-            mask(page.copy(alpha = 0.94f * a), top, bandPx),
+            mask(page.copy(alpha = 0.96f * a), top, bandPx),
             topLeft = Offset(0f, top),
             size = androidx.compose.ui.geometry.Size(size.width, bandPx),
         )
     }
 
     private fun mask(color: Color, top: Float, height: Float): Brush {
+        // Full strength over the bar itself, then the eased ramp over the margin past it.
+        val hold = if (height > 0f) (solid() / height).coerceIn(0f, 0.95f) else 0f
+        fun at(t: Float) = hold + (1f - hold) * t
         val ramp = arrayOf(
             0f to color,
-            0.3f to color.copy(alpha = color.alpha * 0.85f),
-            0.6f to color.copy(alpha = color.alpha * 0.4f),
-            0.85f to color.copy(alpha = color.alpha * 0.1f),
+            hold to color,
+            at(0.3f) to color.copy(alpha = color.alpha * 0.85f),
+            at(0.6f) to color.copy(alpha = color.alpha * 0.4f),
+            at(0.85f) to color.copy(alpha = color.alpha * 0.1f),
             1f to color.copy(alpha = 0f),
         )
         return if (edge == VerticalEdge.TOP) {
@@ -204,6 +242,9 @@ private class ProgressiveBlurNode(
         }
     }
 }
+
+/** How much of the surface tone tints the blurred band, so a bar's text never sits on a busy smudge. */
+private const val VEIL = 0.4f
 
 // MARK: - The only ways to pin something to an edge
 
@@ -238,6 +279,8 @@ fun EdgeBars(
     val topAlpha by animateFloatAsState(if (topCovered) 1f else 0f, fade, label = "topBlur")
     val bottomAlpha by animateFloatAsState(if (bottomCovered) 1f else 0f, fade, label = "bottomBlur")
     val bands = remember { Bands() }
+    // The tone behind the bars: the night surface's, or the page's.
+    val veil = if (LocalIsNightSurface.current) DS.palette.night else DS.palette.canvasSoft
     val probe = if (sampleTone) remember { EdgeToneProbe() } else null
     val platform = LocalPlatformUi.current
     if (probe != null) LaunchedEffect(probe, platform) { probe.run(platform) }
@@ -265,12 +308,14 @@ fun EdgeBars(
         val bottomHeight = bottom.maxOfOrNull { it.height } ?: 0
         bands.top = if (hasTop) topHeight + extra else 0f
         bands.bottom = if (hasBottom) bottomHeight + extra else 0f
+        bands.topSolid = topHeight.toFloat()
+        bands.bottomSolid = bottomHeight.toFloat()
         probe?.bandTop = statusTop.toFloat()
         val padding = PaddingValues(top = topHeight.toDp(), bottom = bottomHeight.toDp())
         val body = subcompose(Slot.CONTENT) {
             var m: Modifier = Modifier
-            if (hasTop || probe != null) m = m.progressiveBlur(VerticalEdge.TOP, { bands.top }, { if (hasTop) topAlpha else 0f }, probe = probe)
-            if (hasBottom) m = m.progressiveBlur(VerticalEdge.BOTTOM, { bands.bottom }, { bottomAlpha })
+            if (hasTop || probe != null) m = m.progressiveBlur(VerticalEdge.TOP, { bands.top }, { if (hasTop) topAlpha else 0f }, probe = probe, solid = { bands.topSolid }, veil = veil)
+            if (hasBottom) m = m.progressiveBlur(VerticalEdge.BOTTOM, { bands.bottom }, { bottomAlpha }, solid = { bands.bottomSolid }, veil = veil)
             Box(m) { content(padding) }
         }.map { it.measure(constraints) }
         val width = body.maxOfOrNull { it.width } ?: constraints.minWidth
@@ -288,6 +333,8 @@ private enum class Slot { TOP, BOTTOM, CONTENT }
 private class Bands {
     var top by mutableFloatStateOf(0f)
     var bottom by mutableFloatStateOf(0f)
+    var topSolid by mutableFloatStateOf(0f)
+    var bottomSolid by mutableFloatStateOf(0f)
 }
 
 /**
