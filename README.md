@@ -58,9 +58,11 @@ seven languages. After a wording change on the iPhone side:
 python3 scripts/sync-strings.py ../drafft/Drafft/Resources/Localizable.xcstrings
 ```
 
-A few iPhone-specific phrases are still used as they are because the catalog has no Android version
-yet (App Store and Apple Account billing terms, "iPhone Settings"). Adding Android variants to the
-catalog (and to WORDING.md) fixes them without touching the code.
+The few sentences the iPhone writes about its own platform (App Store, Apple Account, iPhone Settings)
+have an Android wording, in the 7 languages, under the same keys in
+`core/model/src/main/resources/i18n/android/` (Google Play, Google account, the phone's settings).
+`L` reads them first. When such a sentence changes on the iPhone side, update its Android variant too
+(the test `LocalizationTest` checks every variant still matches a catalog key).
 
 ## Layout
 
