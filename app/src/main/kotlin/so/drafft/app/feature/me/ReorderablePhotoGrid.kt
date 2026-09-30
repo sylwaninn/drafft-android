@@ -2,6 +2,7 @@ package so.drafft.app.feature.me
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector2D
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -28,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -109,6 +111,8 @@ fun ReorderablePhotoGrid(
     val currentPhotos by rememberUpdatedState(photos)
     val onChange by rememberUpdatedState(onPhotosChange)
     val scope = rememberCoroutineScope()
+    // Each tile's slot animation, so a released tile settles from where the finger left it.
+    val slotsByName = remember { HashMap<String, Animatable<IntOffset, AnimationVector2D>>() }
 
     LaunchedEffect(moderation.removeRequest) {
         val path = moderation.removeRequest ?: return@LaunchedEffect
@@ -146,19 +150,77 @@ fun ReorderablePhotoGrid(
             return IntOffset(p.x + d.x.roundToInt(), p.y + d.y.roundToInt())
         }
 
-        Box(Modifier.fillMaxWidth().height(gridHeight)) {
-            // Add buttons fill the free slots.
-            for (i in shown.size until maxOf(shown.size, slots)) {
-                key("add-$i") {
-                    Box(Modifier.offset { position(i) }.size(tileW, tileH)) { addButton() }
-                }
+        /** Ends a drag: the tile settles from where the finger left it, and the order is committed. */
+        fun endDrag() {
+            val name = dragging ?: return
+            val here = dragAnchor(name)
+            scope.launch {
+                slotsByName[name]?.snapTo(here)
+                onChange(order)
+                dragging = null
+                dragOffset.value = Offset.Zero
             }
-            CompositionLocalProvider(LocalViewConfiguration provides hold) {
+        }
+
+        CompositionLocalProvider(LocalViewConfiguration provides hold) {
+            // The gesture sits on the grid, which never moves: on the lifted tile itself, its own
+            // movement would feed back into the finger's travel.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(gridHeight)
+                    .pointerInput(wPx, hPx, gapPx) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { at ->
+                                val col = (at.x / (wPx + gapPx)).toInt()
+                                val row = (at.y / (hPx + gapPx)).toInt()
+                                if (col !in 0 until COLUMNS) return@detectDragGesturesAfterLongPress
+                                val name = currentPhotos.getOrNull(row * COLUMNS + col) ?: return@detectDragGesturesAfterLongPress
+                                order = currentPhotos
+                                dragOffset.value = Offset.Zero
+                                dragging = name
+                                Haptics.thump()
+                            },
+                            onDrag = { change, amount ->
+                                val name = dragging ?: return@detectDragGesturesAfterLongPress
+                                change.consume()
+                                dragOffset.value += amount
+                                // Live reorder: find the slot under the tile's centre.
+                                val start = position(currentPhotos.indexOf(name).coerceAtLeast(0))
+                                val cx = start.x + dragOffset.value.x + wPx / 2
+                                val cy = start.y + dragOffset.value.y + hPx / 2
+                                val col = (cx / (wPx + gapPx)).toInt().coerceIn(0, COLUMNS - 1)
+                                val row = (cy / (hPx + gapPx)).toInt().coerceAtLeast(0)
+                                val to = minOf(order.size - 1, row * COLUMNS + col)
+                                val from = order.indexOf(name)
+                                if (from >= 0 && from != to) {
+                                    Haptics.select()
+                                    order = order.toMutableList().apply {
+                                        removeAt(from)
+                                        add(to, name)
+                                    }
+                                }
+                            },
+                            onDragEnd = { endDrag() },
+                            onDragCancel = { endDrag() },
+                        )
+                    },
+            ) {
+                // Add buttons fill the free slots.
+                for (i in shown.size until maxOf(shown.size, slots)) {
+                    key("add-$i") {
+                        Box(Modifier.offset { position(i) }.size(tileW, tileH)) { addButton() }
+                    }
+                }
                 shown.forEachIndexed { i, name ->
                     key(name) {
                         val isDragged = dragging == name
                         val target = position(i)
                         val slot = remember { Animatable(target, IntOffset.VectorConverter) }
+                        DisposableEffect(name, slot) {
+                            slotsByName[name] = slot
+                            onDispose { slotsByName.remove(name) }
+                        }
                         LaunchedEffect(target, isDragged) {
                             if (!isDragged) slot.animateTo(target, Motion.snappy())
                         }
@@ -172,55 +234,7 @@ fun ReorderablePhotoGrid(
                                     scaleX = scale
                                     scaleY = scale
                                 }
-                                .shadow(if (isDragged) 14.dp else 0.dp, RoundedCornerShape(DS.Radius.lg), clip = false)
-                                .pointerInput(name, wPx, hPx) {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = {
-                                            order = currentPhotos
-                                            dragOffset.value = Offset.Zero
-                                            dragging = name
-                                            Haptics.thump()
-                                        },
-                                        onDrag = { change, amount ->
-                                            change.consume()
-                                            dragOffset.value += amount
-                                            // Live reorder: find the slot under the tile's centre.
-                                            val start = position(currentPhotos.indexOf(name).coerceAtLeast(0))
-                                            val cx = start.x + dragOffset.value.x + wPx / 2
-                                            val cy = start.y + dragOffset.value.y + hPx / 2
-                                            val col = (cx / (wPx + gapPx)).toInt().coerceIn(0, COLUMNS - 1)
-                                            val row = (cy / (hPx + gapPx)).toInt().coerceAtLeast(0)
-                                            val to = minOf(order.size - 1, row * COLUMNS + col)
-                                            val from = order.indexOf(name)
-                                            if (from >= 0 && from != to) {
-                                                Haptics.select()
-                                                order = order.toMutableList().apply {
-                                                    removeAt(from)
-                                                    add(to, name)
-                                                }
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            val here = dragAnchor(name)
-                                            scope.launch {
-                                                // The tile settles from where the finger left it.
-                                                slot.snapTo(here)
-                                                onChange(order)
-                                                dragging = null
-                                                dragOffset.value = Offset.Zero
-                                            }
-                                        },
-                                        onDragCancel = {
-                                            val here = dragAnchor(name)
-                                            scope.launch {
-                                                slot.snapTo(here)
-                                                onChange(order)
-                                                dragging = null
-                                                dragOffset.value = Offset.Zero
-                                            }
-                                        },
-                                    )
-                                },
+                                .shadow(if (isDragged) 14.dp else 0.dp, RoundedCornerShape(DS.Radius.lg), clip = false),
                         ) {
                             PhotoTile(
                                 name = name,
@@ -291,7 +305,7 @@ private fun PhotoTile(
                 if (refused) onClick { onRefusedTap(); true }
             }
             .pointerInput(refused) {
-                detectTapGestures { if (refused) onRefusedTap() }
+                if (refused) detectTapGestures { onRefusedTap() }
             },
     ) {
         Photo(name, Modifier.fillMaxSize())

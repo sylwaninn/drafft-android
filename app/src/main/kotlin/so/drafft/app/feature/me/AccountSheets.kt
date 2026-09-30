@@ -798,5 +798,3 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
     }
 }
 
-/** `.font(.footnote.weight(.bold))`, the chevrons' weight. */
-internal val chevronStyle get() = TextStyles.footnote.bold

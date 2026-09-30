@@ -57,7 +57,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.discover.ExtrasSheet
-import so.drafft.app.feature.discover.ExtrasSheetTab
 import so.drafft.app.feature.discover.NameAgeLine
 import so.drafft.app.feature.discover.SuperLikeComposer
 import so.drafft.app.feature.matches.UnmatchButton
@@ -333,7 +332,7 @@ fun ProfileDetailView(
         ReportSheet(profile, onDone = { blockAndLeave() })
     }
     DrafftSheet(visible = showExtras, onDismissRequest = { showExtras = false }) {
-        ExtrasSheet(tab = ExtrasSheetTab.SUPER_LIKE)
+        ExtrasSheet(tab = ExtrasSheet.Tab.SUPER_LIKE)
     }
 }
 
