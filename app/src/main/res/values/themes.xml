@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch: the night surface with nothing on it, then SplashView draws the photos and the word
+         (the system splash can only centre an icon; the iPhone's shows the word at the bottom). -->
+    <style name="Theme.Drafft.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/launch_surface</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+        <item name="postSplashScreenTheme">@style/Theme.Drafft</item>
+    </style>
+
+    <style name="Theme.Drafft" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/launch_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
