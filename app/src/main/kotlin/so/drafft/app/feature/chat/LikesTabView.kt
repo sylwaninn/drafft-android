@@ -217,7 +217,7 @@ private fun BlurredCard(like: BlurredLike) {
                 .background(Color.White.copy(alpha = 0.18f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("lock.fill", size = 24.dp, tint = Color.White)
+            DrafftIcon("lock-keyhole-minimalistic", size = 24.dp, tint = Color.White)
         }
         if (like.superLike) {
             Box(
@@ -229,7 +229,7 @@ private fun BlurredCard(like: BlurredLike) {
                     .clearAndSetSemantics { },
                 contentAlignment = Alignment.Center,
             ) {
-                DrafftIcon("star.fill", size = 16.dp, tint = DS.palette.onAccentOnNight)
+                DrafftIcon("star", size = 16.dp, tint = DS.palette.onAccentOnNight)
             }
         }
     }

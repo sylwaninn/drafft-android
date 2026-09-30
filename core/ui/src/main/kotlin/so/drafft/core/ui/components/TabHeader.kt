@@ -119,7 +119,7 @@ fun TabHeader(
                 exit = scaleOut(Motion.snappy()) + fadeOut(Motion.snappy()),
             ) {
                 GlassCircleButton(
-                    "magnifyingglass",
+                    "magnifier",
                     onClick = {
                         Haptics.tap()
                         searchExpanded = true
@@ -152,7 +152,7 @@ fun TabHeader(
                     horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("magnifyingglass", tint = p.body)
+                    DrafftIcon("magnifier", tint = p.body)
                     BasicTextField(
                         value = text,
                         onValueChange = onSearchChange,
@@ -178,7 +178,7 @@ fun TabHeader(
                     exit = scaleOut(Motion.bouncy(), targetScale = 0.4f) + fadeOut(Motion.bouncy()),
                 ) {
                     GlassCircleButton(
-                        "xmark",
+                        "close",
                         onClick = {
                             Haptics.tap()
                             onSearchChange("")

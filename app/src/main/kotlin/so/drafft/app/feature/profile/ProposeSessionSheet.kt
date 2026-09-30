@@ -246,21 +246,21 @@ fun ProposeSessionSheet(
                     // Other times: the session stays as it is, only the times change.
                     FixedSession(counterTo)
                 } else {
-                    Block(L("Sport"), "figure.run") {
+                    Block(L("Sport"), "running") {
                         SportPicker(profile, me, theyTeach, youTeach, chosen, discovery) { s, d ->
                             Haptics.select()
                             chosen = s
                             discovery = d
                         }
                     }
-                    Block(L("Pitch it"), "quote.bubble", trailing = L("Optional")) {
+                    Block(L("Pitch it"), "chat-round-quote", trailing = L("Optional")) {
                         TitlePicker(title, { title = it }, pitchIdeas(chosen, discovery), chosen, discovery)
                     }
                 }
                 Block(L("When"), "calendar", trailing = L("Up to %d times", MAX_OPTIONS)) {
                     SlotsEditor(profile, options, onCompose = { compose(it) })
                 }
-                Block(L("Meet safely"), "shield.lefthalf.filled") { SafetyTipRows() }
+                Block(L("Meet safely"), "shield-check") { SafetyTipRows() }
             }
         }
     }
@@ -547,7 +547,7 @@ private fun AddCard(first: Boolean, modifier: Modifier, onClick: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(DS.Space.xs, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        DrafftIcon("plus", size = symbol(20f), tint = p.accentInk)
+        DrafftIcon("add", size = symbol(20f), tint = p.accentInk)
         Text(
             if (first) L("Add a time") else L("Add another"),
             style = TextStyles.caption.semibold.copy(textAlign = TextAlign.Center),
@@ -614,7 +614,7 @@ private fun TitlePicker(
                     scale = 1f,
                     contentDescription = L("Clear pitch"),
                 ) {
-                    DrafftIcon("xmark.circle.fill", size = symbol(17f), tint = p.mute)
+                    DrafftIcon("close-circle", size = symbol(17f), tint = p.mute)
                 }
             }
         }
@@ -656,7 +656,7 @@ private fun IdeaRow(idea: String, on: Boolean, onClick: () -> Unit) {
     ) {
         Box(Modifier.width(16.dp).padding(top = 2.dp), contentAlignment = Alignment.Center) {
             Crossfade(on, label = "ideaIcon") { picked ->
-                DrafftIcon(if (picked) "checkmark" else "sparkles", size = symbol(13f), tint = ink)
+                DrafftIcon(if (picked) "check" else "stars", size = symbol(13f), tint = ink)
             }
         }
         Text(idea, Modifier.weight(1f), style = TextStyles.subheadline.semibold, color = ink)
@@ -727,10 +727,10 @@ private fun Footer(
             enabled = canSend,
         ) {
             if (sending) {
-                DrafftIcon("checkmark", size = symbol(17f), tint = p.onLime)
+                DrafftIcon("check", size = symbol(17f), tint = p.onLime)
                 Text(L("Sent"))
             } else {
-                DrafftIcon("paperplane.fill", size = symbol(17f), tint = p.onLime)
+                DrafftIcon("plain", size = symbol(17f), tint = p.onLime)
                 Text(if (options.size > 1) L("%s (%d times)", sendTitle, options.size) else sendTitle, maxLines = 2)
             }
         }

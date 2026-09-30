@@ -421,7 +421,7 @@ fun DrafftField(
                     scale = 1f,
                     contentDescription = if (revealed) L("Hide password") else L("Show password"),
                 ) {
-                    DrafftIcon(if (revealed) "eye.slash" else "eye", tint = p.body)
+                    DrafftIcon(if (revealed) "eye-closed" else "eye", tint = p.body)
                 }
             }
         }
@@ -441,7 +441,7 @@ private fun FieldError(error: String?) {
         exit = fadeOut(Motion.snappy()) + slideOutVertically(Motion.snappy()) { -it / 2 },
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-            DrafftIcon("exclamationmark.circle.fill", size = symbolBox(13f), tint = DS.palette.negative)
+            DrafftIcon("danger-circle", size = symbolBox(13f), tint = DS.palette.negative)
             Text(last[0].orEmpty(), style = TextStyles.footnote.medium, color = DS.palette.negative)
         }
     }
@@ -731,7 +731,7 @@ fun CheckDisc(
                 .background(if (onLimeFill) onAccent else accent, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("checkmark", size = size * 0.46f * 1.2f, tint = if (onLimeFill) accent else onAccent)
+            DrafftIcon("check", size = size * 0.46f * 1.2f, tint = if (onLimeFill) accent else onAccent)
         }
     }
 }

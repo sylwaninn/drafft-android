@@ -144,11 +144,11 @@ fun MeView(modifier: Modifier = Modifier) {
             if (!app.isPremium) PlusCard { sheet = MeSheet.PAYWALL }
 
             Group(L("Discovery")) {
-                SettingsRow(L("Filters"), "slider.horizontal.3", filtersSummary(app)) { sheet = MeSheet.FILTERS }
+                SettingsRow(L("Filters"), "tuning-2", filtersSummary(app)) { sheet = MeSheet.FILTERS }
                 Separator()
                 ToggleSettingsRow(
                     L("Pause my profile"),
-                    "pause.fill",
+                    "pause",
                     detail = if (app.profilePaused) {
                         L("Hidden from Discover and likes. Your chats and sessions carry on.")
                     } else {
@@ -161,18 +161,18 @@ fun MeView(modifier: Modifier = Modifier) {
             Group(L("Preferences")) {
                 SettingsRow(
                     L("Notifications"),
-                    "bell.fill",
+                    "bell",
                     if (notifications.isAllowed) L("Matches, messages, sessions") else L("Off"),
                 ) { sheet = MeSheet.NOTIFICATIONS }
                 Separator()
-                SettingsRow(L("Language"), "globe", app.language.displayName) { sheet = MeSheet.LANGUAGE }
+                SettingsRow(L("Language"), "global", app.language.displayName) { sheet = MeSheet.LANGUAGE }
             }
             Group(L("Account")) {
-                SettingsRow(L("Email"), "envelope.fill", app.email) { sheet = MeSheet.EMAIL }
+                SettingsRow(L("Email"), "letter", app.email) { sheet = MeSheet.EMAIL }
                 Separator()
-                SettingsRow(L("Phone"), "phone.fill", app.phoneNumber ?: L("Add your number")) { sheet = MeSheet.PHONE }
+                SettingsRow(L("Phone"), "phone", app.phoneNumber ?: L("Add your number")) { sheet = MeSheet.PHONE }
                 Separator()
-                SettingsRow(L("Password"), "key.fill", L("Change your password")) { sheet = MeSheet.PASSWORD }
+                SettingsRow(L("Password"), "key", L("Change your password")) { sheet = MeSheet.PASSWORD }
                 // Only while subscribed: without it, the tier card above is the way in.
                 val sub = app.subscription
                 if (app.isPremium && sub != null) {
@@ -188,29 +188,29 @@ fun MeView(modifier: Modifier = Modifier) {
             Group(L("Privacy & data")) {
                 SettingsRow(
                     L("Blocked people"),
-                    "hand.raised.fill",
+                    "user-block",
                     if (app.blockedCount == 0) L("No one") else "${app.blockedCount}",
                 ) { sheet = MeSheet.BLOCKED }
                 Separator()
                 SettingsRow(
                     L("Export my data"),
-                    "square.and.arrow.down.fill",
+                    "download-minimalistic",
                     if (app.dataExportRequestedAt == null) L("Sent to you by email") else L("Requested, check your inbox"),
                 ) { sheet = MeSheet.EXPORT }
                 Separator()
                 // drafft can't work without the gender: withdrawing the consent is deleting the account.
                 SettingsRow(
                     L("Sensitive data consent"),
-                    "checkmark.shield.fill",
+                    "shield-check",
                     L("Withdrawing it means deleting your account."),
                 ) { sheet = MeSheet.DELETE }
             }
             Group(L("Help")) {
-                SettingsRow(L("Safety tips"), "shield.lefthalf.filled", L("Meeting someone for the first time")) { sheet = MeSheet.SAFETY }
+                SettingsRow(L("Safety tips"), "shield-check", L("Meeting someone for the first time")) { sheet = MeSheet.SAFETY }
                 Separator()
-                SettingsRow(L("Help center"), "questionmark.circle.fill", null) { sheet = MeSheet.HELP }
+                SettingsRow(L("Help center"), "question-circle", null) { sheet = MeSheet.HELP }
                 Separator()
-                SettingsRow(L("Terms & privacy policy"), "doc.text.fill", null) { sheet = MeSheet.LEGAL }
+                SettingsRow(L("Terms & privacy policy"), "document-text", null) { sheet = MeSheet.LEGAL }
             }
             Column(
                 Modifier
@@ -231,7 +231,7 @@ fun MeView(modifier: Modifier = Modifier) {
     DrafftConfirm(
         visible = confirmLogout,
         onDismissRequest = { confirmLogout = false },
-        icon = "rectangle.portrait.and.arrow.right",
+        icon = "logout-2",
         title = L("Log out?"),
         message = L("Your matches and chats stay safe. Log back in to see them."),
         actions = listOf(ConfirmAction(L("Log out"), ConfirmAction.Kind.DESTRUCTIVE) { app.signOut() }),
@@ -249,7 +249,7 @@ fun MeView(modifier: Modifier = Modifier) {
                 MeSheet.PREVIEW -> Box(Modifier.fillMaxSize()) {
                     ProfileDetailView(profile = app.publicMe, mode = ProfileDetailMode.ME)
                     GlassCircleButton(
-                        "xmark",
+                        "close",
                         onClick = LocalSheetDismiss.current,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -322,7 +322,7 @@ private fun ProfileLoadCard() {
                     contentAlignment = Alignment.Center,
                 ) {
                     if (failed) {
-                        DrafftIcon("person.fill", size = 38.dp, tint = Color.White)
+                        DrafftIcon("user-rounded", size = 38.dp, tint = Color.White)
                     } else {
                         CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     }
@@ -340,7 +340,7 @@ private fun ProfileLoadCard() {
             }
             if (failed) {
                 DrafftButton(onClick = { scope.launch { app.loadProfile() } }) {
-                    DrafftIcon("arrow.clockwise", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                    DrafftIcon("refresh", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
                     Text(L("Try again"), maxLines = 2)
                 }
             }
@@ -389,7 +389,7 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                     ) {
                         IconLabel(
                             L("Paused"),
-                            "pause.fill",
+                            "pause",
                             Modifier
                                 .background(Color.White, CircleShape)
                                 .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -438,7 +438,7 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                         .padding(start = 12.dp)
                         .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
                 ) {
-                    DrafftIcon("pencil", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                    DrafftIcon("pen", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
                     Text(L("Edit profile"), maxLines = 2)
                 }
                 PressScaleButton(
@@ -448,7 +448,7 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                         .background(Color.White.copy(alpha = 0.14f), CircleShape),
                     contentDescription = preview,
                 ) {
-                    DrafftIcon("eye.fill", size = symbolSize(TextStyles.body), tint = Color.White)
+                    DrafftIcon("eye", size = symbolSize(TextStyles.body), tint = Color.White)
                 }
             }
         }
@@ -487,7 +487,7 @@ private fun PlusCard(onClick: () -> Unit) {
                 // White on the accent only in semibold or bolder, at full strength.
                 Text(L("Undo your last swipe, see who likes you, unlimited likes."), style = TextStyles.footnote.semibold, color = p.onLime)
             }
-            DrafftIcon("chevron.right", size = symbolSize(TextStyles.footnote), tint = p.onLime)
+            DrafftIcon("alt-arrow-right", size = symbolSize(TextStyles.footnote), tint = p.onLime)
         }
     }
 }
@@ -571,7 +571,7 @@ private fun SettingsRow(title: String, icon: String, value: String?, action: () 
             )
             if (value != null) Text(value, style = TextStyles.footnote, color = p.body, maxLines = 2)
         }
-        DrafftIcon("chevron.right", size = symbolSize(TextStyles.footnote), tint = p.mute)
+        DrafftIcon("alt-arrow-right", size = symbolSize(TextStyles.footnote), tint = p.mute)
     }
 }
 

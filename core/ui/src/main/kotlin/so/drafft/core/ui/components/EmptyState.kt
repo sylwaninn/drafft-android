@@ -66,10 +66,10 @@ data class EmptyStateArt(
     val symbol: String,
 ) {
     companion object {
-        val discover = EmptyStateArt("flame")
+        val discover = EmptyStateArt("fire")
         val likes = EmptyStateArt("heart")
-        val sessions = EmptyStateArt("flag.2.crossed")
-        val chats = EmptyStateArt("bubble.left.and.bubble.right")
+        val sessions = EmptyStateArt("stopwatch-play")
+        val chats = EmptyStateArt("dialog-2")
     }
 }
 

@@ -182,7 +182,7 @@ private fun VoicePill(profile: Profile) {
                 transitionSpec = { fadeIn(Motion.gentle()) togetherWith fadeOut(Motion.gentle()) },
                 label = "voiceGlyph",
             ) { on ->
-                DrafftIcon(if (on) "pause.fill" else "waveform", size = (13f * 1.2f).dp, tint = ink)
+                DrafftIcon(if (on) "pause" else "soundwave", size = (13f * 1.2f).dp, tint = ink)
             }
             RollingText(
                 if (playing) audio.elapsed.clock else profile.voiceDuration.clock,

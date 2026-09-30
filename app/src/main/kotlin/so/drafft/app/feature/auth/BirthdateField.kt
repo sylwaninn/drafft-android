@@ -173,7 +173,7 @@ fun BirthdateField(
             exit = fadeOut(Motion.snappy()) + slideOutVertically(Motion.snappy()) { -it },
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                DrafftIcon("exclamationmark.circle.fill", size = (13f * 1.2f).dp, tint = p.negative)
+                DrafftIcon("danger-circle", size = (13f * 1.2f).dp, tint = p.negative)
                 Text(L("Check the date: this one doesn't exist."), style = TextStyles.footnote.medium, color = p.negative)
             }
         }

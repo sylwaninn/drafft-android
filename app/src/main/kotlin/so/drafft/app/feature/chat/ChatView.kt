@@ -247,7 +247,7 @@ fun ChatView(
     if (convo == null) {
         Box(modifier.fillMaxSize().background(DS.palette.canvasSoft)) {
             GlassCircleButton(
-                "chevron.left",
+                "alt-arrow-left",
                 onClick = { stack.pop() },
                 modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(DS.Space.lg),
                 contentDescription = L("Back"),
@@ -257,7 +257,7 @@ fun ChatView(
                 verticalArrangement = Arrangement.spacedBy(DS.Space.md),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                DrafftIcon("bubble.left", size = 48.dp, tint = DS.palette.mute)
+                DrafftIcon("chat-round", size = 48.dp, tint = DS.palette.mute)
                 Text(L("Chat not found"), style = TextStyles.title2.bold, color = DS.palette.ink)
             }
         }
@@ -724,7 +724,7 @@ private fun JumpToLatestButton(unseen: Int, action: () -> Unit) {
             .semantics { contentDescription = label },
     ) {
         Box(Modifier.fillMaxSize().glass(CircleShape), contentAlignment = Alignment.Center) {
-            DrafftIcon("chevron.down", size = 20.dp, tint = DS.palette.ink)
+            DrafftIcon("alt-arrow-down", size = 20.dp, tint = DS.palette.ink)
         }
         AnimatedVisibility(
             visible = unseen > 0,
@@ -771,7 +771,7 @@ private fun ChatNavigationBar(
             .defaultMinSize(minHeight = 52.dp)
             .padding(horizontal = DS.Space.lg, vertical = DS.Space.xs),
         content = {
-            GlassCircleButton("chevron.left", onBack, contentDescription = L("Back"))
+            GlassCircleButton("alt-arrow-left", onBack, contentDescription = L("Back"))
             // No capsule behind: the bar's own blur is the only backdrop, so the text uses the page's inks.
             Row(
                 Modifier
@@ -800,26 +800,26 @@ private fun ChatNavigationBar(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-                GlassCircleButton("calendar.badge.plus", onPropose, contentDescription = L("Propose a session"))
+                GlassCircleButton("calendar-add", onPropose, contentDescription = L("Propose a session"))
                 Box {
                     // Neutral icons: the menu doesn't take the accent tint.
-                    GlassCircleButton("ellipsis", { menu = true }, contentDescription = L("More"))
+                    GlassCircleButton("menu-dots", { menu = true }, contentDescription = L("More"))
                     // Profile and sessions are one tap away in the bar: this is about the chat, then
                     // safety, apart.
                     ChatMenu(expanded = menu, onDismiss = { menu = false }) {
                         ChatMenuItem(
                             if (convo.muted) L("Unmute notifications") else L("Mute notifications"),
-                            if (convo.muted) "bell" else "bell.slash",
+                            if (convo.muted) "bell" else "bell-off",
                         ) {
                             menu = false
                             app.toggleMute(convo.id)
                         }
-                        ChatMenuItem(L("Mark as unread"), "envelope.badge") {
+                        ChatMenuItem(L("Mark as unread"), "letter-unread") {
                             menu = false
                             onMarkUnread()
                         }
                         Box(Modifier.fillMaxWidth().padding(vertical = DS.Space.xs).height(6.dp).background(DS.palette.ink.copy(alpha = 0.05f)))
-                        ChatMenuItem(L("Report or block"), "shield.lefthalf.filled", destructive = true) {
+                        ChatMenuItem(L("Report or block"), "shield-warning", destructive = true) {
                             menu = false
                             onSafety()
                         }
@@ -1037,7 +1037,7 @@ private fun MessageRowContent(
                 .clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("arrowshape.turn.up.left.fill", size = 20.dp, tint = if (armed) p.onLime else p.ink)
+            DrafftIcon("reply", size = 20.dp, tint = if (armed) p.onLime else p.ink)
         }
         Column(
             Modifier
@@ -1100,7 +1100,7 @@ private fun MessageRowContent(
                             .semantics { contentDescription = notSent },
                         contentAlignment = Alignment.Center,
                     ) {
-                        DrafftIcon("exclamationmark.circle.fill", size = 24.dp, tint = p.negative)
+                        DrafftIcon("danger-circle", size = 24.dp, tint = p.negative)
                     }
                 }
             }
@@ -1350,7 +1350,7 @@ private fun Bubble(
                             .size(56.dp)
                             .background(p.accentOnNight, CircleShape),
                         contentAlignment = Alignment.Center,
-                    ) { DrafftIcon("play.fill", size = 26.dp, tint = p.onAccentOnNight) }
+                    ) { DrafftIcon("play", size = 26.dp, tint = p.onAccentOnNight) }
                     Row(
                         Modifier
                             .align(Alignment.BottomStart)
@@ -1360,7 +1360,7 @@ private fun Bubble(
                         horizontalArrangement = Arrangement.spacedBy(DS.Space.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        DrafftIcon("video.fill", size = 14.dp, tint = Color.White)
+                        DrafftIcon("videocamera", size = 14.dp, tint = Color.White)
                         Text(content.duration.clock, style = TextStyles.caption.bold.monospacedDigits, color = Color.White)
                     }
                 }
@@ -1402,7 +1402,7 @@ private fun Bubble(
                     contentAlignment = Alignment.Center,
                 ) {
                     DrafftIcon(
-                        if (content.name.lowercase().endsWith(".pdf")) "doc.richtext.fill" else "doc.fill",
+                        if (content.name.lowercase().endsWith(".pdf")) "file-text" else "file",
                         size = 26.dp,
                         tint = if (mine) p.ink else p.onLime,
                     )

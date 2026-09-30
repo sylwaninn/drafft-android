@@ -109,7 +109,7 @@ fun AuthScaffold(
                     .padding(horizontal = DS.Space.lg, vertical = DS.Space.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                GlassCircleButton("chevron.left", onClick = { nav.pop() }, contentDescription = L("Back"))
+                GlassCircleButton("alt-arrow-left", onClick = { nav.pop() }, contentDescription = L("Back"))
             }
         },
         navigationEdge = true,

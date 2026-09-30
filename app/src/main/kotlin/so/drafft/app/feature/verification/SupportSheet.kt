@@ -176,7 +176,7 @@ fun SupportSheet(
     AccountSheet(
         title = L("Get help"),
         actionTitle = if (reference != null) L("Done") else L("Send to support"),
-        actionIcon = if (reference != null) "checkmark" else "paperplane.fill",
+        actionIcon = if (reference != null) "check" else "plain",
         enabled = reference != null || (hasMessage && hasEmail && session != Session.UNKNOWN && captchaReady),
         loading = sending,
         error = error,
@@ -248,7 +248,7 @@ private fun SentCard(replyTo: String, reference: String) {
                     .background(DS.palette.accentOnNight, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                DrafftIcon("checkmark", size = 24.dp, tint = DS.palette.onAccentOnNight)
+                DrafftIcon("check", size = 24.dp, tint = DS.palette.onAccentOnNight)
             }
             Text(L("Message sent."), style = display(28f), color = Color.White)
             Text(
@@ -353,7 +353,7 @@ fun GetHelpButton(topic: String, modifier: Modifier = Modifier) {
         },
         modifier = modifier,
     ) {
-        DrafftIcon("questionmark.circle.fill", size = 18.dp, tint = DS.palette.accentInk)
+        DrafftIcon("question-circle", size = 18.dp, tint = DS.palette.accentInk)
         Text(L("Get help"), style = TextStyles.subheadline.semibold, color = DS.palette.accentInk)
     }
     DrafftSheet(visible = show, onDismissRequest = { show = false }) {

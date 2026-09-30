@@ -753,7 +753,7 @@ private fun TopBar(onFilters: () -> Unit, onWallet: () -> Unit, onLikes: () -> U
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DrafftIcon("slider.horizontal.3", size = (17f * 1.2f).dp, tint = p.ink)
+                DrafftIcon("tuning-2", size = (17f * 1.2f).dp, tint = p.ink)
                 val last = remember { IntArray(1) }
                 if (count > 0) last[0] = count
                 AnimatedVisibility(
@@ -839,7 +839,7 @@ private fun Actions(
             enabled = canUndo,
             contentDescription = L("Undo last swipe"),
         ) {
-            DrafftIcon("arrow.uturn.backward", size = (20f * 1.2f).dp, tint = p.ink)
+            DrafftIcon("undo-left", size = (20f * 1.2f).dp, tint = p.ink)
         }
 
         // While dragging, the button on that side grows; the other one shrinks back a little.
@@ -857,7 +857,7 @@ private fun Actions(
                 contentAlignment = Alignment.Center,
             ) {
                 DrafftIcon(
-                    "xmark",
+                    "close",
                     Modifier.graphicsLayer { scaleX = passBounce.value; scaleY = passBounce.value },
                     size = (28f * 1.2f).dp,
                     tint = p.ink,
@@ -879,7 +879,7 @@ private fun Actions(
                 contentAlignment = Alignment.Center,
             ) {
                 DrafftIcon(
-                    "heart.fill",
+                    "heart",
                     Modifier.graphicsLayer { scaleX = likeBounce.value; scaleY = likeBounce.value },
                     size = (30f * 1.2f).dp,
                     tint = p.onLike,
@@ -937,7 +937,7 @@ fun HeartBurst(trigger: Int, modifier: Modifier = Modifier) {
             val angle = (i / 7.0 * 360 - 90) * PI / 180
             val size = (10 + (i % 3) * 3).toFloat()
             DrafftIcon(
-                "heart.fill",
+                "heart",
                 Modifier.graphicsLayer {
                     val f = fired.value
                     translationX = (cos(angle) * 64 * f).toFloat().dp.toPx()

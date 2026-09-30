@@ -176,7 +176,7 @@ fun AccountSheet(
     DrafftConfirm(
         visible = confirmDiscard,
         onDismissRequest = { confirmDiscard = false },
-        icon = "trash",
+        icon = "trash-bin-minimalistic",
         title = L("Discard your changes?"),
         message = L("What you typed here will be lost."),
         cancelTitle = L("Keep editing"),
@@ -359,8 +359,8 @@ fun ChangeEmailSheet(modifier: Modifier = Modifier) {
         title = L("Email"),
         actionTitle = actionTitle,
         actionIcon = when (flow.stage) {
-            EmailCodeModel.Stage.FORM -> "paperplane.fill"
-            EmailCodeModel.Stage.DONE -> "checkmark"
+            EmailCodeModel.Stage.FORM -> "plain"
+            EmailCodeModel.Stage.DONE -> "check"
             else -> null
         },
         enabled = enabled,
@@ -496,9 +496,9 @@ fun ChangePasswordSheet(modifier: Modifier = Modifier) {
         title = L("Password"),
         actionTitle = actionTitle,
         actionIcon = when (flow.stage) {
-            EmailCodeModel.Stage.FORM -> "paperplane.fill"
-            EmailCodeModel.Stage.CODE -> "lock.fill"
-            EmailCodeModel.Stage.DONE -> "checkmark"
+            EmailCodeModel.Stage.FORM -> "plain"
+            EmailCodeModel.Stage.CODE -> "lock-keyhole-minimalistic"
+            EmailCodeModel.Stage.DONE -> "check"
             else -> null
         },
         enabled = enabled,
@@ -608,11 +608,11 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
 
     data class Item(val icon: String, val title: String, val detail: String)
     val included = listOf(
-        Item("person.fill", L("Profile"), L("Name, bio, sports, prompts, lifestyle")),
-        Item("photo.on.rectangle", L("Photos & voice"), L("Everything you've uploaded")),
-        Item("bubble.left.and.bubble.right.fill", L("Messages"), L("Your conversations with matches")),
+        Item("user-rounded", L("Profile"), L("Name, bio, sports, prompts, lifestyle")),
+        Item("gallery-wide", L("Photos & voice"), L("Everything you've uploaded")),
+        Item("dialog-2", L("Messages"), L("Your conversations with matches")),
         Item("calendar", L("Sessions"), L("Invites you sent and received")),
-        Item("heart.fill", L("Likes & matches"), L("Who you liked and matched with")),
+        Item("heart", L("Likes & matches"), L("Who you liked and matched with")),
     )
 
     val requested: Instant? = app.dataExportRequestedAt
@@ -620,7 +620,7 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
     AccountSheet(
         title = L("Export my data"),
         actionTitle = if (requested == null) L("Email me my export") else L("Export requested"),
-        actionIcon = if (requested == null) "envelope.fill" else "checkmark",
+        actionIcon = if (requested == null) "letter" else "check",
         enabled = requested == null && !sending,
         loading = sending,
         error = exportError,
@@ -650,7 +650,7 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
         ) { at ->
             if (at != null) {
                 SheetBlock {
-                    IconLabel(L("Check your inbox"), "envelope.open.fill", style = TextStyles.headline, color = p.ink)
+                    IconLabel(L("Check your inbox"), "letter-opened", style = TextStyles.headline, color = p.ink)
                     Text(
                         L(
                             "We're preparing your export. A download link goes to %s, usually within 24 hours of %s. The link works for 7 days.",
@@ -714,7 +714,7 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
     AccountSheet(
         title = L("Delete account"),
         actionTitle = L("Delete my account"),
-        actionIcon = "trash.fill",
+        actionIcon = "trash-bin-minimalistic",
         destructive = true,
         enabled = understood,
         loading = loading,
@@ -760,7 +760,7 @@ fun DeleteAccountSheet(modifier: Modifier = Modifier) {
                 kind = DrafftButtonKind.SECONDARY,
                 enabled = !app.profilePaused,
             ) {
-                DrafftIcon("pause.fill", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                DrafftIcon("pause", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
                 Text(if (app.profilePaused) L("Your profile is paused") else L("Pause my profile instead"), maxLines = 2)
             }
         }

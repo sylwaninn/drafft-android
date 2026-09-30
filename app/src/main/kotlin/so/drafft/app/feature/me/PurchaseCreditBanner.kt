@@ -160,7 +160,7 @@ private fun Badge(state: PurchaseCredit.Banner) {
         contentAlignment = Alignment.Center,
     ) {
         if (state == PurchaseCredit.Banner.CREDITED) {
-            DrafftIcon("checkmark", size = 24.dp, tint = p.onAccentOnNight)
+            DrafftIcon("check", size = 24.dp, tint = p.onAccentOnNight)
         } else {
             CircularProgressIndicator(Modifier.size(20.dp), color = p.onAccentOnNight, strokeWidth = 2.dp, trackColor = Color.Transparent)
         }

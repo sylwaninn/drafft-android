@@ -147,7 +147,7 @@ fun VoiceBlock(profile: Profile, modifier: Modifier = Modifier) {
                     contentDescription = if (playing) L("Pause voice intro") else L("Play %s's voice intro", profile.name),
                 ) {
                     Crossfade(playing, label = "voiceIntroPlay") { on ->
-                        DrafftIcon(if (on) "pause.fill" else "play.fill", size = symbol(24f), tint = p.onAccentOnNight)
+                        DrafftIcon(if (on) "pause" else "play", size = symbol(24f), tint = p.onAccentOnNight)
                     }
                 }
 
@@ -316,7 +316,7 @@ fun GoalBlock(goal: String, modifier: Modifier = Modifier) {
             .padding(DS.Space.xl),
         verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
     ) {
-        DraftGlyph("flag.checkered", size = 40.dp, fill = p.onLimeWash, glyph = p.onLime)
+        DraftGlyph("flag-2", size = 40.dp, fill = p.onLimeWash, glyph = p.onLime)
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
             Text(L("Training for"), style = TextStyles.subheadline.bold, color = p.onLime)
             Text(goal, style = display(32f), color = p.onLime)
@@ -365,13 +365,13 @@ private fun vitalsItems(profile: Profile, showDistance: Boolean, showsPlace: Boo
         out += VitalsItem(null, profile.neighborhood + if (showDistance) ", ${LocationPrivacy.rounded(profile.distanceKm)}" else "")
     }
     val v = profile.vitals
-    if (v != null && v.chronotype.isNotEmpty()) out += VitalsItem("sunrise.fill", Vitals.label(v.chronotype))
+    if (v != null && v.chronotype.isNotEmpty()) out += VitalsItem("sunrise", Vitals.label(v.chronotype))
     val pronouns = profile.pronouns
-    if (!pronouns.isNullOrEmpty()) out += VitalsItem("person.fill", pronouns)
+    if (!pronouns.isNullOrEmpty()) out += VitalsItem("user-rounded", pronouns)
     if (v != null) {
-        if (v.diet.isNotEmpty()) out += VitalsItem("fork.knife", Vitals.label(v.diet))
-        if (v.drinks.isNotEmpty()) out += VitalsItem("wineglass.fill", Vitals.label(v.drinks))
-        if (v.smokes.isNotEmpty()) out += VitalsItem("nosign", if (v.smokes == "Never") L("Doesn't smoke") else Vitals.label(v.smokes))
+        if (v.diet.isNotEmpty()) out += VitalsItem("chef-hat", Vitals.label(v.diet))
+        if (v.drinks.isNotEmpty()) out += VitalsItem("wineglass", Vitals.label(v.drinks))
+        if (v.smokes.isNotEmpty()) out += VitalsItem("forbidden-circle", if (v.smokes == "Never") L("Doesn't smoke") else Vitals.label(v.smokes))
     }
     return out
 }
@@ -424,7 +424,7 @@ fun LikeHeartButton(
             .background(p.like, CircleShape),
         contentDescription = label,
     ) {
-        DrafftIcon("heart.fill", size = symbol(size.value * 0.38f), tint = p.onLike)
+        DrafftIcon("heart", size = symbol(size.value * 0.38f), tint = p.onLike)
     }
 }
 
@@ -463,7 +463,7 @@ fun LikablePhoto(
     ) {
         Photo(name, Modifier.fillMaxSize())
         DrafftIcon(
-            "heart.fill",
+            "heart",
             Modifier
                 .align(Alignment.Center)
                 .graphicsLayer {

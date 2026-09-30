@@ -119,7 +119,7 @@ fun SelfieCaptureView(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
                                 .background(Color.White.copy(alpha = 0.14f), CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
-                            DrafftIcon("xmark", size = 20.dp, tint = Color.White)
+                            DrafftIcon("close", size = 20.dp, tint = Color.White)
                         }
                     }
                 }
@@ -202,7 +202,7 @@ private fun Hint(model: SelfieCaptureModel) {
                 .clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
-            Crossfade(if (model.isCaptured) "sun.max.fill" else "faceid", animationSpec = Motion.snappy(), label = "hintIcon") { symbol ->
+            Crossfade(if (model.isCaptured) "sun" else "face-scan-square", animationSpec = Motion.snappy(), label = "hintIcon") { symbol ->
                 DrafftIcon(symbol, size = 18.dp, tint = Color.White)
             }
         }
@@ -242,7 +242,7 @@ private fun Actions(
                     if (model.isSending) {
                         CircularProgressIndicator(Modifier.size(22.dp), color = DS.palette.onAccentOnNight, strokeWidth = 2.5.dp)
                     } else {
-                        Label("paperplane.fill", L("Send my selfie"))
+                        Label("plain", L("Send my selfie"))
                     }
                 }
                 TextLinkButton(
@@ -255,13 +255,13 @@ private fun Actions(
                 )
             }
             SelfieCaptureModel.Stage.Denied -> DrafftButton(onClick = onOpenSettings) {
-                Label("gearshape.fill", L("Open Settings"))
+                Label("settings", L("Open Settings"))
             }
             else -> DrafftButton(
                 onClick = onShoot,
                 enabled = model.stage == SelfieCaptureModel.Stage.Live && model.framing == SelfieFraming.READY && !model.shooting,
             ) {
-                Label("camera.fill", L("Take the selfie"))
+                Label("camera", L("Take the selfie"))
             }
         }
     }
