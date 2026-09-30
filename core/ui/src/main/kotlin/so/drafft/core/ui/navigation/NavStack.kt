@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.delay
 import so.drafft.core.ui.theme.Motion
@@ -94,6 +95,12 @@ class NavStack(root: Any) {
 /** The stack the current screen lives in: `LocalNavStack.current.push(...)`. */
 val LocalNavStack = staticCompositionLocalOf<NavStack> { error("No NavStack here") }
 
+/**
+ * False where system back must not reach the stacks below: a tab that isn't the current one (every
+ * tab stays composed, so a chat left open in Chats would otherwise swallow back on Discover).
+ */
+val LocalNavBackEnabled = compositionLocalOf { true }
+
 @Composable
 fun rememberNavStack(root: Any): NavStack = remember { NavStack(root) }
 
@@ -110,7 +117,7 @@ fun NavStackHost(
     content: @Composable (route: Any) -> Unit,
 ) {
     val saveable = rememberSaveableStateHolder()
-    BackHandler(enabled = backEnabled && stack.canPop) { stack.pop() }
+    BackHandler(enabled = backEnabled && LocalNavBackEnabled.current && stack.canPop) { stack.pop() }
     // Popped screens forget their saved state once their exit has played.
     LaunchedEffect(stack.topEntry.key) {
         delay(PUSH_MILLIS.toLong() + 50)

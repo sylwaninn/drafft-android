@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,8 @@ import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.ui.components.LocalTabBarVisibility
 import so.drafft.core.ui.components.TabBarVisibility
+import so.drafft.core.ui.components.LocalTabIsCurrent
+import so.drafft.core.ui.navigation.LocalNavBackEnabled
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -110,15 +113,20 @@ private val TabBarMargin = 12.dp
  * screen or show a banner then.
  */
 @Composable
-fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifier) {
+fun MainTabs(
+    isActive: Boolean,
+    isVisible: Boolean,
+    /** Nobody can see the tabs (under the splash, the welcome screen or sign-up): they may be built ahead. */
+    mayPrebuild: Boolean = !isVisible,
+    /** Called once the walk is over (done, or stopped because the tabs showed). */
+    onBuilt: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     val app = LocalAppModel.current
     val notifications = koinInject<NotificationService>()
     val store = koinInject<Store>()
     val location = koinInject<LocationGate>()
-    val moderation = koinInject<PhotoModeration>()
-    val credit = koinInject<PurchaseCredit>()
-    val sessionFailure = koinInject<SessionFailureNotice>()
-    val sessionCalendar = koinInject<SessionCalendar>()
+    val foreground = koinInject<so.drafft.core.data.platform.ForegroundReturns>()
     val saveable = rememberSaveableStateHolder()
     // Tabs opened at least once stay composed; the others are built on their first visit (or ahead of
     // it, one after another, while the tabs are still hidden).
@@ -140,7 +148,11 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                         .alpha(if (current) 1f else 0f)
                         .then(if (current) Modifier else Modifier.clearAndSetSemantics { }),
                 ) {
-                    CompositionLocalProvider(LocalTabBarVisibility provides visibilities.getValue(item.tab)) {
+                    CompositionLocalProvider(
+                        LocalTabBarVisibility provides visibilities.getValue(item.tab),
+                        LocalNavBackEnabled provides (current && isVisible),
+                        LocalTabIsCurrent provides (current && isVisible),
+                    ) {
                     saveable.SaveableStateProvider(item.tab.name) {
                         when (item.tab) {
                             AppModel.Tab.DISCOVER -> PausedLock { DiscoverView() }
@@ -172,19 +184,16 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
             )
         }
 
-        // Banners that must sit above everything, sheets included.
+        // The match moments' banners, over the tabs (while they're active). The app-wide ones
+        // (photo refused, purchase credit, calendar, session failure) are the root's: `WindowBanners`.
         val banner: Any? = when {
             !isActive -> null
             app.banner != null -> app.banner
             app.notice != null -> app.notice
             app.boostBanner != null -> BoostToken(app.boostBanner!!)
-            moderation.refusalBanner != null -> moderation.refusalBanner
-            credit.banner != null -> CreditToken(credit.banner!!)
-            CalendarAccessNotice.isShown -> CalendarAccessNotice
-            sessionFailure.message != null -> SessionFailureToken(sessionFailure.message!!)
             else -> null
         }
-        TopOverlayWindow(banner = banner, modifier = Modifier.statusBarsPadding().padding(top = DS.Space.xs)) { shown ->
+        TopOverlayWindow(banner = banner) { shown ->
             when (shown) {
                 is AppModel.MatchBanner -> MatchBannerView(
                     banner = shown,
@@ -193,33 +202,16 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                 )
                 is AppModel.Notice -> NoticeBannerView(notice = shown, onDismiss = { app.notice = null })
                 is BoostToken -> BoostBannerView(id = shown.id, onDismiss = { app.boostBanner = null })
-                is PhotoModeration.Refusal -> PhotoRefusalBanner(
-                    refusal = shown,
-                    onOpen = { moderation.refusalBanner = null; PhotoRefusalPresenter.show(shown) },
-                    onDismiss = { moderation.refusalBanner = null },
-                )
-                is CreditToken -> PurchaseCreditBanner(
-                    state = shown.state,
-                    pending = credit.oldest,
-                    onContact = credit::contactSupport,
-                    onDismiss = credit::dismissBanner,
-                )
-                is CalendarAccessNotice -> CalendarAccessBanner(
-                    onOpenSettings = {
-                        CalendarAccessNotice.dismiss()
-                        sessionCalendar.writer.openSettings()
-                    },
-                    onDismiss = CalendarAccessNotice::dismiss,
-                )
-                is SessionFailureToken -> SessionFailureBanner(message = shown.message, onDismiss = sessionFailure::dismiss)
             }
         }
 
-        PhotoRefusalPresenter.Host()
-        PurchaseHelpPresenter.Host()
-
         // Location is required: if it's turned off, block until it's back on.
-        FullScreenCover(visible = isActive && location.isBlocked, onDismissRequest = {}) { LocationRequiredView() }
+        // The permission is a flow, not Compose state: followed here so the cover comes and goes with it.
+        val locationAuthorization by location.authorization.collectAsState()
+        FullScreenCover(
+            visible = isActive && locationAuthorization == so.drafft.core.data.platform.LocationProvider.Authorization.DENIED,
+            onDismissRequest = {},
+        ) { LocationRequiredView() }
 
         val match = app.matchScreen
         FullScreenCover(visible = match != null, onDismissRequest = { app.matchScreen = null }) {
@@ -236,15 +228,27 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
 
     // Builds the tabs not visited yet while nobody sees them, one per frame-ish step, so the first
     // tap on each lands on a screen that already exists.
-    LaunchedEffect(isVisible) {
-        if (isVisible) return@LaunchedEffect
-        for (item in tabs) {
+    LaunchedEffect(mayPrebuild) {
+        try {
+            if (!mayPrebuild) return@LaunchedEffect
+            for (item in tabs) {
+                if (item.tab in built) continue
+                kotlinx.coroutines.delay(250)
+                built = built + item.tab
+            }
+            // The last one gets its turn to build too.
             kotlinx.coroutines.delay(250)
-            built = built + item.tab
+        } finally {
+            onBuilt()
         }
     }
     LaunchedEffect(app.tab) { built = built + app.tab }
 
+    // Location is required: read again each time the app comes back (from Settings, say).
+    LaunchedEffect(isActive) {
+        if (!isActive) return@LaunchedEffect
+        foreground.returns.collect { location.refresh() }
+    }
     // drafft tempo's details (plan, renewal) follow the store, for the signed-in account only.
     LaunchedEffect(Unit) {
         store.load()
@@ -269,6 +273,51 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
     LaunchedEffect(notifications.openSessions) {
         if (notifications.openSessions) { app.tab = AppModel.Tab.SESSIONS; notifications.openSessions = false }
     }
+}
+
+/**
+ * What the iPhone shows in its own window above the app (TopOverlayWindow.swift), in every phase:
+ * sign-up included (a photo refused on the photos step), and over a moderation hold. Placed once, at
+ * the root, with the explanation sheets those banners open.
+ */
+@Composable
+fun WindowBanners() {
+    val moderation = koinInject<PhotoModeration>()
+    val credit = koinInject<PurchaseCredit>()
+    val sessionFailure = koinInject<SessionFailureNotice>()
+    val sessionCalendar = koinInject<SessionCalendar>()
+    val banner: Any? = when {
+        moderation.refusalBanner != null -> moderation.refusalBanner
+        credit.banner != null -> CreditToken(credit.banner!!)
+        CalendarAccessNotice.isShown -> CalendarAccessNotice
+        sessionFailure.message != null -> SessionFailureToken(sessionFailure.message!!)
+        else -> null
+    }
+    TopOverlayWindow(banner = banner) { shown ->
+        when (shown) {
+            is PhotoModeration.Refusal -> PhotoRefusalBanner(
+                refusal = shown,
+                onOpen = { moderation.refusalBanner = null; PhotoRefusalPresenter.show(shown) },
+                onDismiss = { moderation.refusalBanner = null },
+            )
+            is CreditToken -> PurchaseCreditBanner(
+                state = shown.state,
+                pending = credit.oldest,
+                onContact = credit::contactSupport,
+                onDismiss = credit::dismissBanner,
+            )
+            is CalendarAccessNotice -> CalendarAccessBanner(
+                onOpenSettings = {
+                    CalendarAccessNotice.dismiss()
+                    sessionCalendar.writer.openSettings()
+                },
+                onDismiss = CalendarAccessNotice::dismiss,
+            )
+            is SessionFailureToken -> SessionFailureBanner(message = shown.message, onDismiss = sessionFailure::dismiss)
+        }
+    }
+    PhotoRefusalPresenter.Host()
+    PurchaseHelpPresenter.Host()
 }
 
 /** The purchase credit banner, as a distinct banner value. */

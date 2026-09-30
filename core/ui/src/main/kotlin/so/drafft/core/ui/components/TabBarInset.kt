@@ -28,6 +28,12 @@ class TabBarVisibility {
 val LocalTabBarVisibility = compositionLocalOf<TabBarVisibility?> { null }
 
 /**
+ * False inside a tab that isn't the one on screen. Every tab stays composed, so what SwiftUI does in
+ * `onAppear`/`onDisappear` on a tab switch (a chat counting as open, say) follows this instead.
+ */
+val LocalTabIsCurrent = compositionLocalOf { true }
+
+/**
  * Hides the tab bar while the calling screen is shown (iOS `.toolbarVisibility(.hidden, for: .tabBar)`):
  * a chat pushed from Sessions or Chats.
  */

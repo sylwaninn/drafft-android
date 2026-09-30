@@ -1,5 +1,6 @@
 package so.drafft.app.feature.discover
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -149,6 +150,9 @@ fun SuperLikeComposer(
         Haptics.tap()
         close(onCancel)
     }
+
+    // System back is Cancel (over a profile sheet, it would otherwise close the whole sheet).
+    BackHandler { cancel() }
 
     val statusTop = WindowInsets.statusBars.getTop(density)
     Box(modifier.fillMaxSize()) {

@@ -74,6 +74,7 @@ import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
 import so.drafft.core.ui.components.DrafftSheet
+import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.NightBlock
@@ -131,7 +132,7 @@ fun MeView(modifier: Modifier = Modifier) {
                 .verticalScroll(scroll)
                 .padding(bars)
                 .padding(top = DS.Space.xs)
-                .padding(start = DS.Space.lg, end = DS.Space.lg, bottom = DS.Space.xxl),
+                .padding(start = DS.Space.lg, end = DS.Space.lg, bottom = DS.Space.xxl + LocalTabBarInset.current),
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

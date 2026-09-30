@@ -1,5 +1,6 @@
 package so.drafft.app.feature.me
 
+import androidx.activity.compose.BackHandler
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -276,6 +277,8 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
 
     val close = { if (state.hasChanges) state.confirmDiscard = true else dismiss() }
     InteractiveDismissDisabled(state.hasChanges || state.saving)
+    // With changes, system back on the list is Close: it asks before discarding (a sub-page pops first).
+    BackHandler(enabled = state.hasChanges && !state.saving && !stack.canPop) { close() }
 
     // Saves the whole draft. From a sub-page it returns to the list; from the list it closes the editor.
     val save: () -> Unit = save@{

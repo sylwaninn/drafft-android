@@ -69,6 +69,7 @@ import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftSheet
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.Photo
@@ -153,6 +154,8 @@ fun ProfileDetailView(
     }
 
     DisposableEffect(Unit) { onDispose { audio.stop() } }
+    // A composer open over the profile: the sheet stays put, and system back reaches the composer's Cancel.
+    InteractiveDismissDisabled(pendingLike != null || superLiking)
 
     // Behind a composer the profile blurs, standing in for the iPhone's material veil.
     val veil by animateDpAsState(if (pendingLike != null || superLiking) 18.dp else 0.dp, tween(180, easing = Motion.EaseOut), label = "veil")

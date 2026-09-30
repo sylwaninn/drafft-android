@@ -1,5 +1,6 @@
 package so.drafft.app.feature.auth
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -51,6 +52,8 @@ fun OnboardingHeader(
 ) {
     val p = DS.palette
     val skipAlpha by animateFloatAsState(if (skippable) 1f else 0f, Motion.gentle(), label = "skip")
+    // System back is the chevron: the previous step, or the leave confirmation on the first one.
+    BackHandler(enabled = !confirmLeave) { if (step > 0) back() else onConfirmLeaveChange(true) }
     Row(
         modifier
             .fillMaxWidth()
