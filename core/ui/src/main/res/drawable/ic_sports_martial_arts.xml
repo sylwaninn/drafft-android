@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- sports-martial-arts: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10.48,22.27 L10.154,12.846 L6.017,10.425 L5.437,12.552 L7.135,15.481 L6.255,15.981 L4.339,12.673 L5.423,8.777 L11.269,5.439 L8.75,2.766 L9.439,2.077 L12.884,5.633 L9.169,7.823 L11.715,9.584 L19.742,2.692 L20.327,3.381 L12.019,11.788 L11.519,22.269 Z M5,6.691 Q4.31,6.691 3.809,6.191 Q3.308,5.69 3.308,5 Q3.308,4.31 3.808,3.809 Q4.31,3.308 5,3.308 Q5.69,3.308 6.191,3.808 Q6.692,4.308 6.692,5 Q6.692,5.692 6.192,6.191 Q5.69,6.692 5,6.692 Z" />
+</vector>

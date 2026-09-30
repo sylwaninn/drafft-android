@@ -104,7 +104,7 @@ private fun FormatSwitcher(icebreaker: Icebreaker, onChange: (Icebreaker) -> Uni
                 DrafftIcon(kind.symbol, size = symbol(17f), tint = p.ink)
             }
             Text(kind.title, Modifier.weight(1f), style = TextStyles.body.semibold, color = p.ink)
-            DrafftIcon("chevron.up.chevron.down", size = symbol(13f), tint = p.body)
+            DrafftIcon("chevrons-up-down", size = symbol(13f), tint = p.body)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = p.field) {
             Icebreaker.Kind.entries.forEach { k ->
@@ -116,7 +116,7 @@ private fun FormatSwitcher(icebreaker: Icebreaker, onChange: (Icebreaker) -> Uni
                         }
                     },
                     leadingIcon = { DrafftIcon(k.symbol, tint = p.ink) },
-                    trailingIcon = if (k == kind) ({ DrafftIcon("checkmark", tint = p.ink) }) else null,
+                    trailingIcon = if (k == kind) ({ DrafftIcon("check", tint = p.ink) }) else null,
                     onClick = {
                         open = false
                         if (k != kind) {

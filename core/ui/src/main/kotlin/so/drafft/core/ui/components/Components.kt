@@ -301,6 +301,8 @@ fun SportChip(
     onDark: Boolean = false,
     /** Unselected fill override (e.g. sage chips on a white block). */
     fill: Color? = null,
+    /** How the name ends when the chip is squeezed ([SportChipsLine]'s last resort). */
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     val p = DS.palette
     val foreground = when {
@@ -327,7 +329,7 @@ fun SportChip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DrafftIcon(sport.symbol, size = symbolBox(15f), tint = fg)
-        Text(name, style = TextStyles.subheadline.semibold, color = fg, maxLines = 1, softWrap = false)
+        Text(name, style = TextStyles.subheadline.semibold, color = fg, maxLines = 1, softWrap = false, overflow = overflow)
     }
 }
 
@@ -421,7 +423,7 @@ fun DrafftField(
                     scale = 1f,
                     contentDescription = if (revealed) L("Hide password") else L("Show password"),
                 ) {
-                    DrafftIcon(if (revealed) "eye.slash" else "eye", tint = p.body)
+                    DrafftIcon(if (revealed) "eye-closed" else "eye", tint = p.body)
                 }
             }
         }
@@ -441,7 +443,7 @@ private fun FieldError(error: String?) {
         exit = fadeOut(Motion.snappy()) + slideOutVertically(Motion.snappy()) { -it / 2 },
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-            DrafftIcon("exclamationmark.circle.fill", size = symbolBox(13f), tint = DS.palette.negative)
+            DrafftIcon("danger-circle", size = symbolBox(13f), tint = DS.palette.negative)
             Text(last[0].orEmpty(), style = TextStyles.footnote.medium, color = DS.palette.negative)
         }
     }
@@ -635,62 +637,6 @@ fun SportsLine(
     }
 }
 
-// MARK: - Sport badges
-
-/**
- * Sports as a stack of round badges, like overlapping avatars: each sport's symbol on a solid
- * disc, ringed in the surface colour so neighbours stay distinct. Beyond [limit], the last disc
- * says "+X". Names are read by TalkBack.
- */
-@Composable
-fun SportBadgeStack(
-    sports: List<Sport>,
-    modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
-    limit: Int = 4,
-    /** The block the stack sits on: the ring that separates the discs. */
-    surface: Color = DS.palette.night,
-    /** Solid (never translucent, or overlaps would show): the card's white-14 % wash, flattened. */
-    fill: Color = if (LocalDarkTheme.current) Color(0xFF41443D) else Color(0xFF303230),
-    glyph: Color = Color.White,
-) {
-    val overflow = sports.size > limit
-    val shown = if (overflow) sports.take(limit - 1) else sports
-    val all = sports.joinToString(", ") { it.displayName }
-    val discModifier = Modifier
-        .size(size)
-        .background(fill, CircleShape)
-        .border(3.dp, surface, CircleShape)
-    Layout(
-        content = {
-            shown.forEach { sport ->
-                Box(discModifier, contentAlignment = Alignment.Center) {
-                    // Fitted in a box inside the ring, so wide symbols (bike, sailboat) keep a margin.
-                    DrafftIcon(sport.symbol, size = size * 0.5f, tint = glyph)
-                }
-            }
-            if (overflow) {
-                Box(discModifier, contentAlignment = Alignment.Center) {
-                    Text(
-                        "+${sports.size - shown.size}",
-                        style = TextStyle(fontSize = (size * 0.36f).fixedSp()).heavy.monospacedDigits,
-                        color = glyph,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                }
-            }
-        },
-        modifier = modifier.clearAndSetSemantics { contentDescription = all },
-    ) { measurables, _ ->
-        val placeables = measurables.map { it.measure(Constraints()) }
-        val step = (size * (1 - 0.18f)).roundToPx()
-        val width = if (placeables.isEmpty()) 0 else step * (placeables.size - 1) + placeables.last().width
-        val height = placeables.maxOfOrNull { it.height } ?: 0
-        layout(width, height) { placeables.forEachIndexed { i, pl -> pl.place(i * step, 0) } }
-    }
-}
-
 // MARK: - Checkbox
 
 /** A checkbox is the one selection mark too: a large [CheckDisc] in a 44 pt target. */
@@ -731,7 +677,7 @@ fun CheckDisc(
                 .background(if (onLimeFill) onAccent else accent, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("checkmark", size = size * 0.46f * 1.2f, tint = if (onLimeFill) accent else onAccent)
+            DrafftIcon("check", size = size * 0.46f * 1.2f, tint = if (onLimeFill) accent else onAccent)
         }
     }
 }

@@ -302,7 +302,7 @@ fun SheetNavBar(
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
-        GlassCircleButton("xmark", onClose, Modifier.align(Alignment.CenterEnd), contentDescription = L("Close"))
+        GlassCircleButton("close", onClose, Modifier.align(Alignment.CenterEnd), contentDescription = L("Close"))
     }
 }
 

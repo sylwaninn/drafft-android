@@ -37,7 +37,7 @@ fun PermissionButton(
         modifier = modifier,
         kind = kind,
     ) {
-        DrafftIcon(if (refused) "gearshape.fill" else symbol, size = (17f * 1.2f).dp, tint = LocalContentColor.current)
+        DrafftIcon(if (refused) "settings" else symbol, size = (17f * 1.2f).dp, tint = LocalContentColor.current)
         Text(if (refused) L("Open Settings") else askTitle, maxLines = 2, overflow = TextOverflow.Clip)
     }
 }

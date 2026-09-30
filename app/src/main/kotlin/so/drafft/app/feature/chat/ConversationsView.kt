@@ -207,13 +207,13 @@ private fun ConversationList() {
                         shape = shape,
                         leading = SwipeAction(
                             title = if (c.isUnread) L("Read") else L("Unread"),
-                            symbol = if (c.isUnread) "envelope.open" else "envelope.badge",
+                            symbol = if (c.isUnread) "letter-opened" else "letter-unread",
                             tint = DS.palette.night,
                         ) { if (c.isUnread) app.markRead(c.id) else app.markUnread(c.id) },
                         // Stays dark in dark mode too, so the white label keeps its contrast.
                         trailing = SwipeAction(
                             title = if (c.muted) L("Unmute") else L("Mute"),
-                            symbol = if (c.muted) "bell" else "bell.slash",
+                            symbol = if (c.muted) "bell" else "bell-off",
                             tint = DS.palette.nightRaised,
                         ) { app.toggleMute(c.id) },
                         onTap = { open(c.id) },
@@ -325,7 +325,7 @@ private fun NoChatsYet(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(DS.Space.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        DrafftIcon("bubble.left.and.bubble.right", size = 48.dp, tint = DS.palette.mute)
+        DrafftIcon("dialog-2", size = 48.dp, tint = DS.palette.mute)
         Text(L("No chats yet"), style = TextStyles.title2.bold, color = DS.palette.ink, textAlign = TextAlign.Center)
         Text(L("Say hi to a new match to start chatting."), style = TextStyles.subheadline, color = DS.palette.body, textAlign = TextAlign.Center)
     }
@@ -440,7 +440,7 @@ fun ConversationRow(convo: Conversation, modifier: Modifier = Modifier) {
                 Text(convo.profile.name, Modifier.weight(1f, fill = false).alignByBaseline(), style = TextStyles.headline, color = p.ink)
                 if (convo.muted) {
                     // The row's value says it.
-                    DrafftIcon("bell.slash", Modifier.alignByBaseline().clearAndSetSemantics { }, size = 15.dp, tint = p.body)
+                    DrafftIcon("bell-off", Modifier.alignByBaseline().clearAndSetSemantics { }, size = 15.dp, tint = p.body)
                 }
                 Spacer(Modifier.weight(1f))
                 convo.lastMessage?.date?.let { d ->
@@ -529,11 +529,11 @@ private fun Preview(m: Message, unread: Boolean, style: androidx.compose.ui.text
 /** The symbol before a message's preview in the list, by content. */
 val Message.previewIcon: String?
     get() = when (content) {
-        is MessageContent.Photo, is MessageContent.PhotoReply -> "photo"
-        is MessageContent.Video -> "video.fill"
-        is MessageContent.Voice -> "waveform"
-        is MessageContent.File -> "doc.fill"
-        is MessageContent.Session -> "flag.2.crossed" // the Sessions tab icon
+        is MessageContent.Photo, is MessageContent.PhotoReply -> "gallery"
+        is MessageContent.Video -> "videocamera"
+        is MessageContent.Voice -> "soundwave"
+        is MessageContent.File -> "file"
+        is MessageContent.Session -> "stopwatch-play" // the Sessions tab icon
         else -> null
     }
 

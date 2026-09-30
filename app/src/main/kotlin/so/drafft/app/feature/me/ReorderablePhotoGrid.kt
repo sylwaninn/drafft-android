@@ -267,7 +267,7 @@ fun ReorderablePhotoGrid(
     DrafftConfirm(
         visible = failure != null && failure in photos,
         onDismissRequest = { moderation.shownFailure = null },
-        icon = "exclamationmark.triangle",
+        icon = "danger-triangle",
         title = L("Upload failed"),
         message = failure?.let(moderation::reason),
         cancelTitle = L("OK"),
@@ -360,7 +360,7 @@ private fun PhotoTile(
                 contentDescription = L("Remove photo %d", index + 1),
             ) {
                 Box(Modifier.size(26.dp).background(DS.palette.canvas, CircleShape), contentAlignment = Alignment.Center) {
-                    DrafftIcon("xmark", size = 14.4.dp, tint = DS.palette.ink)
+                    DrafftIcon("close", size = 14.4.dp, tint = DS.palette.ink)
                 }
             }
         }
@@ -376,9 +376,9 @@ private fun ModerationBadge(state: PhotoModeration.State, modifier: Modifier = M
     val p = DS.palette
     val refused = state == PhotoModeration.State.Refused
     val symbol = when (state) {
-        PhotoModeration.State.Refused -> "nosign"
+        PhotoModeration.State.Refused -> "forbidden-circle"
         PhotoModeration.State.InReview -> "hourglass"
-        else -> "exclamationmark.triangle"
+        else -> "danger-triangle"
     }
     val label = when (state) {
         PhotoModeration.State.Refused -> L("Refused")

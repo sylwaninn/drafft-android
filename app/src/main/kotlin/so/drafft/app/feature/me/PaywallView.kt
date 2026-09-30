@@ -232,10 +232,10 @@ fun PaywallView(
     }
 
     val perks = listOf(
-        Perk("arrow.uturn.backward", L("Undo your last swipe"), L("Swiped too fast? Bring them back.")),
-        Perk("heart.text.square", L("See who liked you"), L("Match instantly with people already into you.")),
-        Perk("infinity", L("Unlimited likes"), L("No daily cap, like everyone you'd train with.")),
-        Perk("bolt.fill", L("Weekly boost"), L("One free boost every week: 30 minutes at the top of decks near you.")),
+        Perk("undo-left", L("Undo your last swipe"), L("Swiped too fast? Bring them back.")),
+        Perk("user-heart", L("See who liked you"), L("Match instantly with people already into you.")),
+        Perk("infinite", L("Unlimited likes"), L("No daily cap, like everyone you'd train with.")),
+        Perk("bolt", L("Weekly boost"), L("One free boost every week: 30 minutes at the top of decks near you.")),
     )
 
     // The sheet paints the same night behind the grabber and the bars: no white band around the paywall.
@@ -324,7 +324,7 @@ fun PaywallView(
                 .background(Color.White.copy(alpha = 0.14f), CircleShape),
             contentDescription = L("Not now"),
         ) {
-            DrafftIcon("xmark", size = 20.dp, tint = Color.White)
+            DrafftIcon("close", size = 20.dp, tint = Color.White)
         }
     }
 
@@ -542,7 +542,7 @@ private fun PaywallFooter(
             val last = remember { arrayOfNulls<String>(1) }
             if (notice != null) last[0] = notice
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                DrafftIcon("info.circle.fill", size = 16.dp, tint = Color.White)
+                DrafftIcon("info-circle", size = 16.dp, tint = Color.White)
                 Text(last[0].orEmpty(), style = TextStyles.footnote.semibold, color = Color.White)
             }
         }
@@ -858,10 +858,10 @@ private fun SubscriptionStatus(sub: TempoSubscription) {
 private fun Included() {
     val p = DS.palette
     val perks = listOf(
-        IncludedPerk("arrow.uturn.backward", L("Undo your last swipe")),
-        IncludedPerk("heart.text.square", L("See who liked you")),
-        IncludedPerk("infinity", L("Unlimited likes")),
-        IncludedPerk("bolt.fill", L("One free boost every week")),
+        IncludedPerk("undo-left", L("Undo your last swipe")),
+        IncludedPerk("user-heart", L("See who liked you")),
+        IncludedPerk("infinite", L("Unlimited likes")),
+        IncludedPerk("bolt", L("One free boost every week")),
     )
     SheetBlock(title = L("Included")) {
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.md)) {
@@ -897,7 +897,7 @@ private fun Billing(
             color = p.body,
         )
         TextLinkButton(onClick = onOpenStore) {
-            DrafftIcon("arrow.up.right", size = 18.dp, tint = p.accentInk)
+            DrafftIcon("arrow-right-up", size = 18.dp, tint = p.accentInk)
             Text(L("Open App Store subscriptions"), style = TextStyles.subheadline.semibold, color = p.accentInk)
         }
         CompositionLocalProvider(LocalContentColor provides p.body) {
@@ -913,7 +913,7 @@ private fun Billing(
             val last = remember { arrayOfNulls<String>(1) }
             if (restoreResult != null) last[0] = restoreResult
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                DrafftIcon("checkmark.circle.fill", size = 16.dp, tint = p.positiveDeep)
+                DrafftIcon("check-circle", size = 16.dp, tint = p.positiveDeep)
                 Text(last[0].orEmpty(), style = TextStyles.footnote.semibold, color = p.positiveDeep)
             }
         }

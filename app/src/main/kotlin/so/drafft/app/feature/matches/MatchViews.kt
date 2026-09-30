@@ -147,7 +147,7 @@ fun MatchView(
                     verticalArrangement = Arrangement.spacedBy(DS.Space.sm),
                 ) {
                     DrafftButton(onClick = onChat) {
-                        DrafftIcon("bubble.left.fill", size = 20.dp, tint = LocalContentColor.current)
+                        DrafftIcon("chat-round-line", size = 20.dp, tint = LocalContentColor.current)
                         Text(L("Say hi"), maxLines = 2)
                     }
                     TextLinkButton(
@@ -216,7 +216,7 @@ private fun Formation(
                 .border(4.dp, p.night, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("heart.fill", size = 34.dp, tint = p.onLike)
+            DrafftIcon("heart", size = 34.dp, tint = p.onLike)
         }
     }
 }
@@ -309,7 +309,7 @@ fun MatchBannerView(
                     Text(L("It's a match. Tap to say hi."), style = TextStyles.subheadline, color = p.accentOnNight)
                 }
                 DrafftIcon(
-                    "heart.fill",
+                    "heart",
                     Modifier
                         .graphicsLayer {
                             scaleX = heart.value
@@ -375,7 +375,7 @@ fun BoostBannerView(id: UUID, onDismiss: () -> Unit, modifier: Modifier = Modifi
                     contentAlignment = Alignment.Center,
                 ) {
                     DrafftIcon(
-                        "bolt.fill",
+                        "bolt",
                         Modifier.graphicsLayer {
                             scaleX = bolt.value
                             scaleY = bolt.value
@@ -425,7 +425,7 @@ fun NoticeBannerView(notice: AppModel.Notice, onDismiss: () -> Unit, modifier: M
                     .clearAndSetSemantics { },
                 contentAlignment = Alignment.Center,
             ) {
-                DrafftIcon("exclamationmark", size = 24.dp, tint = p.onAccentOnNight)
+                DrafftIcon("exclamation-mark", size = 24.dp, tint = p.onAccentOnNight)
             }
             Text(notice.text, Modifier.weight(1f), style = TextStyles.subheadline.semibold, color = Color.White)
         }

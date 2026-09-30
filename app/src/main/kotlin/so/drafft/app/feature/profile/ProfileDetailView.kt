@@ -252,7 +252,7 @@ fun ProfileDetailView(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                DrafftIcon("shield.lefthalf.filled", size = symbol(13f), tint = p.body)
+                                DrafftIcon("shield-warning", size = symbol(13f), tint = p.body)
                                 Text(L("Report or block"), style = TextStyles.footnote.medium, color = p.body)
                             }
                         }
@@ -293,7 +293,7 @@ fun ProfileDetailView(
 
         if (mode != ProfileDetailMode.ME && pendingLike == null && !superLiking) {
             GlassCircleButton(
-                "xmark",
+                "close",
                 dismiss,
                 Modifier.align(Alignment.TopEnd).padding(DS.Space.lg),
                 contentDescription = L("Close"),
@@ -470,7 +470,7 @@ private fun DecisionBar(
                 .glass(CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("xmark", size = symbol(26f), tint = p.ink)
+            DrafftIcon("close", size = symbol(26f), tint = p.ink)
         }
 
         Box(
@@ -482,7 +482,7 @@ private fun DecisionBar(
                 .background(p.like, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("heart.fill", size = symbol(28f), tint = p.onLike)
+            DrafftIcon("heart", size = symbol(28f), tint = p.onLike)
         }
 
         if (hasSuperLike) {

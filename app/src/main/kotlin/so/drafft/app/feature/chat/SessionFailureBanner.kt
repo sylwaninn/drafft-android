@@ -50,7 +50,7 @@ fun SessionFailureBanner(
     modifier: Modifier = Modifier,
 ) {
     NoticeBannerFrame(onDismiss, modifier) {
-        BannerIcon("calendar.badge.exclamationmark")
+        BannerIcon("calendar-warning")
         Text(message, Modifier.weight(1f), style = TextStyles.headline, color = Color.White)
     }
 }

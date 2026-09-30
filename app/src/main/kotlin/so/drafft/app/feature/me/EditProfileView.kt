@@ -138,14 +138,14 @@ enum class EditProfilePage(val rawValue: String) {
 
     val icon: String
         get() = when (this) {
-            PHOTOS -> "photo.on.rectangle"
-            BIO -> "text.quote"
-            PROMPTS -> "quote.bubble.fill"
-            VOICE -> "waveform"
-            SPORTS -> "figure.run"
-            GOAL -> "flag.checkered"
-            IDENTITY -> "person.text.rectangle"
-            LIFESTYLE -> "leaf.fill"
+            PHOTOS -> "gallery-wide"
+            BIO -> "quote-circle"
+            PROMPTS -> "chat-round-quote"
+            VOICE -> "soundwave"
+            SPORTS -> "running"
+            GOAL -> "flag-2"
+            IDENTITY -> "user-id"
+            LIFESTYLE -> "leaf"
         }
 }
 
@@ -348,7 +348,7 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
     DrafftConfirm(
         visible = state.confirmDiscard,
         onDismissRequest = { state.confirmDiscard = false },
-        icon = "trash",
+        icon = "trash-bin-minimalistic",
         title = L("Discard your changes?"),
         message = L("What you changed since your last save will be lost."),
         cancelTitle = L("Keep editing"),
@@ -439,13 +439,13 @@ private fun CategoryGroup(title: String, pages: List<EditProfilePage>, state: Ed
                 }
                 if (attention) {
                     DrafftIcon(
-                        "exclamationmark.circle.fill",
+                        "danger-circle",
                         size = symbolSize(TextStyles.body),
                         tint = p.negative,
                         contentDescription = needsAttention,
                     )
                 }
-                DrafftIcon("chevron.right", size = symbolSize(TextStyles.footnote), tint = p.mute)
+                DrafftIcon("alt-arrow-right", size = symbolSize(TextStyles.footnote), tint = p.mute)
             }
             if (i < pages.size - 1) Hairline(start = 52.dp)
         }
@@ -467,7 +467,7 @@ private fun SubPage(
         title = page.title,
         scroll = scroll,
         onClose = close,
-        leading = { GlassCircleButton("chevron.left", onClick = { stack.pop() }, contentDescription = L("Back")) },
+        leading = { GlassCircleButton("alt-arrow-left", onClick = { stack.pop() }, contentDescription = L("Back")) },
         bottomBar = footer,
     ) { bars ->
         FocusScrollView(state = scroll, contentPadding = bars) {
@@ -500,7 +500,7 @@ private fun SubPage(
                             VoiceIntroRecorder(result = state.voice, onResultChange = { state.voice = it }, framed = false)
                         }
                     EditProfilePage.PROMPTS -> {
-                        Block(L("Interactive prompt"), "hand.tap.fill", note = L("What you write is what they see")) {
+                        Block(L("Interactive prompt"), "mask-happy", note = L("What you write is what they see")) {
                             IcebreakerEditor(
                                 icebreaker = state.draft.icebreaker,
                                 onIcebreakerChange = { state.draft = state.draft.copy(icebreaker = it) },
@@ -534,7 +534,7 @@ private fun PhotosGrid(state: EditProfileState, pickPhoto: () -> Unit) {
                 scale = 0.97f,
                 contentDescription = L("Add photo"),
             ) {
-                DrafftIcon("plus", size = 24.dp, tint = p.ink)
+                DrafftIcon("add", size = 24.dp, tint = p.ink)
             }
         },
         onRemove = { i ->
@@ -629,7 +629,7 @@ private fun SportsSection(state: EditProfileState) {
                                 scale = 1f,
                                 contentDescription = L("Remove %s", entry.sport.displayName),
                             ) {
-                                DrafftIcon("trash", size = symbolSize(TextStyles.subheadline), tint = p.body)
+                                DrafftIcon("trash-bin-minimalistic", size = symbolSize(TextStyles.subheadline), tint = p.body)
                             }
                         }
                     }
@@ -694,7 +694,7 @@ private fun PromptsSection(state: EditProfileState) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(prompt.questionText, Modifier.weight(1f, fill = false), style = TextStyles.subheadline.semibold, color = p.body)
-                            DrafftIcon("chevron.up.chevron.down", size = symbolSize(TextStyles.caption2), tint = p.body)
+                            DrafftIcon("chevrons-up-down", size = symbolSize(TextStyles.caption2), tint = p.body)
                         }
                         PressScaleButton(
                             onClick = {
@@ -707,7 +707,7 @@ private fun PromptsSection(state: EditProfileState) {
                             scale = 1f,
                             contentDescription = L("Remove prompt"),
                         ) {
-                            DrafftIcon("trash", size = symbolSize(TextStyles.subheadline), tint = p.body)
+                            DrafftIcon("trash-bin-minimalistic", size = symbolSize(TextStyles.subheadline), tint = p.body)
                         }
                     }
                     InputField(
@@ -738,7 +738,7 @@ private fun PromptsSection(state: EditProfileState) {
                     .background(p.canvasSoft, RoundedCornerShape(DS.Radius.lg)),
                 scale = 0.97f,
             ) {
-                IconLabel(L("Add a prompt"), "plus", style = TextStyles.subheadline.semibold, color = p.accentInk)
+                IconLabel(L("Add a prompt"), "add", style = TextStyles.subheadline.semibold, color = p.accentInk)
             }
         }
     }
@@ -814,7 +814,7 @@ private fun Footer(state: EditProfileState, save: () -> Unit) {
                 ) { saved ->
                     IconLabel(
                         if (saved) L("Saved") else L("Save changes"),
-                        if (saved) "checkmark" else "arrow.down.circle.fill",
+                        if (saved) "check" else "diskette",
                         style = TextStyles.body.semibold,
                         color = LocalContentColor.current,
                         maxLines = 2,
@@ -987,7 +987,7 @@ private fun LockedField(title: String, value: String, hint: String) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(value, Modifier.weight(1f), style = TextStyles.body, color = p.mute)
-                DrafftIcon("lock.fill", size = symbolSize(TextStyles.footnote), tint = p.mute)
+                DrafftIcon("lock-keyhole-minimalistic", size = symbolSize(TextStyles.footnote), tint = p.mute)
             }
         }
         Text(hint, style = TextStyles.footnote, color = p.mute)

@@ -62,11 +62,11 @@ sealed interface Icebreaker {
         /** SF Symbol name (see `DrafftIcon`). */
         val symbol: String
             get() = when (this) {
-                TWO_TRUTHS -> "eyes"
-                JOKE -> "theatermasks.fill"
-                HOT_TAKE -> "flame.fill"
-                THIS_OR_THAT -> "arrow.left.arrow.right"
-                GUESS -> "questionmark.bubble.fill"
+                TWO_TRUTHS -> "incognito"
+                JOKE -> "masks"
+                HOT_TAKE -> "fire"
+                THIS_OR_THAT -> "transfer-horizontal"
+                GUESS -> "chat-round-question-mark"
             }
 
         /** Starting content when switching to this kind in the editor. */

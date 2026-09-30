@@ -86,7 +86,7 @@ fun SportPicker(
             horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DrafftIcon("magnifyingglass", tint = p.body)
+            DrafftIcon("magnifier", tint = p.body)
             BasicTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -114,7 +114,7 @@ fun SportPicker(
                     scale = 1f,
                     contentDescription = L("Clear search"),
                 ) {
-                    DrafftIcon("xmark.circle.fill", tint = p.mute)
+                    DrafftIcon("close-circle", tint = p.mute)
                 }
             }
         }
@@ -158,7 +158,7 @@ fun SportPicker(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(L("All %d sports", catalog.size), style = TextStyles.subheadline.semibold, color = p.accentInk)
-                            DrafftIcon("chevron.down", size = symbolBox(12f), tint = p.accentInk)
+                            DrafftIcon("alt-arrow-down", size = symbolBox(12f), tint = p.accentInk)
                         }
                     }
                 }

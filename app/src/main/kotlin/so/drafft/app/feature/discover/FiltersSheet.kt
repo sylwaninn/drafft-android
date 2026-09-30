@@ -139,19 +139,19 @@ fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
             ),
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
         ) {
-            FilterBlock(L("Distance"), "location.fill", value = draft.distanceLabel) {
+            FilterBlock(L("Distance"), "map-point", value = draft.distanceLabel) {
                 DistanceSlider(value = draft.maxDistanceKm, onValueChange = { draft = draft.copy(maxDistanceKm = it) })
             }
 
             val ages = draft.ages
             FilterBlock(
-                L("Age"), "person.fill",
+                L("Age"), "user-rounded",
                 value = "${ages.first}–${ages.last}${if (ages.last == DiscoverFilters.ageBounds.last) "+" else ""}",
             ) {
                 RangeSlider(range = ages, onRangeChange = { draft = draft.withAges(it) }, bounds = DiscoverFilters.ageBounds)
             }
 
-            FilterBlock(L("Show me"), "eye.fill") {
+            FilterBlock(L("Show me"), "eye") {
                 Chips(
                     options = Audience.entries.map { it.title },
                     isOn = { it == draft.audience.title },
@@ -160,7 +160,7 @@ fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
             }
 
             FilterBlock(
-                L("Sports"), "figure.run",
+                L("Sports"), "running",
                 value = if (draft.sports.isEmpty()) L("Any") else L("%d selected", draft.sports.size),
             ) {
                 val chosen = draft.sports
@@ -172,7 +172,7 @@ fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
                 )
             }
 
-            FilterBlock(L("In common"), "person.2.fill") {
+            FilterBlock(L("In common"), "link-circle") {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DS.Space.md)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(L("Only people who do one of my sports"), style = TextStyles.subheadline.semibold, color = p.ink)
@@ -452,7 +452,7 @@ fun DistanceSlider(
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(L("1 km"), style = TextStyles.caption.semibold, color = p.mute)
             Spacer(Modifier.weight(1f))
-            DrafftIcon("infinity", size = (12f * 1.2f).dp, tint = p.mute, contentDescription = L("No limit"))
+            DrafftIcon("infinite", size = (12f * 1.2f).dp, tint = p.mute, contentDescription = L("No limit"))
         }
     }
 }

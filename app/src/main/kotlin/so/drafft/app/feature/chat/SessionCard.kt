@@ -118,7 +118,7 @@ fun SessionCard(
                     horizontalArrangement = Arrangement.spacedBy(DS.Space.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("sparkles", size = 14.dp, tint = DS.palette.onAccentOnNight)
+                    DrafftIcon("stars", size = 14.dp, tint = DS.palette.onAccentOnNight)
                     Text(
                         if (youTeach) L("Discovery: you show %s the ropes", profileName) else L("Discovery: %s shows you the ropes", profileName),
                         style = TextStyles.caption.bold,
@@ -163,7 +163,7 @@ fun SessionCard(
     DrafftConfirm(
         visible = confirmCancel,
         onDismissRequest = { confirmCancel = false },
-        icon = "calendar.badge.minus",
+        icon = "calendar-minus",
         title = L("Cancel this session?"),
         message = L("%s will be told it's off.", profileName),
         cancelTitle = L("Keep it"),
@@ -237,7 +237,7 @@ private fun TimeRow(d: Instant, state: RowState, canAnswer: Boolean) {
                 .background(if (on) p.accentOnNight else Color.White.copy(alpha = 0.14f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon(if (state == RowState.AGREED) "checkmark" else "calendar", size = 14.dp, tint = if (on) p.onAccentOnNight else Color.White)
+            DrafftIcon(if (state == RowState.AGREED) "check" else "calendar", size = 14.dp, tint = if (on) p.onAccentOnNight else Color.White)
         }
         Column(Modifier.weight(1f)) {
             Text(day, style = TextStyles.subheadline.semibold, color = Color.White)
@@ -256,10 +256,10 @@ private fun StatusPill(status: SessionProposal.Status, mine: Boolean) {
     val (text, icon) = when (status) {
         // No name in the pill: a pill stays on one line, and names are never truncated.
         SessionProposal.Status.PENDING -> (if (mine) L("Waiting") else L("New invite")) to "hourglass"
-        SessionProposal.Status.ACCEPTED -> L("Confirmed") to "checkmark"
-        SessionProposal.Status.DECLINED -> L("Declined") to "xmark"
-        SessionProposal.Status.COUNTERED -> L("Other times suggested") to "arrow.uturn.backward"
-        SessionProposal.Status.CANCELLED -> L("Cancelled") to "calendar.badge.minus"
+        SessionProposal.Status.ACCEPTED -> L("Confirmed") to "check"
+        SessionProposal.Status.DECLINED -> L("Declined") to "close"
+        SessionProposal.Status.COUNTERED -> L("Other times suggested") to "undo-left"
+        SessionProposal.Status.CANCELLED -> L("Cancelled") to "calendar-minus"
     }
     val accepted = status == SessionProposal.Status.ACCEPTED
     val ink = if (accepted) DS.palette.night else Color.White
@@ -331,7 +331,7 @@ private fun Actions(
                     horizontalArrangement = Arrangement.spacedBy(DS.Space.xs, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("shield.lefthalf.filled", size = 18.dp, tint = Color.White.copy(alpha = 0.75f))
+                    DrafftIcon("shield-check", size = 18.dp, tint = Color.White.copy(alpha = 0.75f))
                     Text(
                         L("Meet safely"),
                         style = TextStyles.subheadline.semibold,

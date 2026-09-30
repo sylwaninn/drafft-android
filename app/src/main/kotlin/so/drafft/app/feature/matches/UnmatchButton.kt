@@ -79,7 +79,7 @@ fun UnmatchButton(profile: Profile, onDone: () -> Unit, modifier: Modifier = Mod
                 horizontalArrangement = Arrangement.spacedBy(DS.Space.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DrafftIcon("heart.slash", size = 16.dp, tint = p.body)
+                DrafftIcon("heart-crack", size = 16.dp, tint = p.body)
                 Text(L("Unmatch"), style = TextStyles.footnote.medium, color = p.body)
             }
         }
@@ -88,7 +88,7 @@ fun UnmatchButton(profile: Profile, onDone: () -> Unit, modifier: Modifier = Mod
     DrafftConfirm(
         visible = confirming,
         onDismissRequest = { confirming = false },
-        icon = "heart.slash",
+        icon = "heart-crack",
         title = L("Unmatch %s?", profile.name),
         message = L("Your chat ends for both of you, and you won't see each other in Discover again."),
         actions = listOf(ConfirmAction(L("Unmatch"), ConfirmAction.Kind.DESTRUCTIVE) { unmatch() }),

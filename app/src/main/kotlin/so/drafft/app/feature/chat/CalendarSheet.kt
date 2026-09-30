@@ -101,7 +101,7 @@ fun CalendarButton(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     DrafftIcon(
-                        if (on) "calendar.badge.checkmark" else "calendar.badge.plus",
+                        if (on) "calendar-check" else "calendar-add",
                         size = 20.dp,
                         tint = if (on) DS.palette.accentOnNight else Color.White,
                     )
@@ -118,7 +118,7 @@ fun CalendarButton(
                 horizontalArrangement = Arrangement.spacedBy(DS.Space.sm, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DrafftIcon("calendar.badge.checkmark", size = 20.dp, tint = DS.palette.accentOnNight)
+                DrafftIcon("calendar-check", size = 20.dp, tint = DS.palette.accentOnNight)
                 Text(L("In your calendar"), style = TextStyles.body.semibold, color = DS.palette.accentOnNight)
             }
         }
@@ -129,7 +129,7 @@ fun CalendarButton(
                 .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp))
                 .then(a11y),
         ) {
-            DrafftIcon("calendar.badge.plus", size = 20.dp, tint = LocalContentColor.current)
+            DrafftIcon("calendar-add", size = 20.dp, tint = LocalContentColor.current)
             Text(L("Add to calendar"), maxLines = 2)
         }
     }

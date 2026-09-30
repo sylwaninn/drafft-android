@@ -135,11 +135,11 @@ fun MessageFocusOverlay(
     }
 
     val actions = buildList {
-        add(FocusAction(L("Reply"), "arrowshape.turn.up.left", false, onReply))
+        add(FocusAction(L("Reply"), "reply", false, onReply))
         (message.content as? MessageContent.Text)?.let { t ->
-            add(FocusAction(L("Copy"), "doc.on.doc", false) { clipboard.setText(AnnotatedString(t.text)) })
+            add(FocusAction(L("Copy"), "copy", false) { clipboard.setText(AnnotatedString(t.text)) })
         }
-        if (mine) add(FocusAction(L("Unsend"), "arrow.uturn.backward", true) { app.delete(message.id, convo.id) })
+        if (mine) add(FocusAction(L("Unsend"), "undo-left", true) { app.delete(message.id, convo.id) })
     }
 
     LaunchedEffect(Unit) {
@@ -327,7 +327,7 @@ private fun ReactionBar(
                         .size(40.dp)
                         .background(p.ink.copy(alpha = if (pickingEmoji) 0.14f else 0.07f), CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { DrafftIcon("plus", size = 22.dp, tint = p.ink) }
+                ) { DrafftIcon("add", size = 22.dp, tint = p.ink) }
             }
         }
         EmojiInput(active = pickingEmoji, onPick = onEmojiTyped)

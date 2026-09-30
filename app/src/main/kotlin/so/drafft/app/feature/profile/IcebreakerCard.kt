@@ -139,7 +139,7 @@ fun IcebreakerCard(
                     kind = DrafftButtonKind.LIKE,
                     enabled = !sent,
                 ) {
-                    DrafftIcon(if (sent) "checkmark" else "heart.fill", size = symbol(17f), tint = p.onLike)
+                    DrafftIcon(if (sent) "check" else "heart", size = symbol(17f), tint = p.onLike)
                     Text(if (sent) L("Done") else sendTitle, maxLines = 2)
                 }
             }
@@ -307,7 +307,7 @@ private fun Joke(setup: String, punchline: String, revealed: Boolean, onReveal: 
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("hand.tap.fill", size = symbol(15f), tint = Color.White)
+                    DrafftIcon("mask-happy", size = symbol(15f), tint = Color.White)
                     Text(L("Tap for the punchline"), style = TextStyles.subheadline.bold, color = Color.White)
                 }
             }
@@ -408,7 +408,7 @@ private fun Guess(profile: Profile, q: String, options: List<String>, answer: In
                         exit = scaleOut() + fadeOut(),
                     ) {
                         DrafftIcon(
-                            if (right) "checkmark.circle.fill" else "xmark.circle.fill",
+                            if (right) "check-circle" else "close-circle",
                             size = symbol(17f),
                             tint = if (right) p.accentOnNight else Color.White.copy(alpha = 0.7f),
                         )
@@ -432,8 +432,8 @@ private fun HotTake(text: String, take: Boolean?, onTake: (Boolean) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(DS.Space.lg)) {
         Text(L("“%s”", text), style = displayBold(24f), color = Color.White)
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-            VoteButton(L("Agree"), "hand.thumbsup.fill", on = take == true, Modifier.weight(1f)) { onTake(true) }
-            VoteButton(L("Disagree"), "hand.thumbsdown.fill", on = take == false, Modifier.weight(1f)) { onTake(false) }
+            VoteButton(L("Agree"), "like", on = take == true, Modifier.weight(1f)) { onTake(true) }
+            VoteButton(L("Disagree"), "dislike", on = take == false, Modifier.weight(1f)) { onTake(false) }
         }
     }
 }

@@ -741,12 +741,12 @@ private fun PrimaryButton(state: OnboardingState, modifier: Modifier) {
             if (locator.state == AreaLocator.State.Locating) {
                 ButtonSpinner()
             } else {
-                DrafftIcon("location.fill", size = (17f * 1.2f).dp, tint = LocalContentColor.current)
+                DrafftIcon("map-point", size = (17f * 1.2f).dp, tint = LocalContentColor.current)
                 Text(if (locator.state == AreaLocator.State.Denied) L("Open Settings") else L("Allow location"), maxLines = 2)
             }
         }
         state.current == OnboardingStep.NOTIFICATIONS && state.notifications.permission != PermissionStatus.ALLOWED ->
-            PermissionButton(state.notifications, askTitle = L("Turn on notifications"), symbol = "bell.fill", modifier = modifier)
+            PermissionButton(state.notifications, askTitle = L("Turn on notifications"), symbol = "bell", modifier = modifier)
         else -> DrafftButton(
             onClick = state::advance,
             modifier = modifier,
@@ -782,7 +782,7 @@ private fun FieldLabel(text: String) {
 private fun Hint(text: String, error: Boolean = false) {
     if (error) {
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.Top) {
-            DrafftIcon("exclamationmark.circle.fill", Modifier.padding(top = 1.dp), size = (13f * 1.2f).dp, tint = DS.palette.negative)
+            DrafftIcon("danger-circle", Modifier.padding(top = 1.dp), size = (13f * 1.2f).dp, tint = DS.palette.negative)
             Text(branded(text), style = TextStyles.footnote.medium, color = DS.palette.negative)
         }
     } else {
@@ -884,10 +884,10 @@ private fun RulesStep(state: OnboardingState) {
         Modifier.block(DS.palette.canvas).padding(DS.Space.xl),
         verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
     ) {
-        Fact("person.fill", L("Be yourself"), L("Your own photos, your real first name and your real age."))
-        Fact("hand.raised.fill", L("Respect first"), L("Kind in chat, clear about what you want. No means no."))
-        Fact("figure.run", L("Meet where others train"), L("First sessions happen in public places: a park, a club, a court."))
-        Fact("flag.fill", L("Report anything off"), L("Two taps from any profile or chat. Every report is reviewed."))
+        Fact("user-rounded", L("Be yourself"), L("Your own photos, your real first name and your real age."))
+        Fact("user-block", L("Respect first"), L("Kind in chat, clear about what you want. No means no."))
+        Fact("running", L("Meet where others train"), L("First sessions happen in public places: a park, a club, a court."))
+        Fact("flag", L("Report anything off"), L("Two taps from any profile or chat. Every report is reviewed."))
     }
     ConsentChecks(draft = state.consent, onDraftChange = { state.consent = it; state.consentError = null })
 }
@@ -940,9 +940,9 @@ private fun NotificationsStep(state: OnboardingState) {
         verticalArrangement = Arrangement.spacedBy(DS.Space.md),
     ) {
         listOf(
-            "heart.fill" to L("New matches and likes"),
-            "bubble.left.fill" to L("Messages, without the text unless you want it"),
-            "alarm.fill" to L("Session reminders, the evening before and an hour before"),
+            "heart" to L("New matches and likes"),
+            "chat-round-line" to L("Messages, without the text unless you want it"),
+            "alarm" to L("Session reminders, the evening before and an hour before"),
         ).forEach { (icon, text) ->
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.md), verticalAlignment = Alignment.CenterVertically) {
                 IconDisc(icon)
@@ -1067,7 +1067,7 @@ private fun AreaStep(state: OnboardingState) {
                     Text(L("Finding your area…"), style = TextStyles.body, color = p.body)
                 }
                 else -> {
-                    DrafftIcon("location.slash.fill", size = (17f * 1.2f).dp, tint = p.mute)
+                    DrafftIcon("map-point-remove", size = (17f * 1.2f).dp, tint = p.mute)
                     Text(L("Location not shared yet"), style = TextStyles.body, color = p.mute)
                 }
             }
@@ -1105,8 +1105,8 @@ private fun LocationFacts() {
         Modifier.block(DS.palette.canvas).padding(DS.Space.xl),
         verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
     ) {
-        Fact("arrow.triangle.2.circlepath", L("Read once, not tracked"), L("Your area comes from where you are right now. drafft doesn't follow your moves or track you in the background."))
-        Fact("circle.dotted.circle", L("Blurred before it leaves your phone"), L("Your position is rounded to about 1 km. Your exact spot is never sent or stored."))
+        Fact("map-point", L("Read once, not tracked"), L("Your area comes from where you are right now. drafft doesn't follow your moves or track you in the background."))
+        Fact("radial-blur", L("Blurred before it leaves your phone"), L("Your position is rounded to about 1 km. Your exact spot is never sent or stored."))
         Fact("eye", L("What others see"), L("Your area, like a district, and a distance rounded to the kilometre. Never your address."))
     }
 }
@@ -1227,7 +1227,7 @@ private fun AddPhotoTile(onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         // `.title2.weight(.semibold)`.
-        DrafftIcon("plus", size = (22f * 1.2f).dp, tint = p.ink)
+        DrafftIcon("add", size = (22f * 1.2f).dp, tint = p.ink)
     }
 }
 
@@ -1261,9 +1261,9 @@ private fun VoiceStep(state: OnboardingState) {
         FieldLabel(L("Stuck? Talk about"))
         // One symbol per idea (never the same one repeated down a list).
         listOf(
-            "sun.max" to L("What your perfect Sunday session looks like"),
-            "flag.checkered" to L("The race you'd love to finish"),
-            "fork.knife" to L("Your post-workout food ritual"),
+            "sun" to L("What your perfect Sunday session looks like"),
+            "flag-2" to L("The race you'd love to finish"),
+            "chef-hat" to L("Your post-workout food ritual"),
         ).forEach { (icon, text) ->
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
                 DrafftIcon(icon, size = (15f * 1.2f).dp, tint = DS.palette.body)
@@ -1338,7 +1338,7 @@ private fun PromptsStep(state: OnboardingState) {
                 scale = 0.98f,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
-                    DrafftIcon("plus", size = (15f * 1.2f).dp, tint = p.accentInk)
+                    DrafftIcon("add", size = (15f * 1.2f).dp, tint = p.accentInk)
                     Text(
                         if (state.prompts.isEmpty()) L("Choose a prompt") else L("Add another prompt"),
                         style = TextStyles.subheadline.semibold,
@@ -1406,7 +1406,7 @@ private fun PromptCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(prompt.questionText, Modifier.weight(1f, fill = false), style = TextStyles.subheadline.semibold, color = p.body)
-                DrafftIcon("chevron.up.chevron.down", size = (11f * 1.2f).dp, tint = p.body)
+                DrafftIcon("chevrons-up-down", size = (11f * 1.2f).dp, tint = p.body)
             }
             Spacer(Modifier.weight(1f))
             Box(
@@ -1419,7 +1419,7 @@ private fun PromptCard(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                DrafftIcon("trash", size = (15f * 1.2f).dp, tint = p.body)
+                DrafftIcon("trash-bin-minimalistic", size = (15f * 1.2f).dp, tint = p.body)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.Bottom) {
@@ -1468,7 +1468,7 @@ private fun PromptCard(
                     modifier = Modifier.size(44.dp).background(p.lime, CircleShape),
                     contentDescription = doneLabel,
                 ) {
-                    DrafftIcon("checkmark", size = (17f * 1.2f).dp, tint = p.onLime)
+                    DrafftIcon("check", size = (17f * 1.2f).dp, tint = p.onLime)
                 }
             }
         }
@@ -1509,7 +1509,7 @@ fun FrequencyStepper(value: Int, onValueChange: (Int) -> Unit, sport: String, mo
             color = DS.palette.ink,
             countsDown = false,
         )
-        StepperButton("plus", enabled = value < 7) { onValueChange(value + 1) }
+        StepperButton("add", enabled = value < 7) { onValueChange(value + 1) }
     }
 }
 
