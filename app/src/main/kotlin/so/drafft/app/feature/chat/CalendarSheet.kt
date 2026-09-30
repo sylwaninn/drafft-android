@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.Haptics
@@ -40,6 +39,7 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/CalendarSheet.swift.
 //

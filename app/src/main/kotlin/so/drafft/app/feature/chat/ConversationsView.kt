@@ -1,7 +1,7 @@
 package so.drafft.app.feature.chat
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -77,13 +76,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import java.time.Instant
-import java.time.LocalDate
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlinx.coroutines.launch
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.Conversation
@@ -91,7 +83,6 @@ import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.model.Message
 import so.drafft.core.model.MessageContent
-import so.drafft.core.model.appLocale
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.Avatar
 import so.drafft.core.ui.components.DrafftButton
@@ -116,6 +107,13 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 import so.drafft.core.ui.theme.weight
+import java.time.Instant
+import java.time.LocalDate
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/ConversationsView.swift.
 

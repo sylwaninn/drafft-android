@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -62,7 +63,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -77,13 +77,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.media.PhotoCompressor
@@ -104,6 +97,13 @@ import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/Composer.swift.
 
@@ -259,8 +259,8 @@ fun Composer(
     val openCamera = rememberCameraPicker { capture ->
         scope.launch {
             when (capture) {
-                is CameraCapture.Photo -> send(MessageContent.Photo(asset = null, imageData = capture.jpeg))
-                is CameraCapture.Video -> sendVideo(capture.path, platform) { send(it) }
+                is so.drafft.core.ui.platform.CameraCapture.Photo -> send(MessageContent.Photo(asset = null, imageData = capture.jpeg))
+                is so.drafft.core.ui.platform.CameraCapture.Video -> sendVideo(capture.path, platform) { send(it) }
             }
         }
     }
@@ -304,7 +304,7 @@ fun Composer(
             // would drop its focus, and the keyboard with it.
             Box(Modifier.weight(1f), contentAlignment = Alignment.BottomCenter) {
                 Field(text, onTextChange, reply, onCancelReply, isRecording, focus)
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = isRecording,
                     enter = slideInHorizontally(Motion.snappy()) { it } + fadeIn(Motion.snappy()),
                     exit = slideOutHorizontally(Motion.snappy()) { it } + fadeOut(Motion.snappy()),
@@ -602,7 +602,7 @@ private fun MicButton(
     ) {
         AnimatedVisibility(
             visible = isRecording && !locked,
-            modifier = Modifier.offset(y = (-104).dp),
+            modifier = Modifier.offset(y = (-104).dp).wrapContentSize(unbounded = true),
             enter = scaleIn(Motion.snappy(), initialScale = 0.6f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeIn(Motion.snappy()),
             exit = scaleOut(Motion.snappy(), targetScale = 0.6f, transformOrigin = TransformOrigin(0.5f, 1f)) + fadeOut(Motion.snappy()),
         ) {

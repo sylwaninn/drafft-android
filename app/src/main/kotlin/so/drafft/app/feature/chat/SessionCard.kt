@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import java.time.Instant
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -56,6 +55,7 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
+import java.time.Instant
 
 // Port of Drafft/Features/Chat/SessionCard.swift.
 

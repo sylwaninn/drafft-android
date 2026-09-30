@@ -43,7 +43,12 @@ import androidx.compose.ui.zIndex
 import java.util.UUID
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.LocationRequiredView
+import so.drafft.app.feature.chat.CalendarAccessBanner
+import so.drafft.app.feature.chat.CalendarAccessNotice
 import so.drafft.app.feature.chat.ConversationsView
+import so.drafft.app.feature.chat.SessionFailureBanner
+import so.drafft.core.data.sessions.SessionCalendar
+import so.drafft.core.data.sessions.SessionFailureNotice
 import so.drafft.app.feature.chat.LikesTabView
 import so.drafft.app.feature.discover.DiscoverView
 import so.drafft.app.feature.matches.BoostBannerView
@@ -112,6 +117,8 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
     val location = koinInject<LocationGate>()
     val moderation = koinInject<PhotoModeration>()
     val credit = koinInject<PurchaseCredit>()
+    val sessionFailure = koinInject<SessionFailureNotice>()
+    val sessionCalendar = koinInject<SessionCalendar>()
     val saveable = rememberSaveableStateHolder()
     // Tabs opened at least once stay composed; the others are built on their first visit (or ahead of
     // it, one after another, while the tabs are still hidden).
@@ -173,6 +180,8 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
             app.boostBanner != null -> BoostToken(app.boostBanner!!)
             moderation.refusalBanner != null -> moderation.refusalBanner
             credit.banner != null -> CreditToken(credit.banner!!)
+            CalendarAccessNotice.isShown -> CalendarAccessNotice
+            sessionFailure.message != null -> SessionFailureToken(sessionFailure.message!!)
             else -> null
         }
         TopOverlayWindow(banner = banner, modifier = Modifier.statusBarsPadding().padding(top = DS.Space.xs)) { shown ->
@@ -195,6 +204,14 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                     onContact = credit::contactSupport,
                     onDismiss = credit::dismissBanner,
                 )
+                is CalendarAccessNotice -> CalendarAccessBanner(
+                    onOpenSettings = {
+                        CalendarAccessNotice.dismiss()
+                        sessionCalendar.writer.openSettings()
+                    },
+                    onDismiss = CalendarAccessNotice::dismiss,
+                )
+                is SessionFailureToken -> SessionFailureBanner(message = shown.message, onDismiss = sessionFailure::dismiss)
             }
         }
 
@@ -256,6 +273,9 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
 
 /** The purchase credit banner, as a distinct banner value. */
 private data class CreditToken(val state: PurchaseCredit.Banner)
+
+/** A session change the server turned down, as a banner (a new sentence is a new banner). */
+private data class SessionFailureToken(val message: String)
 
 /** The boost banner's identity (a restart of the auto-dismiss per boost). */
 private data class BoostToken(val id: UUID)

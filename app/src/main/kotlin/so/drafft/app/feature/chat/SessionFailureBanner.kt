@@ -26,7 +26,6 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import so.drafft.core.model.L
 import so.drafft.core.ui.components.bannerSurface
 import so.drafft.core.ui.theme.DS
@@ -34,6 +33,7 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
+import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/SessionFailureBanner.swift. The notice itself (`SessionFailureNotice`,
 // what the banner says and when it leaves) is core:data's (so.drafft.core.data.sessions).

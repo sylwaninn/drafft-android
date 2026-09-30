@@ -69,4 +69,7 @@ interface DiagnosticsSource {
  */
 interface ForegroundReturns {
     val returns: kotlinx.coroutines.flow.Flow<Unit>
+
+    /** The app going to the background (a chat keeps where the person was reading). */
+    val leaves: kotlinx.coroutines.flow.Flow<Unit> get() = kotlinx.coroutines.flow.emptyFlow()
 }
