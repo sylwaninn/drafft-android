@@ -48,8 +48,8 @@ import so.drafft.core.ui.theme.Motion
 
 /**
  * The app's root: the welcome screen, sign-up or the tabs, the splash over them until the first screen
- * is ready, and the moderation hold over everything. Keyed on the language by the activity, so the
- * whole tree redraws in the new language at once.
+ * is ready, and the moderation hold over everything. A newly picked language reaches every text on
+ * its own (`LanguageObservation`): nothing is rebuilt.
  */
 @Composable
 fun RootView(app: AppModel) {

@@ -211,7 +211,8 @@ fun OnboardingView(modifier: Modifier = Modifier) {
     val location = koinInject<LocationProvider>()
     val phone = koinInject<PhoneVerificationModel> { parametersOf(scope) }
     val state = remember {
-        OnboardingState(app, store, profileSync, notifications, phone, AreaLocator(location, scope), scope)
+        // Restored before the first frame, so a resumed sign-up opens on its step (no slide to it).
+        OnboardingState(app, store, profileSync, notifications, phone, AreaLocator(location, scope), scope).also { it.restore() }
     }
     val reduceMotion = LocalReduceMotion.current
     val scrolls = remember { List(OnboardingStep.entries.size) { ScrollState(0) } }
@@ -242,7 +243,11 @@ fun OnboardingView(modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(Unit) { state.restore() }
+    // The saved language, applied once composed (it redraws the whole app).
+    LaunchedEffect(Unit) {
+        val saved = state.restoredLanguage ?: return@LaunchedEffect
+        if (app.language != saved) app.language = saved
+    }
     LaunchedEffect(phone) {
         snapshotFlow { phone.stage }.drop(1).collect { if (it == PhoneVerificationModel.Stage.VERIFIED) state.save() }
     }
@@ -295,6 +300,9 @@ private class OnboardingState(
     var restored = false
     var confirmLeave by mutableStateOf(false)
     var furthest = 0
+
+    /** The language saved with the progress, for the app to switch to once sign-up shows. */
+    var restoredLanguage: AppLanguage? = null
 
     val steps = OnboardingStep.entries
     val current: OnboardingStep get() = steps[step]
@@ -443,7 +451,7 @@ private class OnboardingState(
         name = p.name
         AppLanguage.fromCode(p.language)?.let { l ->
             language = l
-            if (app.language != l) app.language = l
+            restoredLanguage = l
         }
         birthday = p.birthday
         acceptedTerms = p.acceptedTerms
@@ -466,7 +474,8 @@ private class OnboardingState(
         val target = minOf(firstMissing?.rawValue ?: p.furthest, p.furthest)
         forward = true
         // Clamped: a saved step from an older, longer flow must not index past the steps.
-        step = target.coerceIn(0, steps.size - 1)
+        step = (languageSwitchStep ?: target).coerceIn(0, steps.size - 1)
+        languageSwitchStep = null
     }
 
     /** The new profile holds only what the person answered: nothing from the demo profile. */
@@ -535,6 +544,13 @@ private class OnboardingState(
         )
 
         val oldestBirthday: Instant get() = ZonedDateTime.now().minusYears(100).toInstant()
+
+        /**
+         * The step a language change was made on. On Android the whole app is rebuilt in a newly picked
+         * language (the root is keyed on it), so sign-up restores from its saved progress: this brings
+         * it back on the same step, where the iPhone simply redraws in place.
+         */
+        var languageSwitchStep: Int? = null
     }
 }
 
@@ -626,7 +642,7 @@ private fun PrimaryButton(state: OnboardingState, modifier: Modifier) {
     val openSettings = LocalPlatformUi.current.rememberOpenAppSettings()
     when {
         state.current == OnboardingStep.PHONE -> DrafftButton(onClick = state::phonePrimary, modifier = modifier, enabled = phone.primaryEnabled) {
-            if (phone.busy) Spinner() else Text(phone.primaryTitle, maxLines = 2)
+            if (phone.busy) ButtonSpinner() else Text(phone.primaryTitle, maxLines = 2)
         }
         state.current == OnboardingStep.AREA && state.area == null -> DrafftButton(
             onClick = {
@@ -641,7 +657,7 @@ private fun PrimaryButton(state: OnboardingState, modifier: Modifier) {
             enabled = locator.state != AreaLocator.State.Locating,
         ) {
             if (locator.state == AreaLocator.State.Locating) {
-                Spinner()
+                ButtonSpinner()
             } else {
                 DrafftIcon("location.fill", size = (17f * 1.2f).dp, tint = LocalContentColor.current)
                 Text(if (locator.state == AreaLocator.State.Denied) L("Open Settings") else L("Allow location"), maxLines = 2)
@@ -651,17 +667,12 @@ private fun PrimaryButton(state: OnboardingState, modifier: Modifier) {
             PermissionButton(state.notifications, askTitle = L("Turn on notifications"), symbol = "bell.fill", modifier = modifier)
         else -> DrafftButton(onClick = state::advance, modifier = modifier, enabled = state.canContinue && !state.finishing) {
             if (state.finishing) {
-                Spinner()
+                ButtonSpinner()
             } else {
                 Text(if (state.step == state.steps.size - 1) L("Start swiping") else L("Continue"), maxLines = 2)
             }
         }
     }
-}
-
-@Composable
-private fun Spinner() {
-    CircularProgressIndicator(Modifier.size(20.dp), color = LocalContentColor.current, strokeWidth = 2.dp)
 }
 
 // MARK: - Layout
@@ -873,6 +884,7 @@ private fun LanguageStep(state: OnboardingState) {
                 // The whole app redraws in the new language (the root is keyed on it): kept first so
                 // sign-up comes back on this step with this choice.
                 state.save()
+                OnboardingState.languageSwitchStep = state.step
                 // The rest of sign-up switches to it straight away, one frame after the row so the
                 // selection shows at once.
                 state.scope.launch {

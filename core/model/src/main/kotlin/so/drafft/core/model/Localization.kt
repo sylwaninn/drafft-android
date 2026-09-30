@@ -34,8 +34,29 @@ enum class AppLanguage(val code: String, val displayName: String) {
  */
 object Localization {
     @Volatile
-    var language: AppLanguage = AppLanguage.EN
-        private set
+    private var current: AppLanguage = AppLanguage.EN
+
+    /** The language in use. Reading it (directly, through [L] or [appLocale]) is observed by the UI. */
+    val language: AppLanguage
+        get() {
+            observer.read()
+            return current
+        }
+
+    /**
+     * Lets the UI observe the language like SwiftUI observes `Localization.shared`: every text that
+     * called [L] redraws when it changes, nothing else. Installed by core:ui (a snapshot state).
+     */
+    interface Observer {
+        fun read()
+        fun changed(language: AppLanguage)
+    }
+
+    @Volatile
+    var observer: Observer = object : Observer {
+        override fun read() = Unit
+        override fun changed(language: AppLanguage) = Unit
+    }
 
     @Volatile
     private var table: Map<String, String> = emptyMap()
@@ -45,7 +66,8 @@ object Localization {
     /** Switches the language (loads its table once; call early, off the main thread when possible). */
     fun use(language: AppLanguage) {
         table = load(language)
-        this.language = language
+        current = language
+        observer.changed(language)
     }
 
     /** Loads a language's table ahead of time (the one picked last, at launch). */
@@ -60,6 +82,7 @@ object Localization {
     }
 
     fun string(key: String, args: Array<out Any?>): String {
+        val language = this.language
         val template = table[key] ?: (if (language != AppLanguage.EN) load(AppLanguage.EN)[key] else null) ?: key
         if (args.isEmpty() && !template.contains("%%")) return template
         return runCatching { String.format(language.locale, template, *args) }.getOrDefault(template)

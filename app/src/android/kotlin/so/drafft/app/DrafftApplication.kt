@@ -22,6 +22,7 @@ import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 import so.drafft.core.ui.platform.installDrafftUi
+import so.drafft.core.ui.theme.LanguageObservation
 
 /** The iPhone's `DrafftApp.init`: diagnostics, images, the store, dates, haptics, the language. */
 class DrafftApplication : Application() {
@@ -39,6 +40,8 @@ class DrafftApplication : Application() {
         // The language picked last (the phone's, the first time), before the first screen draws.
         val saved = koin.get<KeyValueStore>().getString(AppModel.LANGUAGE_KEY)
         Localization.use(AppLanguage.fromCode(saved) ?: AppLanguage.deviceDefault(currentLocales()))
+        // Text in the new language as soon as it's picked (texts observe it, see LanguageObservation).
+        LanguageObservation.install()
         IcuDates.install()
         Haptics.engine = AndroidHaptics(this)
         installDrafftUi()
