@@ -102,12 +102,12 @@ fun SwipeCard(
             Photo(profile.portrait, Modifier.fillMaxSize())
 
             // Scrims so the identity (top) and sports (bottom) stay readable on any photo.
-            // design-lint: allow gradient - photo scrims for the identity and sports
             val night = p.night
             Box(
                 Modifier
                     .fillMaxSize()
                     .background(
+                        // design-lint: allow gradient - photo scrims for the identity and sports
                         Brush.verticalGradient(
                             0f to night.copy(alpha = 0.72f),
                             0.3f to Color.Transparent,
