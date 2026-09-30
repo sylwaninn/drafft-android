@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -35,7 +34,6 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
-import so.drafft.core.ui.theme.bold
 
 // Port of Drafft/Features/Chat/SessionFailureBanner.swift. The notice itself (`SessionFailureNotice`,
 // what the banner says and when it leaves) is core:data's (so.drafft.core.data.sessions).
@@ -53,8 +51,7 @@ fun SessionFailureBanner(
 ) {
     NoticeBannerFrame(onDismiss, modifier) {
         BannerIcon("calendar.badge.exclamationmark")
-        Text(message, Modifier.weight(1f, fill = false), style = TextStyles.headline, color = Color.White)
-        Spacer(Modifier.weight(0.001f))
+        Text(message, Modifier.weight(1f), style = TextStyles.headline, color = Color.White)
     }
 }
 

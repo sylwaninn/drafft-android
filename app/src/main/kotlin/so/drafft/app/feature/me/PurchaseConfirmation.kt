@@ -279,7 +279,8 @@ private fun Recap(item: PurchaseReceipt.Item) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(p.canvasSoft, RoundedCornerShape(DS.Radius.lg))
+            // The page tone, not the sheet's flipped one: this sheet isn't marked as a sheet surface on the iPhone.
+            .background(p.sage, RoundedCornerShape(DS.Radius.lg))
             .padding(horizontal = DS.Space.lg),
     ) {
         rows.forEachIndexed { i, (label, value) ->
