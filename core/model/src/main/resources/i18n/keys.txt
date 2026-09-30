@@ -119,6 +119,7 @@ Accept the rules and terms to continue.
 Accept the terms and give your consent to continue.
 Accepted
 Account
+Account & login
 Account check
 Active
 Active now
@@ -167,6 +168,7 @@ Apple shares a verified email (or a private relay address) and, the first time o
 Apply filters
 Archery
 Ask for a second look
+Asking for money, pushing to leave the app, a story that keeps changing.
 At %s, a reminder of tomorrow's session.
 At least 8 characters
 At least one sport in common with you
@@ -189,6 +191,7 @@ Bio
 Birthday
 Birthday, %s
 Block
+Block anytime
 Blocked people
 Blurred before it leaves your phone
 Boost added.
@@ -206,6 +209,7 @@ Buy 1 boost for %s
 Buy 1 super like for %s
 Calendar access is off for drafft.
 Calisthenics
+Call 112
 Called it: that one's the lie 😏 What's the real story?
 Can't be changed
 Cancel
@@ -259,6 +263,7 @@ Confirm your email first.
 Confirm your email first: enter the code we sent you.
 Confirmed
 Connecting…
+Contact the team
 Contact us
 Continue
 Continue with Apple
@@ -291,9 +296,11 @@ Declined
 Delete account
 Delete my account
 Delete recording
+Deleting removes them with your profile, photos, matches and messages, for good.
 Deleting removes your profile, photos, matches and messages for good. Your matches won't be able to reach you.
 Deleting your account doesn't cancel drafft tempo. Cancel it in the App Store to stop it renewing.
 Demo only: %s
+Describe your question. If something doesn't work, say what you tapped and what happened.
 Disagree
 Discard changes
 Discard recording
@@ -385,13 +392,13 @@ From the birthday you gave at sign-up. It can't be changed.
 From your %s account. You can change it.
 Fully agree. Finally someone said it.
 Functional training
-General question
 Get a copy of everything you've shared on drafft. We'll email you a download link to a file you can keep or open elsewhere.
 Get boosts
 Get drafft tempo
 Get help
 Get more boosts
 Get more super likes
+Get somewhere safe first, then report them in the app.
 Get there on your own
 Get told when someone likes you back, writes to you, or a session is coming up.
 Get unlimited likes
@@ -417,6 +424,7 @@ Hear %s
 Hear about matches, messages and sessions right away.
 Help
 Help center
+Here's what deleting removes.
 Hide My Email
 Hide password
 Hides you from Discover and likes. Your chats and sessions carry on.
@@ -432,7 +440,9 @@ Hot take
 Hot take. Agree?
 Hot yoga
 How %s moves
+How can we help?
 How do you move?
+How drafft uses this data
 How often
 How often?
 How you eat
@@ -457,8 +467,10 @@ I've never missed a Sunday run
 I've run 3 marathons
 Ice skating
 If I were an energy gel flavour I'd be
+If something feels wrong
 In %d days
 In common
+In danger? Call 112.
 In it for the marathon
 In reply to %s: %s
 In reply to you: %s
@@ -479,6 +491,7 @@ It goes to %s.
 It shows on your profile as “Training for…”. Big or small, it's a great conversation starter.
 It's a match.
 It's a match. Tap to say hi.
+It's never your fault
 It's not on your profile. Tap to see why.
 Jiu-jitsu
 Jump rope
@@ -493,8 +506,10 @@ Keep editing
 Keep going
 Keep it
 Keep it under 200 characters.
+Keep personal details private
 Keep swiping
 Keep the chat in drafft
+Keep your codes to yourself
 Kickboxing
 Kind in chat, clear about what you want. No means no.
 Kitesurf
@@ -508,6 +523,8 @@ Leave
 Leave sign-up
 Leave sign-up?
 Leg day, I'll spot you?
+Legal Notice
+Legal information
 Less than 1 km
 Lie
 Lifestyle
@@ -552,6 +569,7 @@ Marked as unread
 Martial arts
 Match instantly with people already into you.
 Match with someone on Discover to start chatting.
+Matches & chats
 Matches, messages, sessions
 Maximum age
 Maximum distance
@@ -766,6 +784,7 @@ Plays it full screen
 Plus
 Post-race only
 Preferences
+Pressure or harassment is on them, never on you. Report it, even if you're unsure.
 Preview my profile
 Price
 Privacy
@@ -774,6 +793,7 @@ Privacy Policy
 Profile
 Profile %d percent complete
 Profile %d%% complete
+Profile & photos
 Profile paused
 Project night, you spot me?
 Prompts
@@ -847,6 +867,7 @@ Rowing
 Rugby
 Run club
 Running
+Safety & reports
 Safety tips
 Sailing
 Same pick as %s!
@@ -930,6 +951,7 @@ Someone from our team will review it, usually within 24 hours. It stays off your
 Someone who likes you. Unlock with drafft tempo
 Something I'm training for outside of sport
 Something casual, no pressure
+Something doesn't work
 Something else
 Something went wrong. Try again in a moment.
 Sometimes
@@ -990,8 +1012,6 @@ Tell a friend
 Tell us what happened to send your request.
 Tennis
 Terms
-Terms & privacy
-Terms & privacy policy
 Terms of Use
 Thanks, we'll take a look
 That doesn't look like a mobile number.
@@ -1148,12 +1168,14 @@ WOD together, no mercy?
 Waiting
 Walking
 Warm-up first
+Watch for red flags
 We can't see a face on your first photo. Put a clear photo of you first.
 We couldn't check this number right now. Try again in a moment.
 We couldn't delete your account. Check your connection and try again.
 We couldn't find your area. Try again.
 We couldn't see your face clearly. Try again.
 We couldn't text this number. Check it, or get help if it keeps failing.
+We read every message and reply to %s.
 We sent a link to %s. Open it on this iPhone to confirm your email and carry on.
 We sent a link to %s. Your email changes once you tap it.
 We usually reply within a day.
@@ -1167,7 +1189,6 @@ We'll text you a code. Your number never shows on your profile.
 We're adding your purchase to your account.
 We're checking your account.
 We're preparing your export. A download link goes to %s, usually within 24 hours of %s. The link works for 7 days.
-We're sorry to see you go.
 We've set it to your phone's language. You can change it anytime in You.
 Weekday dawn runner, weekend long rides…
 Weekend long run:
@@ -1184,6 +1205,7 @@ What you typed here will be lost.
 What you write is what they see
 What your perfect Sunday session looks like
 What's included
+What's it about?
 What's wrong?
 What's your next goal?
 What's your number?
@@ -1194,6 +1216,7 @@ When's your birthday?
 Where do you train?
 Where should we reply?
 Which describes you best?
+While you chat
 Who do you want to meet?
 Who you liked and matched with
 Why are you leaving?
@@ -1204,6 +1227,7 @@ Win the club tournament
 Wing foil
 With %s
 Withdrawing it means deleting your account.
+Withdrawing your consent means deleting your account.
 Within %s
 Woman
 Women
@@ -1263,6 +1287,7 @@ You've sent several reports already. Try again later.
 You: 
 Your account has been closed.
 Your account is on hold.
+Your address, workplace and last name can wait until you trust them.
 Your answer
 Your answers won't be kept. You'll start over next time.
 Your area
@@ -1340,9 +1365,12 @@ drafft is for people 18 and over.
 drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.
 drafft needs the camera for your selfie. Allow it in Settings.
 drafft needs your consent to use your gender. Tick it to continue.
+drafft needs your gender and the genders you want to see to suggest anyone.
 drafft needs your location to show people near you. We show your area, never your address.
+drafft never asks for your password or a login code in a chat.
 drafft now keeps a record of your consent. Tick both to keep using the app.
 drafft tempo
+drafft tempo & billing
 drafft tempo has no daily limit.
 drafft tempo shows everyone who already liked you, so you can match in one tap.
 drafft works because everyone plays fair.

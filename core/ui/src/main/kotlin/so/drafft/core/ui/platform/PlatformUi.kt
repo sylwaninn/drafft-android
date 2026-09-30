@@ -60,6 +60,13 @@ interface PlatformUi {
     fun rememberOpenLocationSettings(): () -> Unit
 
     /**
+     * The action that opens the phone app with [number] typed in (`ACTION_DIAL`, the iPhone's
+     * `tel:` URL): the person still taps call, the app never calls by itself.
+     */
+    @Composable
+    fun rememberDial(): (number: String) -> Unit
+
+    /**
      * The system photo picker, images only (the iPhone's `PhotosPicker(matching: .images)`): returns
      * the action that opens it. [onPicked] gets the chosen photo's bytes, read off the main thread;
      * nothing is called when the picker is cancelled or the photo can't be read.
@@ -141,6 +148,9 @@ object DefaultPlatformUi : PlatformUi {
 
     @Composable
     override fun rememberOpenLocationSettings(): () -> Unit = {}
+
+    @Composable
+    override fun rememberDial(): (number: String) -> Unit = {}
 
     @Composable
     override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit = {}

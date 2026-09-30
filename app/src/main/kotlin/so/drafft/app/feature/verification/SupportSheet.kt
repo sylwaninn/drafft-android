@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.me.AccountSheet
+import so.drafft.app.feature.me.ChoiceChip
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.asObject
 import so.drafft.core.data.backend.asString
@@ -60,6 +61,7 @@ import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftField
 import so.drafft.core.ui.components.DrafftSheet
+import so.drafft.core.ui.components.FlowLayout
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.SheetBlock
 import so.drafft.core.ui.components.SheetDetent
@@ -86,12 +88,13 @@ private val emailPattern = Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")
  * adds a few words, and it goes to the team (backend `support`), which replies by email. Signed out (a
  * stuck sign-up or reset), the form also asks where to reply. The reference comes back from the server
  * and is emailed too. Signed out, the message carries a Cloudflare Turnstile token (TurnstileChallenge).
+ * Without a topic it's the help center: the person picks one of [HelpTopics.all] first.
  *
  * Shown inside a `DrafftSheet`; Done closes it through [LocalSheetDismiss].
  */
 @Composable
 fun SupportSheet(
-    topic: String,
+    topic: String? = null,
     /** Already written for the person (a purchase's reference); they can change it. */
     prefill: String = "",
     /** Sent with the message for the team (a transaction id), never shown. */
@@ -104,6 +107,8 @@ fun SupportSheet(
     val dismiss = LocalSheetDismiss.current
     val scope = rememberCoroutineScope()
     var message by rememberSaveable { mutableStateOf("") }
+    // The topic picked in the help center, none until the person taps one.
+    var picked by rememberSaveable { mutableStateOf<String?>(null) }
     var replyEmail by rememberSaveable { mutableStateOf("") }
     var session by remember { mutableStateOf(Session.UNKNOWN) }
     var sending by remember { mutableStateOf(false) }
@@ -117,15 +122,18 @@ fun SupportSheet(
     // Signed out, sending waits for a Turnstile token.
     val captchaReady = session == Session.SIGNED_IN || captcha.token != null
     val replyTo = if (session == Session.SIGNED_IN) app.email else replyEmail.trim()
+    val isHelpCenter = topic == null
+    val sentTopic = topic ?: picked
 
     suspend fun send() {
         sending = true
         error = null
         val signedIn = session == Session.SIGNED_IN
+        val topic = sentTopic ?: ""
         try {
             val context = buildMap<String, Any?> {
                 put("app", appInfo.version)
-                put("screen", topic)
+                put("screen", if (isHelpCenter) "Help center" else topic)
                 app.moderation.hold?.let { put("hold", it.rawValue) }
                 putAll(details)
             }
@@ -174,10 +182,11 @@ fun SupportSheet(
     }
 
     AccountSheet(
-        title = L("Get help"),
+        title = if (isHelpCenter) L("Help center") else L("Get help"),
         actionTitle = if (reference != null) L("Done") else L("Send to support"),
         actionIcon = if (reference != null) "check" else "plain",
-        enabled = reference != null || (hasMessage && hasEmail && session != Session.UNKNOWN && captchaReady),
+        enabled = reference != null ||
+            (sentTopic != null && hasMessage && hasEmail && session != Session.UNKNOWN && captchaReady),
         loading = sending,
         error = error,
         hasChanges = reference == null && hasMessage,
@@ -203,7 +212,10 @@ fun SupportSheet(
             } else {
                 SupportForm(
                     topic = topic,
-                    signedOut = session == Session.SIGNED_OUT,
+                    picked = picked,
+                    onPickedChange = { picked = it },
+                    session = session,
+                    accountEmail = app.email,
                     replyEmail = replyEmail,
                     onReplyEmailChange = { replyEmail = it },
                     message = message,
@@ -262,28 +274,36 @@ private fun SentCard(replyTo: String, reference: String) {
 
 @Composable
 private fun SupportForm(
-    topic: String,
-    signedOut: Boolean,
+    topic: String?,
+    picked: String?,
+    onPickedChange: (String?) -> Unit,
+    session: Session,
+    accountEmail: String,
     replyEmail: String,
     onReplyEmailChange: (String) -> Unit,
     message: String,
     onMessageChange: (String) -> Unit,
 ) {
     val p = DS.palette
+    val isHelpCenter = topic == null
     Column(verticalArrangement = Arrangement.spacedBy(DS.Space.md)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .background(p.canvas, RoundedCornerShape(DS.Radius.xl))
-                .padding(DS.Space.lg),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(L("Topic"), style = TextStyles.subheadline.semibold, color = p.body)
-            Spacer(Modifier.weight(1f))
-            Text(topic, style = TextStyles.subheadline.semibold, color = p.ink)
+        if (topic != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(p.canvas, RoundedCornerShape(DS.Radius.xl))
+                    .padding(DS.Space.lg),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(L("Topic"), style = TextStyles.subheadline.semibold, color = p.body)
+                Spacer(Modifier.weight(1f))
+                Text(topic, style = TextStyles.subheadline.semibold, color = p.ink)
+            }
+        } else {
+            TopicPicker(picked, onPickedChange)
         }
 
-        if (signedOut) {
+        if (session == Session.SIGNED_OUT) {
             SheetBlock(title = L("Where should we reply?")) {
                 DrafftField(
                     title = L("Email"),
@@ -295,15 +315,48 @@ private fun SupportForm(
             }
         }
 
-        SheetBlock(title = L("What happened?")) {
-            MessageField(message, onMessageChange)
+        SheetBlock(title = if (isHelpCenter) L("How can we help?") else L("What happened?")) {
+            MessageField(
+                message,
+                onMessageChange,
+                placeholder = if (isHelpCenter) {
+                    L("Describe your question. If something doesn't work, say what you tapped and what happened.")
+                } else {
+                    L("A few words help us fix it faster")
+                },
+            )
+            if (session == Session.SIGNED_IN) {
+                Text(L("We read every message and reply to %s.", accountEmail), style = TextStyles.footnote, color = p.mute)
+            }
         }
     }
 }
 
-/** A multi-line field (4 to 8 lines) with DrafftField's box and focus ring. */
+/**
+ * Help center only: what the message is about, so it reaches the right person. Nothing picked
+ * until the person taps a topic.
+ */
 @Composable
-private fun MessageField(message: String, onMessageChange: (String) -> Unit) {
+private fun TopicPicker(picked: String?, onPickedChange: (String?) -> Unit) {
+    SheetBlock(title = L("What's it about?")) {
+        FlowLayout(spacing = DS.Space.sm) {
+            HelpTopics.all.forEach { t ->
+                val on = picked == t
+                ChoiceChip(t, on, onClick = {
+                    Haptics.select()
+                    onPickedChange(if (on) null else t)
+                })
+            }
+        }
+    }
+}
+
+/**
+ * A multi-line field with DrafftField's box and focus ring. Grows with the message: room to explain
+ * from the start, never a scrolling box.
+ */
+@Composable
+private fun MessageField(message: String, onMessageChange: (String) -> Unit, placeholder: String) {
     val p = DS.palette
     var focused by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
@@ -328,13 +381,12 @@ private fun MessageField(message: String, onMessageChange: (String) -> Unit) {
                 .focusRequester(focus)
                 .onFocusChanged { focused = it.isFocused },
             textStyle = TextStyles.body.copy(color = p.ink),
-            minLines = 4,
-            maxLines = 8,
+            minLines = 8,
             cursorBrush = SolidColor(p.accentInk),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             decorationBox = { inner ->
                 Box {
-                    if (message.isEmpty()) Text(L("A few words help us fix it faster"), style = TextStyles.body, color = p.mute)
+                    if (message.isEmpty()) Text(placeholder, style = TextStyles.body, color = p.mute)
                     inner()
                 }
             },
@@ -359,6 +411,17 @@ fun GetHelpButton(topic: String, modifier: Modifier = Modifier) {
     DrafftSheet(visible = show, onDismissRequest = { show = false }) {
         SupportSheet(topic = topic)
     }
+}
+
+/** The help center's topics, in the order people look for them. */
+object HelpTopics {
+    val safety: String get() = L("Safety & reports")
+
+    val all: List<String>
+        get() = listOf(
+            L("Account & login"), L("Profile & photos"), L("Matches & chats"), L("Sessions"),
+            L("drafft tempo & billing"), safety, L("Something doesn't work"), L("Something else"),
+        )
 }
 
 /** A support topic, for a sheet shown while one is set (`.sheet(item:)`). */
