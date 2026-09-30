@@ -17,11 +17,13 @@ The iPhone app's list lives in `drafft/TODO.md`, backend work in `drafft-backend
 
 ## Google Play and purchases
 
-- [ ] **Subscription and in-app products in Google Play Console**, same ids as the iPhone's, then import
-      them in both RevenueCat projects and attach them to the same entitlement and offerings
-      (`drafft_tempo`; offerings `default`, `boosts`, `super_likes`):
-      - subscriptions `so.drafft.app.tempo.monthly`, `.sixmonths`, `.yearly`, base plan id `base`;
-      - one-time products `so.drafft.app.boost.1`, `.5`, `.10`, `so.drafft.app.superlike.3`, `.15`, `.30`.
+- [x] **Subscription and in-app products** created and active in Google Play Console (ids as the iPhone's,
+      prices equal to the App Store's where the currency is the same, 7 languages), imported in both
+      RevenueCat projects and attached to `drafft_tempo` and the offerings `default`, `boosts`,
+      `super_likes`. Subscriptions use the base plan id `base`.
+      - To check: the product names are lowercase (`1 boost`, WORDING.md 4) while App Store Connect has
+        `1 Boost`, `3 Super Likes`. Fix the App Store side in drafft.
+      - Product texts in the 7 languages exist on Google Play only. The App Store side has English only.
 - [ ] **License testers** (Play Console, Settings, License testing) to buy without paying.
 - [ ] **Google developer notifications** (Pub/Sub, real-time events) connected to one RevenueCat project
       (production): RevenueCat, app "drafft (Google Play)", Google Play notifications.
