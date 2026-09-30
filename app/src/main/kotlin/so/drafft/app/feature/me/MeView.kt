@@ -3,10 +3,13 @@ package so.drafft.app.feature.me
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -88,6 +92,7 @@ import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
+import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.branded
@@ -136,6 +141,7 @@ fun MeView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            PausedBanner(app.profilePaused)
             if (app.profileLoad == AppModel.ProfileLoad.LOADED) {
                 LoadedProfileCard(onEdit = { sheet = MeSheet.EDIT }, onPreview = { sheet = MeSheet.PREVIEW })
             } else {
@@ -382,21 +388,6 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
                         fill = Color.White,
                         glyph = p.night,
                     )
-                    AnimatedVisibility(
-                        app.profilePaused,
-                        enter = scaleIn(Motion.snappy()) + fadeIn(Motion.snappy()),
-                        exit = scaleOut(Motion.snappy()) + fadeOut(Motion.snappy()),
-                    ) {
-                        IconLabel(
-                            L("Paused"),
-                            "pause.fill",
-                            Modifier
-                                .background(Color.White, CircleShape)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                            style = TextStyles.caption.bold,
-                            color = p.night,
-                        )
-                    }
                 }
             }
 
@@ -502,6 +493,79 @@ private fun Spark(color: Color, modifier: Modifier) {
             drawOutline(outline, color)
         },
     )
+}
+
+// MARK: Paused banner
+
+/**
+ * While the profile is paused, the first block of You says so, what it means, and resumes in one
+ * tap. The switch in Discovery stays the way to pause.
+ */
+@Composable
+private fun PausedBanner(visible: Boolean) {
+    val app = LocalAppModel.current
+    val p = DS.palette
+    val reduceMotion = LocalReduceMotion.current
+    // The banner comes and goes with the pause (the switch, its Resume button, the server): the
+    // blocks under it slide along instead of jumping.
+    val top = TransformOrigin(0.5f, 0f)
+    AnimatedVisibility(
+        visible,
+        Modifier.fillMaxWidth(),
+        enter = if (reduceMotion) {
+            fadeIn(tween(200, easing = Motion.EaseInOut)) + expandVertically(tween(200, easing = Motion.EaseInOut), Alignment.Top)
+        } else {
+            expandVertically(Motion.bouncy(), Alignment.Top) +
+                scaleIn(Motion.bouncy(), initialScale = 0.96f, transformOrigin = top) + fadeIn(Motion.bouncy())
+        },
+        exit = if (reduceMotion) {
+            fadeOut(tween(200, easing = Motion.EaseInOut)) + shrinkVertically(tween(200, easing = Motion.EaseInOut), Alignment.Top)
+        } else {
+            shrinkVertically(Motion.bouncy(), Alignment.Top) +
+                scaleOut(Motion.bouncy(), targetScale = 0.96f, transformOrigin = top) + fadeOut(Motion.bouncy())
+        },
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(p.canvas, RoundedCornerShape(DS.Radius.xl))
+                .padding(DS.Space.xl),
+            verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
+        ) {
+            // Read as one statement: the title and what it means.
+            Row(
+                Modifier.semantics(mergeDescendants = true) { heading() },
+                horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
+            ) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .background(p.canvasSoft, CircleShape)
+                        .clearAndSetSemantics { },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DrafftIcon("pause.fill", size = symbolSize(TextStyles.body), tint = p.ink)
+                }
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .padding(top = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(L("Your profile is paused"), style = display(20f), color = p.ink)
+                    Text(
+                        L("No one sees you in Discover while you're paused. Your chats and sessions carry on."),
+                        style = TextStyles.subheadline,
+                        color = p.body,
+                    )
+                }
+            }
+            DrafftButton(L("Resume my profile"), onClick = {
+                Haptics.success()
+                app.profilePaused = false
+            })
+        }
+    }
 }
 
 // MARK: Rows
