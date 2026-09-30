@@ -56,6 +56,7 @@ object Symbols {
             "checkmark" to Icons.Rounded.Check,
             "checkmark.circle.fill" to Icons.Rounded.CheckCircle,
             "checkmark.seal.fill" to Icons.Rounded.Verified,
+            "checkmark.shield.fill" to Icons.Rounded.VerifiedUser,
             "chevron.down" to Icons.Rounded.KeyboardArrowDown,
             "chevron.left" to Icons.Rounded.ChevronLeft,
             "chevron.right" to Icons.Rounded.ChevronRight,

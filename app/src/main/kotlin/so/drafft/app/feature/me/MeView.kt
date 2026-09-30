@@ -197,6 +197,13 @@ fun MeView(modifier: Modifier = Modifier) {
                     "square.and.arrow.down.fill",
                     if (app.dataExportRequestedAt == null) L("Sent to you by email") else L("Requested, check your inbox"),
                 ) { sheet = MeSheet.EXPORT }
+                Separator()
+                // drafft can't work without the gender: withdrawing the consent is deleting the account.
+                SettingsRow(
+                    L("Sensitive data consent"),
+                    "checkmark.shield.fill",
+                    L("Withdrawing it means deleting your account."),
+                ) { sheet = MeSheet.DELETE }
             }
             Group(L("Help")) {
                 SettingsRow(L("Safety tips"), "shield.lefthalf.filled", L("Meeting someone for the first time")) { sheet = MeSheet.SAFETY }
