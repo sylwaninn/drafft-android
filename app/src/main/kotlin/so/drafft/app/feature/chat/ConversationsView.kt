@@ -303,6 +303,7 @@ private fun NewMatchesRow(newMatches: List<Conversation>, open: (String) -> Unit
                             color = DS.palette.ink,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
+                            // design-lint: allow truncation - a person's name (content, not copy), asked cut after two lines
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -521,6 +522,7 @@ private fun Preview(m: Message, unread: Boolean, style: androidx.compose.ui.text
             DrafftIcon(icon, Modifier.fillMaxSize(), tint = p.body)
         },
     )
+    // design-lint: allow truncation - the last message's preview (content, not copy)
     Text(text, style = style, maxLines = 2, overflow = TextOverflow.Ellipsis, inlineContent = inline)
 }
 

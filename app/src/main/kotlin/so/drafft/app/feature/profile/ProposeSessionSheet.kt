@@ -712,6 +712,7 @@ private fun Footer(
                         style = TextStyles.footnote,
                         color = p.body,
                         maxLines = 1,
+                        // design-lint: allow truncation - the session's pitch, written by the proposer (content, not copy)
                         overflow = TextOverflow.Ellipsis,
                     )
                 }

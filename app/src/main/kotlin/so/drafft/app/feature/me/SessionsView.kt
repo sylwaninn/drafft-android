@@ -342,6 +342,7 @@ private fun ConfirmedRow(item: Item, onOpen: () -> Unit) {
     ) {
         DateColumn(s.date)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // design-lint: allow truncation - the session's title, written by people (content, not copy)
             Text(s.displayTitle, style = TextStyles.headline, color = p.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(L("%s with %s", s.timeText, item.name), style = TextStyles.footnote, color = p.body)
         }

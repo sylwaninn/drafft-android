@@ -793,6 +793,7 @@ private fun ChatNavigationBar(
                         style = TextStyles.headline,
                         color = DS.palette.ink,
                         maxLines = 1,
+                        // design-lint: allow truncation - a person's name (content, not copy) in the header
                         overflow = TextOverflow.Ellipsis,
                     )
                     PresenceLine(convo)
@@ -1223,6 +1224,7 @@ private fun InnerQuote(q: Message, mine: Boolean, convo: Conversation) {
                 style = TextStyles.footnote,
                 color = if (mine) p.white.copy(alpha = 0.75f) else p.body,
                 maxLines = 2,
+                // design-lint: allow truncation - a quoted message (content, not copy)
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -1251,6 +1253,7 @@ private fun OuterQuote(q: Message, convo: Conversation) {
         Box(Modifier.width(3.dp).fillMaxHeight().background(p.lime, CircleShape))
         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(if (q.fromMe) L("You") else convo.profile.name, style = TextStyles.caption.bold, color = p.accentInk)
+            // design-lint: allow truncation - a quoted message (content, not copy)
             Text(q.previewText, style = TextStyles.footnote, color = p.body, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
@@ -1405,6 +1408,7 @@ private fun Bubble(
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    // design-lint: allow truncation - an attachment's file name (content, not copy)
                     Text(content.name, style = TextStyles.subheadline.semibold, color = ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(byteCount(content.size), Modifier.alpha(0.7f), style = TextStyles.caption, color = ink)
                 }
@@ -1450,6 +1454,7 @@ private fun Bubble(
                         style = TextStyles.caption.bold,
                         color = ink,
                     )
+                    // design-lint: allow truncation - quoted profile text (content, not copy)
                     Text(content.quote, style = TextStyles.footnote, color = ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 }
             }
