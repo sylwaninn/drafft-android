@@ -22,7 +22,7 @@ data class Coordinate(val latitude: Double, val longitude: Double) {
 /**
  * The phone's location, one reading at a time, reduced accuracy, only while the app is in use (the
  * iPhone's `CLLocationManager` with `kCLLocationAccuracyReduced`). Implemented on Android with the
- * fused location provider (`AndroidLocationProvider`).
+ * fused location provider and the system's own providers (`AndroidLocationProvider`).
  */
 interface LocationProvider {
     enum class Authorization {
