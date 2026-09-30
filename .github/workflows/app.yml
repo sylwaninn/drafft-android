@@ -1,0 +1,92 @@
+# Checks every change to the Android app on Linux runners: the platform-neutral compile check and unit
+# tests (tools/jvmcheck), the Android build, the design and string lints, and repository hygiene.
+name: app
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  jvm:
+    name: jvm (compile check, unit tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile check and tests
+        run: ./gradlew -p tools/jvmcheck compileKotlin test
+
+  android:
+    name: android (assembleLocalDebug)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      # The runner image ships the Android SDK. No local.private.properties and no
+      # google-services.json: the build still succeeds (the local app would stop at launch saying
+      # what's missing, push stays off).
+      - name: Build
+        run: ./gradlew assembleLocalDebug
+
+  design:
+    name: design (DESIGN.md rules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Design rules
+        run: python3 scripts/ci/design_lint.py
+
+  i18n:
+    name: i18n (7 languages, placeholders, brand, wording)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: String tables
+        run: python3 scripts/ci/i18n_lint.py
+      - name: Every L("...") key is in the catalog
+        run: python3 scripts/check-strings.py
+
+  hygiene:
+    name: hygiene (secrets, workflows, assets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secrets (whole history)
+        run: docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:v8.28.0 git --no-banner --config .gitleaks.toml --redact .
+      - name: Workflows
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color
+      - name: Asset sizes
+        # The app ships every byte: a media file over 1 MB is almost always an export mistake.
+        run: |
+          big=$(git ls-files -z -- '*.png' '*.jpg' '*.jpeg' '*.gif' '*.webp' '*.pdf' \
+            '*.mp3' '*.m4a' '*.ogg' '*.wav' '*.mp4' '*.webm' '*.ttf' '*.otf' \
+            | xargs -0 -I{} find {} -type f -size +1024k)
+          if [ -n "$big" ]; then echo "error: files over 1 MB:"; echo "$big"; exit 1; fi
+      - name: Only public keys in build settings
+        run: |
+          if grep -nE 'sb_secret_|service_role|PRIVATE KEY' config/*.properties app/build.gradle.kts gradle.properties; then
+            echo "error: a secret in the build settings: only publishable/public keys belong there"; exit 1
+          fi
