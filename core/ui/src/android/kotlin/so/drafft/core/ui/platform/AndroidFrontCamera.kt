@@ -80,9 +80,16 @@ internal class AndroidFrontCamera(
         capture = null
     }
 
+    /** The screen is gone: the camera and the analysis thread with it. */
+    fun release() {
+        stop()
+        onFaces = null
+        executor.shutdown()
+    }
+
     override suspend fun capture(): CapturedPhoto? {
         val still = capture ?: return null
-        val proxy = suspendCancellableCoroutine { done ->
+        val proxy = suspendCancellableCoroutine<ImageProxy?> { done ->
             still.takePicture(
                 executor,
                 object : ImageCapture.OnImageCapturedCallback() {

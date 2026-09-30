@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -239,6 +240,8 @@ fun PaywallView(
         NightSurface {
             BottomBar(
                 scroll = scroll,
+                // The sheet already sits below the status bar and above the navigation bar.
+                windowInsets = WindowInsets(0.dp),
                 bar = {
                     PaywallFooter(
                         plan = plan,
@@ -764,6 +767,8 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
             })
         },
         navigationEdge = true,
+        // The sheet already sits below the status bar and above the navigation bar.
+        windowInsets = WindowInsets(0.dp),
     ) { padding ->
         Column(
             Modifier

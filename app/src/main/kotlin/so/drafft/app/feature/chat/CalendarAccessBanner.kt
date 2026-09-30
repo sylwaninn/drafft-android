@@ -23,7 +23,6 @@ import so.drafft.core.model.L
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
-import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.semibold
 
 // Port of Drafft/Features/Chat/CalendarAccessBanner.swift.
@@ -67,7 +66,7 @@ fun CalendarAccessBanner(
     NoticeBannerFrame(onDismiss, modifier) {
         BannerIcon("calendar.badge.exclamationmark")
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
-            Text(branded(L("Calendar access is off for drafft.")), style = TextStyles.headline, color = Color.White)
+            Text(L("Calendar access is off for drafft."), style = TextStyles.headline, color = Color.White)
             PressScaleButton(
                 onClick = {
                     Haptics.tap()
