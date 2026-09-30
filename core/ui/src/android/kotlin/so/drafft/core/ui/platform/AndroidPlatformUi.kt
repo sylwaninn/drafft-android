@@ -171,7 +171,6 @@ object AndroidPlatformUi : PlatformUi {
                 view
             },
             modifier = modifier.clipToBounds(),
-            onRelease = { (view.parent as? android.view.ViewGroup)?.removeView(view) },
         )
     }
 
@@ -196,7 +195,6 @@ object AndroidPlatformUi : PlatformUi {
                 web.webView
             },
             modifier = modifier,
-            onRelease = { web.detach() },
         )
     }
     @Composable

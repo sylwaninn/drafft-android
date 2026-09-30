@@ -160,7 +160,7 @@ private fun SettingsGroup(title: String, allowed: Boolean, content: @Composable 
             .padding(bottom = DS.Space.xs),
     ) {
         Text(
-            branded(title, brandWeight = FontWeight.ExtraBold),
+            branded(title, brandWeight = FontWeight.ExtraBold, tierColor = p.accentInk),
             Modifier
                 .padding(start = DS.Space.lg, end = DS.Space.lg, top = DS.Space.lg, bottom = DS.Space.xs)
                 .semantics { heading() },
