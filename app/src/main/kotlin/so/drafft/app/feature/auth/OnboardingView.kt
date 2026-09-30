@@ -112,6 +112,8 @@ import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.backend.hasLifestyle
 import so.drafft.core.data.location.Area
 import so.drafft.core.data.location.AreaLocator
+import so.drafft.core.data.location.OnDeviceAreaResolver
+import so.drafft.core.data.location.ServerAreaResolver
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.notifications.NotificationService
@@ -210,10 +212,12 @@ fun OnboardingView(modifier: Modifier = Modifier) {
     val profileSync = koinInject<ProfileSync>()
     val notifications = koinInject<NotificationService>()
     val location = koinInject<LocationProvider>()
+    val backend = koinInject<Backend>()
     val phone = koinInject<PhoneVerificationModel> { parametersOf(scope) }
     val state = remember {
         // Restored before the first frame, so a resumed sign-up opens on its step (no slide to it).
-        OnboardingState(app, store, profileSync, notifications, phone, AreaLocator(location, scope), scope).also { it.restore() }
+        val locator = AreaLocator(location, scope, ServerAreaResolver(backend, OnDeviceAreaResolver(location)))
+        OnboardingState(app, store, profileSync, notifications, phone, locator, scope).also { it.restore() }
     }
     val reduceMotion = LocalReduceMotion.current
     val scrolls = remember { List(OnboardingStep.entries.size) { ScrollState(0) } }
