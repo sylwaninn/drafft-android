@@ -25,7 +25,8 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import so.drafft.app.feature.auth.AccountHoldView
+import so.drafft.app.feature.auth.HoldLayer
+import so.drafft.app.feature.auth.LocalHeroSlideshowLeads
 import so.drafft.app.feature.auth.OnboardingView
 import so.drafft.app.feature.auth.SplashView
 import so.drafft.app.feature.auth.WelcomeView
@@ -100,15 +101,17 @@ fun RootView(app: AppModel) {
                     label = "phase",
                 ) { phase ->
                     when (phase) {
-                        AppModel.Phase.WELCOME -> WelcomeView()
+                        // Under the splash, the welcome photos wait for it: it hands over on the photo it shows.
+                        AppModel.Phase.WELCOME -> CompositionLocalProvider(LocalHeroSlideshowLeads provides !splashShown) { WelcomeView() }
                         AppModel.Phase.ONBOARDING -> OnboardingView()
                         AppModel.Phase.MAIN -> Box(Modifier.fillMaxSize())
                     }
                 }
             }
             // A moderation hold: the hold screen covers everything, at once, and lifts the same way.
-            if (moderation.hold != null && app.phase != AppModel.Phase.WELCOME) {
-                Box(Modifier.fillMaxSize().zIndex(5f)) { AccountHoldView() }
+            // (Always placed once signed in, so the hold fades out as well as in.)
+            if (app.phase != AppModel.Phase.WELCOME) {
+                Box(Modifier.fillMaxSize().zIndex(5f)) { HoldLayer() }
             }
             // The launch: it covers the first screen until it's ready, then fades onto it.
             if (splashShown) {
