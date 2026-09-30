@@ -29,13 +29,15 @@ data class BackendConfig(
 
     /**
      * What this build lacks to reach a backend (the iPhone stops with "missing from Info.plist"): the
-     * local flavor needs `drafft.local.supabaseUrl` and `drafft.local.supabaseKey` in local.properties.
-     * Empty when configured.
+     * local flavor needs its machine's URL and key in local.private.properties
+     * (scripts/local-backend.sh), the others config/<flavor>.properties. Empty when configured.
      */
     val missing: List<String>
         get() = buildList {
-            if (url.isBlank()) add("SUPABASE_URL" + if (environment == "local") " (drafft.local.supabaseUrl in local.properties)" else "")
-            if (publishableKey.isBlank()) add("SUPABASE_PUBLISHABLE_KEY" + if (environment == "local") " (drafft.local.supabaseKey in local.properties)" else "")
+            val file = if (environment == "local") "local.private.properties, run scripts/local-backend.sh"
+            else "config/${environment.ifEmpty { "production" }}.properties"
+            if (url.isBlank()) add("SUPABASE_URL ($file)")
+            if (publishableKey.isBlank()) add("SUPABASE_PUBLISHABLE_KEY ($file)")
         }
 
     /** False: the app stops at launch and says what's [missing]. */
