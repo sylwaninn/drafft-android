@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -52,7 +53,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import so.drafft.app.feature.auth.LegalDoc
-import so.drafft.app.feature.auth.LegalDocSheet
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -62,7 +62,6 @@ import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
-import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EdgeBars
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.Photo
@@ -402,7 +401,7 @@ fun SessionSafetySheet(
 
 @Composable
 fun LegalDocsListSheet(modifier: Modifier = Modifier) {
-    var open by remember { mutableStateOf<LegalDoc?>(null) }
+    val uriHandler = LocalUriHandler.current
     val p = DS.palette
 
     fun icon(doc: LegalDoc): String = when (doc) {
@@ -422,7 +421,7 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
                             .defaultMinSize(minHeight = 44.dp)
                             .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
                                 Haptics.tap()
-                                open = doc
+                                uriHandler.openUri(doc.url())
                             }
                             .padding(vertical = DS.Space.md),
                         horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
@@ -435,11 +434,6 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
                 }
             }
         }
-    }
-
-    // Over this list, so closing a document comes back here.
-    open?.let { doc ->
-        DrafftSheet(onDismissRequest = { open = null }) { LegalDocSheet(doc = doc) }
     }
 }
 

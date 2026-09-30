@@ -65,7 +65,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.LegalDoc
-import so.drafft.app.feature.auth.LegalDocSheet
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
@@ -144,7 +143,7 @@ fun PaywallView(
     var restoring by remember { mutableStateOf(false) }
     // Outcome of a purchase or restore that didn't unlock anything, said plainly.
     var notice by remember { mutableStateOf<String?>(null) }
-    var legal by remember { mutableStateOf<LegalDoc?>(null) }
+    val uriHandler = LocalUriHandler.current
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
     InteractiveDismissDisabled(purchasing || receipt != null)
     val scroll = rememberScrollState()
@@ -253,7 +252,7 @@ fun PaywallView(
                         notice = notice,
                         onPurchase = ::purchase,
                         onRestore = ::restore,
-                        onLegal = { legal = it },
+                        onLegal = { uriHandler.openUri(it.url()) },
                     )
                 },
             ) { padding ->
@@ -322,9 +321,6 @@ fun PaywallView(
         }
     }
 
-    legal?.let { doc ->
-        DrafftSheet(onDismissRequest = { legal = null }) { LegalDocSheet(doc = doc) }
-    }
     // Over the paywall; closing it closes both, then the unlocked action runs.
     receipt?.let { r ->
         DrafftSheet(
@@ -692,7 +688,6 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
     var managing by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
     var restoreResult by remember { mutableStateOf<String?>(null) }
-    var legal by remember { mutableStateOf<LegalDoc?>(null) }
     val scroll = rememberScrollState()
 
     // What the store reports. Expired closes the page, since the drafft tempo row only shows while
@@ -789,15 +784,12 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                     restoreResult = restoreResult,
                     onOpenStore = { uriHandler.openUri(PLAY_SUBSCRIPTIONS_URL) },
                     onRestore = ::restore,
-                    onLegal = { legal = it },
+                    onLegal = { uriHandler.openUri(it.url()) },
                 )
             }
         }
     }
 
-    legal?.let { doc ->
-        DrafftSheet(onDismissRequest = { legal = null }) { LegalDocSheet(doc = doc) }
-    }
 }
 
 @Composable
