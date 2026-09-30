@@ -1,0 +1,1407 @@
+%d
+%d boosts
+%d boosts added.
+%d boosts left
+%d kilometres
+%d km
+%d left
+%d likes a day
+%d new messages, go to the latest
+%d of %d
+%d of %d likes left
+%d of 5 picked
+%d people like you.
+%d people like you. See who
+%d people like you. Unlock with drafft tempo
+%d photos
+%d selected
+%d super likes
+%d super likes added.
+%d super likes left
+%d super likes left after this
+%d times offered
+%d too many
+%d unread
+%d written
+%d years old
+%d×
+%d× a week
+%s 
+%s %s
+%s %s or %s
+%s (%d times)
+%s a month
+%s a year
+%s at %s
+%s away
+%s billed monthly
+%s billed yearly
+%s could show you
+%s discovery
+%s each
+%s every 6 months
+%s liked you back
+%s only sees it if you match.
+%s sees you first.
+%s session
+%s session planned on drafft.
+%s sessions per week
+%s super liked you
+%s together, then coffee?
+%s voice intro
+%s went the other way.
+%s will be told it's off.
+%s will pick a time or suggest others.
+%s with %s
+%s won't be notified, and you won't see each other again.
+%s%s
+%s%s%s
+%s's best bad joke
+%s's pick
+%s, %d
+%s, %d time options
+%s, %d written
+%s, %d, super liked you
+%s, %d. %s
+%s, %d. Open profile
+%s, %s
+%s, %s at %s
+%s, %s away
+%s, %s, best value
+%s, %s, you do it too
+%s, no time yet
+%s, obviously. Great minds 🤝
+%s, step %d of %d. Part %d of %d.
+%s, you do it too
++%d
+/ month
+1 boost
+1 boost left
+1 km
+1 month
+1 person likes you.
+1 photo
+1 super like
+1 super like left
+1 super like left after this
+1.5 times
+1.5×
+12 months
+1k swim, then breakfast?
+1×
+2 times
+2×
+50+ km
+6 months
+A 15-second voice intro. No pressure, you can redo it.
+A bit deeper
+A busy track, park, gym or club session, with others around.
+A few ground rules
+A few sets before work?
+A few words about you
+A few words help us fix it faster
+A first date that isn't dinner
+A goal that scares me a little
+A long-term relationship
+A mistake? Contact us
+A photo couldn't be sent. Tap it to see why, then try again.
+A photo wasn't approved
+A sport photo and a voice intro help. New likes land here.
+A stat I'm weirdly proud of
+About %d sessions a week
+About 1 session a week
+About you
+Accept the rules and terms to continue.
+Accepted
+Account
+Account check
+Active
+Active now
+Activity
+Add %s at %s
+Add a comment
+Add a few more photos
+Add a few words about how you move
+Add a first name.
+Add a goal
+Add a note (optional)
+Add a prompt
+Add a time
+Add another
+Add another prompt
+Add at least one clear face photo and one mid-session. Up to 6.
+Add at least one photo.
+Add at least one sport.
+Add photo
+Add to calendar
+Add what you're training for
+Add your first name.
+Add your number
+Added
+Adding it to your account
+Adjust filters
+After a workout you'll find me
+Age
+Agree
+Alex
+All
+All %d sports
+Allow location
+Already training with us?
+An hour before
+Answer a prompt
+Answer a prompt, or skip it for now.
+Answer a third prompt
+Answer one, or skip it for now.
+Any
+Any distance
+Anything else? (optional)
+Apple emails your receipt.
+Apple emails your receipt. Manage your subscription anytime in You.
+Apple shares a verified email (or a private relay address) and, the first time only, the name you choose. Never a photo, birthday or phone number.
+Apply filters
+Archery
+Ask for a second look
+At %s, a reminder of tomorrow's session.
+At least 8 characters
+At least one sport in common with you
+Back
+Back to Discover
+Bad joke
+Badminton
+Barre
+Basketball
+Be real
+Be respectful
+Be yourself
+Beach tennis
+Beach volley
+Before you go
+Beginner-friendly %s, I'll bring the gear?
+Best of three, winner picks dinner?
+Best value
+Billing
+Bio
+Birthday
+Birthday, %s
+Block
+Blocked people
+Blurred before it leaves your phone
+Boost added.
+Boost now
+Boost running
+Boost running, %d minutes %d seconds left
+Boosts
+Bouldering
+Bouldering, then a beer?
+Boxing
+Brick session: bike then run?
+Buy %d boosts for %s
+Buy %d super likes for %s
+Buy 1 boost for %s
+Buy 1 super like for %s
+Calendar access is off for drafft.
+Calisthenics
+Called it: that one's the lie 😏 What's the real story?
+Can't be changed
+Cancel
+Cancel like
+Cancel reply
+Cancel session
+Cancel super like
+Cancel this session?
+Cancelled
+Cancelled. You keep everything until %s.
+Center your face in the oval.
+Change
+Change or remove this time
+Change plan or cancel in Apple's subscription settings.
+Change time
+Change your password
+Chat not found
+Chats
+Check the date: this one doesn't exist.
+Check your connection and try again.
+Check your email address.
+Check your inbox
+Check your inbox, and your spam folder. It's the code that confirms it's you.
+Check your inbox, and your spam folder. The code works for 1 hour.
+Check your messages. The code works for 10 minutes.
+Checking the code…
+Checking this photo
+Checking your first photo…
+Choose a new password
+Choose a pack
+Choose a prompt
+Choose from library
+Choose what you hear about below.
+Choose your new password.
+Clear filters
+Clear pitch
+Clear search
+Climb a 7a
+Climbing
+Close
+Closed account
+Code sent to %s
+Come a little closer.
+Come try my usual %s spot?
+Coming up
+Community Guidelines
+Confirm %s, %s
+Confirm new password
+Confirm with your password.
+Confirm your email first, then add your number.
+Confirm your email first.
+Confirm your email first: enter the code we sent you.
+Confirmed
+Connecting…
+Contact us
+Continue
+Continue with Apple
+Continue with Google
+Cool morning run in Parc de la Tête d'Or?
+Copy
+Couldn't connect. Check your connection and try again.
+Couldn't reach the App Store. Try again.
+Couldn't send it. Check your connection and try again.
+Country code
+Country code, %s %s
+Country or code
+Create a password
+Create a password.
+Create account
+Create your account
+Cross-country skiing
+CrossFit
+Current email
+Current number
+Current password
+Cycling
+DD
+Dance
+Dating me
+Day
+Day hike, sandwiches on me?
+Deadlift PR attempt, come cheer?
+Declined
+Delete account
+Delete my account
+Delete recording
+Deleting removes your profile, photos, matches and messages for good. Your matches won't be able to reach you.
+Demo only: %s
+Disagree
+Discard changes
+Discard recording
+Discard your changes?
+Discover
+Discovery
+Discovery: %s shows you the ropes
+Discovery: you show %s the ropes
+Dismiss
+Distance
+Doesn't match yet.
+Doesn't smoke
+Don't miss a match
+Done
+Done with this answer
+Doubles, loser buys drinks?
+Drinking
+Drinks post-race only
+Drinks rarely
+Drinks socially
+Each boost puts you first in decks near you for 30 minutes. Use them when you like: they never expire.
+Each time you open drafft, your area follows you: home, work, a weekend away.
+Early bird
+Early bird or night owl?
+Early lengths at the outdoor pool?
+Easy %s session to start?
+Easy 8k along the canal, then croissants?
+Easy aerobic day together?
+Easy circuits for a first session?
+Easy spin to a café?
+Edit password
+Edit profile
+Email
+Email change
+Email me my export
+Email or password is incorrect. Try again or reset your password.
+Email sent again
+Email updated
+Ending
+Ending your account
+Ends %s
+Enter the 6-digit code we sent you.
+Enter the 6-digit code.
+Enter the email you signed up with. We'll send you a 6-digit code.
+Enter your mobile number.
+Enter your new email to continue.
+Enter your password.
+Every day
+Everyone
+Everyone on drafft verifies a phone number. It keeps fake accounts out.
+Everything you've uploaded
+Expired
+Explains why and what you can do
+Export my data
+Export or delete your data at any time from You › Privacy & data. Contact our data protection officer through support.
+Export requested
+Face
+Face on the first photo
+Failed, tap to see why
+Fails
+Fake profile or scam
+Fencing
+Filters
+Filters, %s, %d active
+Finding a time
+Finding your area…
+Finish line.
+Finish your interactive prompt.
+Finish your profile first.
+Finish your prompt, or skip it for now.
+First %s session? I'll show you the basics.
+First 10k
+First name
+First name only. It's what your matches see.
+First sessions happen in public places: a park, a club, a court.
+First sessions in public places. Tell a friend where you're going.
+First trail race
+Flexitarian
+Football
+For 30 minutes, people nearby see your profile before anyone else's.
+For a run or a ride, pick a busy route in daylight and keep your phone charged.
+Forest walk with a picnic?
+Forgot it?
+Forgot password
+Forgot your current password?
+Forgot?
+Format
+Format, %s
+Forwards to your email
+Friendly match after work?
+From the birthday you gave at sign-up. It can't be changed.
+From your %s account. You can change it.
+Fully agree. Finally someone said it.
+Functional training
+General question
+Get a copy of everything you've shared on drafft. We'll email you a download link to a file you can keep or open elsewhere.
+Get boosts
+Get drafft tempo
+Get help
+Get more boosts
+Get more super likes
+Get there on your own
+Get told when someone likes you back, writes to you, or a session is coming up.
+Get unlimited likes
+Give them an easy opener
+Go to chats
+Go to the latest message
+Golf
+Google shares your name, email and profile picture. Never your birthday, gender or phone number.
+Google will share your name, email address and profile picture with drafft.
+Got it
+Gravel
+Gravel ride with a picnic stop?
+Green flag in a training partner
+Guess about %s
+Guess about me
+Guess this is the lie
+Guessed it: %s! Do I win a session?
+Gymnastics
+HIIT
+Handball
+Harassment or threats
+Hear %s
+Hear about matches, messages and sessions right away.
+Help
+Help center
+Hidden from everyone. Your chats and sessions carry on.
+Hide My Email
+Hide password
+Hiking
+Hill repeats and a view?
+Hockey
+Hold a 2 min plank
+Hold a photo, then drag to reorder
+Hold to record, release to send
+Hold to record, release to send. Slide left to cancel, up to lock.
+Horse riding
+Hot take
+Hot take. Agree?
+Hot yoga
+How %s moves
+How do you move?
+How long we keep it
+How often
+How often?
+How you eat
+How you move
+Hyrox
+I can do a muscle-up
+I feel most like myself when
+I met someone
+I need a break
+I said %s… so it's %s? Tell me more
+I understand my account and all my data will be permanently deleted.
+I was SO sure that was the lie. Tell me it's not true
+I will never shut up about
+I'd drop everything to watch
+I'll know it's a match if
+I'm 18 or older and I accept the %s, the %s and the %s.
+I'm 18 or older and I accept the Terms of Use, the Privacy Policy and the Community Guidelines
+I'm looking for someone who
+I've confirmed my email
+I've never been as sore as the day I
+I've never missed a Sunday run
+I've run 3 marathons
+Ice skating
+If I were an energy gel flavour I'd be
+In %d days
+In common
+In it for the marathon
+In reply to %s: %s
+In reply to you: %s
+In review
+In your calendar
+In your calendar. Add again
+In your words
+Inappropriate photos
+Included
+Indoor cycling
+Interactive prompt
+Intervals, loser buys coffee?
+Invites you sent and received
+Is your face clear and well lit?
+It broke the drafft community rules. This decision is final.
+It couldn't be sent. Check your connection and try again.
+It goes to %s.
+It shows on your profile as “Training for…”. Big or small, it's a great conversation starter.
+It's a match.
+It's a match. Tap to say hi.
+It's not on your profile. Tap to see why.
+Jiu-jitsu
+Jump rope
+Just block, without a report
+Just for fun
+Just need a break?
+Just you in the frame.
+Just your face, well lit, nothing covering it.
+Karaoke song, no hesitation
+Kayak
+Keep editing
+Keep going
+Keep it
+Keep it under 200 characters.
+Keep swiping
+Keep the chat in drafft
+Kickboxing
+Kind in chat, clear about what you want. No means no.
+Kitesurf
+LIKE
+Language
+Lap complete.
+Last name
+Later
+Lead the pack.
+Leave
+Leave sign-up
+Leave sign-up?
+Leg day, I'll spot you?
+Less than 1 km
+Lie
+Lifestyle
+Like
+Like %s
+Like back and it's a match straight away.
+Like this answer
+Like this photo
+Like with this answer
+Liked %s's photo
+Liked a photo
+Liked your photo
+Liked your profile
+Likes
+Likes & matches
+Likes you
+Loading packs
+Loading plans
+Loading profiles
+Loading your profile
+Location is off for drafft. Turn it on in Settings (While Using the App is enough) to continue.
+Location not shared yet
+Log back in any time to see where the check is.
+Log back in any time to send your selfie.
+Log in
+Log in again to send your photos.
+Log in to see who's new nearby.
+Log out
+Log out?
+Long slow trail, big brunch after?
+Longchamp laps at sunrise?
+Looking for
+MM
+Make a change to save it.
+Make your own way there and back. Your address can wait.
+Man
+Manage subscription
+Mark as %s
+Mark as unread
+Marked as unread
+Martial arts
+Match instantly with people already into you.
+Match with someone on Discover to start chatting.
+Matches, messages, sessions
+Maximum age
+Maximum distance
+Meet safely
+Meet up and move together.
+Meet where others train
+Meet where people train
+Meeting someone for the first time
+Men
+Message
+Message sent.
+Messages
+Messages, without the text unless you want it
+Met
+Microphone access is off. Turn it on in Settings › drafft to record.
+Minimum age
+Mobile number
+Mobility
+More
+More emoji
+Morning stretch, slow start?
+Most popular
+Mountain biking
+Move earlier
+Move later
+Muddy loop in Fontainebleau?
+Mute
+Mute notifications
+Muted
+My competitive streak, rated
+My first %s session, be gentle?
+My hidden talent nobody believes
+My ideal Sunday session
+My love language is basically
+My marathon best is…
+My most controversial opinion
+My most irrational fear
+My pick
+My playlist for the last kilometre
+My pre-race ritual involves
+My purchase hasn't reached my account.
+My purchase hasn't reached my account. Reference: %s
+Nailed it. You read people well.
+Name
+Name & age
+Name, bio, sports, prompts, lifestyle
+Need inspiration?
+Needs attention
+Never
+New account
+New email
+New friends to train with
+New invite
+New match, %s. Start chatting
+New matches
+New matches and likes
+New password
+New people join every morning. Meanwhile, your matches are waiting in Chats.
+New time
+New times below.
+Next up
+Night owl
+No alcohol
+No boost left, or one is already running.
+No cap on likes.
+No cap.
+No chats yet
+No daily cap, like everyone you'd train with.
+No drafft tempo purchase on this Apple ID.
+No face
+No harassment, hate or sexual content without consent.
+No likes yet.
+No limit
+No name
+No new likes right now. Keep swiping, they'll show up here.
+No one
+No one\nhere.
+No one blocked.
+No one here
+No one new for now.
+No pitch yet
+No profiles right now.
+No prompt matches “%s”.
+No results
+No sessions yet.
+No sport called “%s”. Try another word.
+Nobody can see your profile yet, so a boost wouldn't reach anyone.
+Nobody nearby fits your filters right now. Loosen them a little and new people will show up.
+Nobody sees you and discovery waits until you resume. Your chats and sessions carry on.
+Non-binary
+Non-binary people
+None
+Nope, that one's true. The lie was a different one.
+Normal
+Not enough people nearby
+Not filled in
+Not met yet
+Not now
+Not quite. Now you know.
+Not recorded yet
+Not sent. Tap to try again.
+Not shown
+Not this time
+Not yet
+Notifications
+Notifications are off
+Notifications are off in iPhone Settings. Skip for now.
+Notifications are off. You can turn them on later in iPhone Settings.
+Notifications are on
+Notifications are on. Fine-tune them anytime in You › Notifications.
+Number verified
+OK
+Obstacle racing
+Off
+Off: notifications only say who wrote, not what.
+Offer a few times that work for you.
+Offer up to %d times. %s picks one, or suggests others.
+Okay that got a groan AND a laugh. Respect 😂
+Omnivore
+On the move
+One export at a time. You can ask again once it arrives.
+One free boost every week
+One free boost every week: 30 minutes at the top of decks near you.
+One number
+One of your times has passed.
+One-time purchase, never expires.
+Only people who do one of my sports
+Only the drafft team sees it, never other members.
+Only your first name is shown.
+Open App Store subscriptions
+Open Settings
+Open a chat with a match and propose a session. Confirmed ones show up here.
+Open chat
+Open profile
+Open water
+Open-water dip if you dare?
+Opening the camera.
+Opens it full screen
+Opens the chat
+Opens their profile
+Optional
+Optional. It helps us make drafft better.
+Or steal one of these
+Other times suggested
+Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
+Our team can unlock it for you.
+Our team needs a little time to make sure your account follows the drafft rules. It usually takes less than 48 hours.
+Our team needs a quick selfie to check that your photos are really you.
+Out of likes.
+PASS
+Packs couldn't load. Check your connection and try again.
+Paddleboard
+Padel
+Padel and a terrace?
+Paid
+Paid features
+Parkour
+Partner workout, then tacos?
+Pass
+Pass on %s
+Password
+Password change
+Password reset
+Password updated
+Pause my profile
+Pause my profile instead
+Pause voice intro
+Pause voice message
+Paused
+Pausing hides you from Discover and keeps your matches and chats.
+Payment is charged to your Apple Account. The subscription renews automatically at the same price unless you cancel it at least 24 hours before the end of the period. Manage or cancel it in your App Store settings.
+People nearby see you first for 30 minutes.
+Perfect. Hold still and take it.
+Pescatarian
+Phone
+Phone number
+Phone verification
+Photo
+Photo %d of %d
+Photos
+Photos & voice
+Photos of %s, %d total
+Pick 1 to 3 times that haven't passed.
+Pick a format for your interactive prompt. Matches play it and reply in one tap.
+Pick a plan to continue.
+Pick a prompt
+Pick a stronger password.
+Pick a time above
+Pick as many as you like.
+Pick at least one sport.
+Pick at least one time to send.
+Pick at least one.
+Pick one of the times offered.
+Pick one, or skip it for now.
+Pick something different from your current password.
+Pick the one that fits you best.
+Pick the time that works for you
+Pick up to 5 sports. Next, how often you do each.
+Pick your birthday.
+Pick your language
+Pickleball
+Pilates
+Pitch
+Pitch it
+Place your face in the oval.
+Plan
+Plans couldn't load. Check your connection and try again.
+Play %s's voice intro
+Play voice message, %d seconds
+Playback speed
+Plays it full screen
+Plus
+Post-race only
+Preferences
+Preview my profile
+Price
+Privacy
+Privacy & data
+Privacy Policy
+Profile
+Profile %d percent complete
+Profile %d%% complete
+Project night, you spot me?
+Prompts
+Propose a session
+Punchline, hidden until they tap
+Purchase
+Push day then smoothies?
+Put a clear photo of your face first.
+Question: %s. Change it
+Quick security check
+Rally, no score, just fun?
+Rarely
+Re: %s's profile
+Re: your profile
+React
+React %s
+Reaction %s
+Reactions
+Read
+Ready to update.
+Real check
+Recent photos of you, your own voice, your real age.
+Record a voice intro
+Record again
+Record voice intro
+Record voice message
+Record your intro, or skip it for now.
+Recorded
+Recording, %d of 15 seconds
+Red flag: you skip
+Reference
+Reformer Pilates
+Refused
+Remove %s
+Remove %s reaction
+Remove photo %d
+Remove prompt
+Remove this photo
+Remove this prompt
+Remove this time
+Renews
+Renews %s
+Renews on %s
+Reply
+Replying to %s
+Replying to yourself
+Report
+Report and block
+Report anything off
+Report anything that feels wrong. Reports are confidential.
+Report or block
+Report or block %s
+Report or block %s?
+Requested, check your inbox
+Resend code
+Resend code in 0:%s
+Resend in 0:%s
+Resend the email
+Reset your password
+Respect first
+Rest day? Here's what that really means
+Restore purchases
+Restoring purchases
+Resume my profile
+Retake
+Retry
+Returning
+Reveal punchline
+Ride 100k in a day
+Right
+Right! You know %s already.
+Rowing
+Rugby
+Run club
+Running
+Safety tips
+Sailing
+Same pick as %s!
+Same session, new times
+Saturday class, you in?
+Save %d%%
+Save %s at %s
+Save changes
+Save password
+Saved
+Saves everything you've changed.
+Say hi
+Say hi to a new match to start chatting.
+Say hi, out loud
+Say what you're looking for
+Search
+Search %d sports
+Search chats
+Search prompts
+See profiles again
+See who already likes you, send unlimited likes and get a free boost every week.
+See who liked you
+See who likes you
+See who likes you.
+See who, and match in one tap with drafft tempo.
+Select your birthday
+Send
+Send a photo or video
+Send as opener
+Send code
+Send confirmation link
+Send like
+Send like with comment
+Send my selfie
+Send new times
+Send session invite
+Send super like
+Send super like with note
+Send to support
+Send voice message
+Sending the SMS
+Sends
+Sent
+Sent to you by email
+Session confirmed
+Session reminders, the evening before and an hour before
+Session: %s, %s
+Sessions
+Sessions a week for each sport. Rough is fine.
+Set at sign-up. It can't be changed.
+Share
+Share My Email
+Share who you're meeting, where and when. Check in with them after.
+Share your location to see people nearby.
+Show me
+Show me your %s moves?
+Show message previews
+Show password
+Show us it's you.
+Show you in motion
+Shown as your age: %d
+Shown on your profile
+Shown on your profile so nobody's guessing. Skip it to keep it private.
+Shown on your profile. Answer what you like, leave the rest.
+Shows why, and lets you try again
+Sign in with Apple
+Sign in with Google
+Sign up with email
+Sign-up complete
+Single
+Skateboarding
+Ski touring
+Skiing
+Skip
+Slide to cancel
+Smoking
+Snowboarding
+Socially
+Someone from our team will review it, usually within 24 hours. It stays off your profile until then.
+Someone who likes you. Unlock with drafft tempo
+Something I'm training for outside of sport
+Something casual, no pressure
+Something else
+Something went wrong. Try again in a moment.
+Sometimes
+Spam or selling
+Spikeball
+Sport
+Sports
+Squad goals
+Squash
+Stand out.
+Start recording
+Start swiping
+Start with your current password.
+Stay in the app until you know them. Never send money.
+Stay on routes you know
+Stepper
+Still figuring it out
+Still stretching
+Stop recording
+Strength
+Stretching is overrated.
+Strongly disagree, and I'm ready to argue it over a session
+Stuck? Talk about
+Sub-4h marathon
+Suggest other times
+Sunrise
+Sunrise hike, worth the alarm?
+Sunset
+Sunset flow in the park?
+Super like
+Super like %s, %d left
+Super like added.
+Super like, %d left
+Super likes
+Support can't take messages this way right now. Try again later.
+Surfing
+Swim 2k non-stop
+Swim-run by the lake?
+Swimming
+Swiped too fast? Bring them back.
+Table tennis
+Tai chi
+Take a break from discovery: you disappear, your chats stay open.
+Take a photo or video
+Take it back.
+Take my selfie
+Take the selfie
+Tap Report or block on their profile or in the chat. Reports are confidential.
+Tap a prompt to select it.
+Tap a time to change it. %s picks one, or suggests others.
+Tap again to unselect.
+Tap for the punchline
+Tap to record
+Tap to stop
+Teach me %s? I'm a total beginner.
+Team %s. We need to talk 😄
+Tell a friend
+Tell us what happened to send your request.
+Tennis
+Terms
+Terms & privacy
+Terms & privacy policy
+Terms of Use
+Thanks, we'll take a look
+That doesn't look like a mobile number.
+That doesn't look like an email address.
+That doesn't look like an email address. Check for typos.
+That number looks incomplete.
+That's 5. Remove one to pick another.
+That's already your email.
+That's already your number.
+That's everyone nearby.
+That's your current prompt.
+The app opens again by itself once it's done.
+The basics
+The best advice a coach ever gave me
+The camera isn't available on this device.
+The code I type is
+The dumbest injury I've ever had
+The evening before
+The person who got me into sport
+The piece of gear I'd save in a fire
+The purchase didn't go through. You haven't been charged.
+The race you'd love to finish
+The security check couldn't load. Check your connection and try again.
+The security check didn't go through. Try again.
+The snack that fuels my entire personality
+The sport I'm secretly bad at
+The two new passwords don't match.
+The way to win me over
+The worst run of my life happened when
+There's already an account with this email. Log in instead.
+They agree or disagree
+They can't see your profile or message you, and you won't see them.
+They guess the right answer
+They like you.
+They offered
+They pick a side, then see yours
+They see you first, with a red heart on your profile. It doesn't use a daily like.
+They see you first, with a red heart on your profile. Use them when you like: they never expire.
+They spot the lie
+They tap for the punchline
+They won't be notified, and you won't see each other again. Reports go to our safety team.
+They won't be notified. The chat closes and you won't see each other again. Reports go to our safety team.
+This %s account is
+This can't be undone.
+This code has expired. Send a new one.
+This file is too large.
+This file type isn't supported.
+This invite has already been answered.
+This is taking longer than usual.
+This number can't get codes. Use a mobile number.
+This number is already used by another drafft account.
+This one is true
+This or that
+This or that? Pick a side.
+This photo can't go on your profile
+This photo has already been reviewed.
+This profile isn't available.
+This session is already closed.
+This session is no longer available.
+This swipe can't be undone any more.
+This time has passed.
+This was the lie
+Tick the box above to continue.
+Time
+Time %d, %s
+To confirm it's you
+Today
+Today %s
+Together we could finally
+Tomorrow
+Too many codes sent. Try again later.
+Too many emails sent. Wait a few minutes and try again.
+Too many tries.
+Too many wrong codes. For your security, this change is paused.
+Too many wrong codes. For your security, verification is paused.
+Topic
+Trail
+Train at your tempo.
+Train with %s
+Training for
+Training partner first, see where it goes
+Triathlon
+True
+Trust your gut
+Try %s with me, zero pressure?
+Try again
+Turn location back on.
+Turn on notifications
+Turn them on in iPhone Settings to hear about matches and sessions.
+Turn your matches into sessions, and meet at the start line.
+Two lines under your name: how you train, and what you're like after.
+Two of your times are the same.
+Two taps from any profile or chat. Every report is reviewed.
+Two truths and a lie about my fitness
+Two truths, one lie
+Two truths, one lie. Spot the lie.
+Type it again
+Type the new password once more.
+Typing
+Typing…
+Ultimate frisbee
+Ultra running
+Unblock
+Unblock %s
+Unblock %s?
+Unblock?
+Under 18
+Undo any swipe
+Undo is part of drafft tempo, along with a few things that get you to a first session faster.
+Undo last swipe
+Undo my last swipe
+Undo swipes, see who liked you, unlimited likes.
+Undo, see who liked you, unlimited likes and a free boost every week. Everything is on, starting now.
+Unlimited likes
+Unlimited likes come with drafft tempo, along with a free boost every week.
+Unlimited likes come with drafft tempo.
+Unmatch
+Unmatch %s
+Unmatch %s?
+Unmute
+Unmute notifications
+Unpopular opinion about stretching
+Unread
+Unsend
+Until you delete your account, then 30 days in backups.
+Up for a sprint
+Up to %d km
+Up to %d times
+Up to 15 seconds
+Up to 3
+Up to 3 short answers on your profile. People like one to start a chat.
+Up to 5
+Update password
+Updates as you move
+Upload failed
+Upper and lower case
+Use it next time you log in on another device.
+Use it next time you log in.
+Use this prompt
+Vegan
+Vegetarian
+Verification code
+Verification paused
+Verified
+Verify
+Verify your phone number first.
+Very early bird
+Video
+Video, %d seconds
+View %s's profile
+Voice intro
+Voice message (%s)
+Volleyball
+WOD together, no mercy?
+Waiting
+Walking
+Warm-up first
+We can't see a face on your first photo. Put a clear photo of you first.
+We couldn't check this number right now. Try again in a moment.
+We couldn't delete your account. Check your connection and try again.
+We couldn't find your area. Try again.
+We couldn't see your face clearly. Try again.
+We couldn't text this number. Check it, or get help if it keeps failing.
+We sent a link to %s. Open it on this iPhone to confirm your email and carry on.
+We sent a link to %s. Your email changes once you tap it.
+We usually reply within a day.
+We'll email a 6-digit code to %s to confirm it's you.
+We'll email a 6-digit code to %s.
+We'll get along if
+We'll reply at %s. Your reference is %s.
+We'll send a confirmation link to %s.
+We'll text a 6-digit code to %s.
+We'll text you a code. Your number never shows on your profile.
+We're adding your purchase to your account.
+We're checking your account.
+We're preparing your export. A download link goes to %s, usually within 24 hours of %s. The link works for 7 days.
+We're sorry to see you go.
+We've set it to your phone's language. You can change it anytime in You.
+Weekday dawn runner, weekend long rides…
+Weekend long run:
+Weekly boost
+Welcome back
+What are you training for?
+What happened, in a few words
+What happened?
+What keeps me going on hard days
+What others see
+What should we call you?
+What we collect
+What we never show
+What you changed since your last save will be lost.
+What you typed here will be lost.
+What you write is what they see
+What your perfect Sunday session looks like
+What's included
+What's wrong?
+What's your next goal?
+What's your number?
+When
+When someone reacts to one of your messages.
+When your free boost of the week is added.
+When's your birthday?
+Where do you train?
+Where should we reply?
+Which describes you best?
+Who can use drafft
+Who do you want to meet?
+Who you liked and matched with
+Why are you leaving?
+Why did the runner bring a map?
+Widen to %s
+Widen to any distance
+Win the club tournament
+Wing foil
+With %s
+Within %s
+Woman
+Women
+Write a few words, or skip it for now.
+Write a short bio
+Written prompts
+Wrong
+Wrong code. %d tries left.
+Wrong code. 1 try left.
+Wrong or expired code. %d tries left.
+Wrong or expired code. 1 try left.
+Wrong or expired code. Check it, or send a new one.
+YYYY
+Yes
+Yesterday
+Yesterday %s
+Yoga
+Yoga then a long lunch?
+You
+You already offer this time.
+You and %s both do %s. Say hi, then plan a first session.
+You and %s liked each other. Say hi, then plan a first session.
+You can block someone from their profile or a chat.
+You can change it anytime in You.
+You can close this. We'll switch as soon as you confirm.
+You can delete your account at any time from You › Delete account.
+You can end a session anytime, no explanation needed.
+You can replace your number, not remove it: it keeps your account secure.
+You can't create a new drafft account.
+You choose what you hear about in You › Notifications.
+You do it too
+You matched with %s
+You must be 18 or older and use your real identity. One account per person.
+You need to be 18 or older to use drafft.
+You now have
+You should not go out with me if
+You sign in with %s, no password
+You sign in with %s. Changing your email here only affects notifications.
+You verify a phone number. Keep your login details private.
+You'll see each other in Discover again. Your old chat doesn't come back.
+You'll stay logged in on this iPhone.
+You'll use it to log in from now on.
+You're at the front
+You're boosted
+You're logged out, so nothing was deleted. Log in again, then delete your account.
+You're on drafft tempo.
+You're out of likes for today.
+You're out of super likes.
+You've been logged out
+You've been logged out. Log in again to continue.
+You've reached the photo limit. Remove one, then try again.
+You've seen every profile that matches your filters. Come back later or change them.
+You've seen every profile within %s. Widen it to see more.
+You've seen everyone around you for now. Widen your filters or catch up with your matches in Chats.
+You've seen everyone for now.
+You've seen everyone within %s.
+You've sent several messages already. Try again in an hour.
+You've sent several reports already. Try again later.
+You: 
+Your account
+Your account has been closed.
+Your account is on hold.
+Your answer
+Your answers won't be kept. You'll start over next time.
+Your area
+Your area, like a district, and a distance rounded to the kilometre. Never your address.
+Your bio
+Your birthday can't be changed.
+Your chat ends for both of you, and you won't see each other in Discover again.
+Your conversations with matches
+Your current password is incorrect.
+Your email stays private. Matches only see your first name.
+Your exact location and your phone number.
+Your face is too small on your first photo. Use a closer one first.
+Your first photo needs to show your face clearly.
+Your last super like
+Your likes refill at midnight, or go unlimited with drafft tempo.
+Your matches and chats are kept.
+Your matches and chats stay safe. Log back in to see them.
+Your message couldn't be sent. Check your connection and try again.
+Your new number is saved.
+Your new password needs all three checks.
+Your own photos, your real first name and your real age.
+Your password
+Your password doesn't meet every rule yet.
+Your password is incorrect.
+Your photo and %s's photo
+Your position is rounded to about 1 km. Your exact spot is never sent or stored.
+Your post-workout food ritual
+Your profile
+Your profile and chats are no longer visible.
+Your profile couldn't load
+Your profile hasn't loaded, so nothing was saved. Close and try again.
+Your profile is hidden until then.
+Your profile is hidden while we check.
+Your profile is paused
+Your profile is up to date.
+Your profile shows your age, never the date.
+Your profile will show %d.
+Your profile, photos, voice intro, messages, your phone number and an approximate area.
+Your purchase is on your account.
+Your report couldn't be sent. Check your connection and try again.
+Your request couldn't be sent. Check your connection and try again.
+Your rights
+Your routine
+Your selfie couldn't be sent. Try again.
+Your session ended on this iPhone. Log in again to pick up where you left off.
+Your sport
+Your sports
+Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
+Your subscription is up to date.
+Your turn
+at CrossFit
+at barre
+at hot yoga
+at run club
+at the range
+boost
+boosts
+bouldering
+boxing
+climbing
+cross-country skiing
+cycling
+dancing
+doing HIIT
+doing Pilates
+doing calisthenics
+doing gymnastics
+doing parkour
+doing tai chi
+doing yoga
+drafft 0.1, demo build
+drafft is for people 18 and over.
+drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.
+drafft needs the camera for your selfie. Allow it in Settings.
+drafft needs your location to show people near you. We show your area, never your address.
+drafft tempo
+drafft tempo has no daily limit.
+drafft tempo renews until you cancel. Boosts and super likes are one-time purchases.
+drafft tempo shows everyone who already liked you, so you can match in one tap.
+drafft works because everyone plays fair.
+e.g. Sub-4h marathon in Berlin
+fencing
+foiling
+golfing
+hiking
+kayaking
+kickboxing
+kiting
+lifting
+mountain biking
+on the reformer
+on the stepper
+open-water swimming
+paddling
+playing badminton
+playing basketball
+playing beach tennis
+playing beach volley
+playing football
+playing handball
+playing hockey
+playing padel
+playing pickleball
+playing ping-pong
+playing rugby
+playing spikeball
+playing squash
+playing tennis
+playing ultimate
+playing volleyball
+racing
+riding
+riding gravel
+rolling
+rowing
+running
+running long
+sailing
+skating
+ski touring
+skiing
+skipping
+snowboarding
+spinning
+stretching
+super like
+super likes
+surfing
+swimming
+trail running
+training
+training for Hyrox
+walking
+you both do it
+you could show %s
+you@example.com
+“%s”
