@@ -629,7 +629,7 @@ No one\nhere.
 No one blocked.
 No one here
 No one new for now.
-No one sees you in Discover while you're paused. Your chats and sessions carry on.
+No one sees you in Discover.
 No pitch yet
 No profiles right now.
 No prompt matches “%s”.
@@ -771,6 +771,7 @@ Privacy Policy
 Profile
 Profile %d percent complete
 Profile %d%% complete
+Profile paused
 Project night, you spot me?
 Prompts
 Propose a session

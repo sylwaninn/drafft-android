@@ -237,6 +237,13 @@ class AppModel(
     /** Set while applying the server's own state, so it isn't sent back. */
     private var pauseFromServer = false
 
+    /**
+     * Flips of the switch on this phone, and those still being saved: a read of the server that
+     * began before the latest flip was saved says the old state, and mustn't put it back on screen.
+     */
+    private var pauseEdits = 0
+    private var pauseSaves = 0
+
     var notifyMatches by mutableStateOf(true)
     var notifyMessages by mutableStateOf(true)
     var notifySessions by mutableStateOf(true)
@@ -772,6 +779,7 @@ class AppModel(
             if (!force && Duration.between(at, Instant.now()).seconds < FRESH_FOR_SECONDS) return account
         }
         val session = sessionID
+        val pauseEdits = pauseEdits
         val task = scope.async {
             try {
                 val (account, data) = profileSync.loadAccount() ?: throw Backend.BackendError.SignedOut
@@ -779,7 +787,7 @@ class AppModel(
                 if (session != sessionID) return@async null
                 openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.PROFILE) } }
                 lastAccountRead = Instant.now() to account
-                apply(account)
+                apply(account, pauseReadAt = pauseEdits)
                 applyConsent(fromServer = account.consent)
                 account
             } catch (e: CancellationException) {
@@ -833,12 +841,12 @@ class AppModel(
         }
     }
 
-    private fun apply(account: ProfileSync.Account) {
+    private fun apply(account: ProfileSync.Account, pauseReadAt: Int? = null) {
         // Before the profile: a refused or pending photo must never show as the profile, not even for a frame.
         photoModeration.track(account.photos)
         me = account.profile
         profileLoad = ProfileLoad.LOADED
-        applyServerPause(account.paused)
+        applyServerPause(account.paused, readAt = pauseReadAt)
         moderation.apply(account.hold)
         account.notifications?.let(notifications::applyServer)
     }
@@ -1506,11 +1514,17 @@ class AppModel(
         if (from && !profilePaused) refreshDiscovery()
         if (profilePaused == from || pauseFromServer) return
         val paused = profilePaused
-        scope.launch { syncPause(paused) }
+        pauseEdits += 1
+        val edit = pauseEdits
+        scope.launch { syncPause(paused, edit) }
     }
 
-    /** The server says the profile is paused (or not): shown as is, never sent back. */
-    fun applyServerPause(paused: Boolean) {
+    /**
+     * The server says the profile is paused (or not): shown as is, never sent back. `readAt` is
+     * `pauseEdits` when the read began: a flip made since, or still being saved, wins over it.
+     */
+    fun applyServerPause(paused: Boolean, readAt: Int? = null) {
+        if (readAt != null && (readAt != pauseEdits || pauseSaves > 0)) return
         pauseFromServer = true
         profilePaused = paused
         pauseFromServer = false
@@ -1520,22 +1534,28 @@ class AppModel(
      * Sends the switch to the server; if it can't be saved (signed out included), the switch goes
      * back to the server's state.
      */
-    suspend fun syncPause(paused: Boolean) {
+    suspend fun syncPause(paused: Boolean, edit: Int) {
+        pauseSaves += 1
         try {
             backend.updateMyProfile(jsonOf("paused" to paused))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            // A later flip is on its way: it decides.
+            if (edit != pauseEdits) return
             Haptics.warning()
             applyServerPause(!paused)
+        } finally {
+            pauseSaves -= 1
         }
     }
 
     /** The saved pause, read back when signing in on this device. */
     suspend fun loadPause() {
+        val edits = pauseEdits
         val data = attempt { backend.myProfile(select = "paused") } ?: return
         val paused = data.parseJsonOrNull().asArray?.firstOrNull().asObject?.get("paused").asBoolean ?: return
-        applyServerPause(paused)
+        applyServerPause(paused, readAt = edits)
     }
 
     // endregion

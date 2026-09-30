@@ -3,13 +3,14 @@ package so.drafft.app.feature.me
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,16 +49,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.discover.FiltersSheet
@@ -78,9 +85,9 @@ import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
 import so.drafft.core.ui.components.DrafftSheet
-import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.LocalSheetDismiss
+import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
@@ -91,8 +98,8 @@ import so.drafft.core.ui.components.TopBar
 import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
-import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.LocalReduceMotion
+import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.branded
@@ -141,11 +148,17 @@ fun MeView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PausedBanner(app.profilePaused)
-            if (app.profileLoad == AppModel.ProfileLoad.LOADED) {
-                LoadedProfileCard(onEdit = { sheet = MeSheet.EDIT }, onPreview = { sheet = MeSheet.PREVIEW })
-            } else {
-                ProfileLoadCard()
+            // While paused, a strip slides out from under the card: the card and what it says about
+            // you, then that no one sees it for now.
+            Column(Modifier.fillMaxWidth()) {
+                Box(Modifier.zIndex(1f)) {
+                    if (app.profileLoad == AppModel.ProfileLoad.LOADED) {
+                        LoadedProfileCard(onEdit = { sheet = MeSheet.EDIT }, onPreview = { sheet = MeSheet.PREVIEW })
+                    } else {
+                        ProfileLoadCard()
+                    }
+                }
+                PausedStrip(app.profilePaused)
             }
             if (!app.isPremium) PlusCard { sheet = MeSheet.PAYWALL }
 
@@ -162,6 +175,7 @@ fun MeView(modifier: Modifier = Modifier) {
                     },
                     isOn = app.profilePaused,
                     onChange = { app.profilePaused = it },
+                    tint = p.paused,
                 )
             }
             Group(L("Preferences")) {
@@ -495,75 +509,60 @@ private fun Spark(color: Color, modifier: Modifier) {
     )
 }
 
-// MARK: Paused banner
+// MARK: Paused strip
 
 /**
- * While the profile is paused, the first block of You says so, what it means, and resumes in one
- * tap. The switch in Discovery stays the way to pause.
+ * While the profile is paused, the strip under the You card: the same colour as the switch that
+ * paused it, and what it means in one line. The switch in Discovery is the way back.
+ *
+ * It sits under the card's bottom by the card's radius, drawn behind it (the card is above in z), so
+ * it reads as another card continuing beneath.
  */
 @Composable
-private fun PausedBanner(visible: Boolean) {
-    val app = LocalAppModel.current
+private fun PausedStrip(visible: Boolean) {
     val p = DS.palette
     val reduceMotion = LocalReduceMotion.current
-    // The banner comes and goes with the pause (the switch, its Resume button, the server): the
-    // blocks under it slide along instead of jumping.
-    val top = TransformOrigin(0.5f, 0f)
+    // The strip comes and goes with the pause (the switch or the server): it slides out from under the
+    // card while its height opens, both on one curve, so its bottom edge and the blocks under it move
+    // together. No bounce: a spring overshooting read as a jolt.
+    val sizeSpec = if (reduceMotion) tween<IntSize>(200, easing = Motion.EaseInOut) else Motion.springOf(0.35, 1f, IntSize.VisibilityThreshold)
+    val offsetSpec = Motion.springOf(0.35, 1f, IntOffset.VisibilityThreshold)
     AnimatedVisibility(
         visible,
         Modifier.fillMaxWidth(),
         enter = if (reduceMotion) {
-            fadeIn(tween(200, easing = Motion.EaseInOut)) + expandVertically(tween(200, easing = Motion.EaseInOut), Alignment.Top)
+            fadeIn(tween(200, easing = Motion.EaseInOut)) + expandVertically(sizeSpec, Alignment.Top, clip = false)
         } else {
-            expandVertically(Motion.bouncy(), Alignment.Top) +
-                scaleIn(Motion.bouncy(), initialScale = 0.96f, transformOrigin = top) + fadeIn(Motion.bouncy())
+            expandVertically(sizeSpec, Alignment.Top, clip = false) + slideInVertically(offsetSpec) { -it }
         },
         exit = if (reduceMotion) {
-            fadeOut(tween(200, easing = Motion.EaseInOut)) + shrinkVertically(tween(200, easing = Motion.EaseInOut), Alignment.Top)
+            fadeOut(tween(200, easing = Motion.EaseInOut)) + shrinkVertically(sizeSpec, Alignment.Top, clip = false)
         } else {
-            shrinkVertically(Motion.bouncy(), Alignment.Top) +
-                scaleOut(Motion.bouncy(), targetScale = 0.96f, transformOrigin = top) + fadeOut(Motion.bouncy())
+            shrinkVertically(sizeSpec, Alignment.Top, clip = false) + slideOutVertically(offsetSpec) { -it }
         },
     ) {
-        Column(
+        val line = buildAnnotatedString {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(L("Profile paused")) }
+            append(" ")
+            append(L("No one sees you in Discover."))
+        }
+        Row(
             Modifier
                 .fillMaxWidth()
-                .background(p.canvas, RoundedCornerShape(DS.Radius.xl))
-                .padding(DS.Space.xl),
-            verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
+                // Tucked under the card by its radius: laid out that much shorter, drawn that much higher.
+                .layout { measurable, constraints ->
+                    val tuck = DS.Radius.xl.roundToPx()
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, (placeable.height - tuck).coerceAtLeast(0)) { placeable.place(0, -tuck) }
+                }
+                .background(p.paused, RoundedCornerShape(DS.Radius.xl))
+                .padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Radius.xl + DS.Space.md, bottom = DS.Space.md)
+                .semantics(mergeDescendants = true) { },
+            horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Read as one statement: the title and what it means.
-            Row(
-                Modifier.semantics(mergeDescendants = true) { heading() },
-                horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
-            ) {
-                Box(
-                    Modifier
-                        .size(44.dp)
-                        .background(p.canvasSoft, CircleShape)
-                        .clearAndSetSemantics { },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    DrafftIcon("pause.fill", size = symbolSize(TextStyles.body), tint = p.ink)
-                }
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(top = 2.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(L("Your profile is paused"), style = display(20f), color = p.ink)
-                    Text(
-                        L("No one sees you in Discover while you're paused. Your chats and sessions carry on."),
-                        style = TextStyles.subheadline,
-                        color = p.body,
-                    )
-                }
-            }
-            DrafftButton(L("Resume my profile"), onClick = {
-                Haptics.success()
-                app.profilePaused = false
-            })
+            DrafftIcon("pause.fill", Modifier.clearAndSetSemantics { }, size = symbolSize(TextStyles.footnote), tint = p.onPaused)
+            Text(line, Modifier.weight(1f), style = TextStyles.subheadline, color = p.onPaused)
         }
     }
 }
@@ -660,7 +659,14 @@ private fun InfoRow(title: String, icon: String, value: String) {
 }
 
 @Composable
-private fun ToggleSettingsRow(title: String, icon: String, detail: String?, isOn: Boolean, onChange: (Boolean) -> Unit) {
+private fun ToggleSettingsRow(
+    title: String,
+    icon: String,
+    detail: String?,
+    isOn: Boolean,
+    onChange: (Boolean) -> Unit,
+    tint: Color = DS.palette.lime,
+) {
     val p = DS.palette
     Row(
         Modifier
@@ -688,6 +694,7 @@ private fun ToggleSettingsRow(title: String, icon: String, detail: String?, isOn
                 onChange(it)
                 Haptics.select()
             },
+            tint = tint,
         )
     }
 }
