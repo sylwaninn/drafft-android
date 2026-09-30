@@ -175,6 +175,7 @@ object Symbols {
             "pencil" to Icons.Rounded.Edit,
             "person.2.fill" to Icons.Rounded.People,
             "person.3.fill" to Icons.Rounded.Groups,
+            "person.crop.circle.fill" to Icons.Rounded.AccountCircle,
             "person.crop.circle" to Icons.Outlined.AccountCircle,
             "person.crop.circle.badge.exclamationmark" to Icons.Rounded.ManageAccounts,
             "person.crop.circle.badge.xmark" to Icons.Rounded.PersonOff,

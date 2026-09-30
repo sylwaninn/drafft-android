@@ -62,3 +62,11 @@ interface DeviceIntegrityProvider {
 interface DiagnosticsSource {
     fun start(onPayload: (kind: String, json: String, summary: String, isProblem: Boolean) -> Unit)
 }
+
+/**
+ * Real returns to the app from the background (not a system dialog or the app switcher making it
+ * inactive for a moment): the root reads what changed while away on each one.
+ */
+interface ForegroundReturns {
+    val returns: kotlinx.coroutines.flow.Flow<Unit>
+}
