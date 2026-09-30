@@ -1,6 +1,6 @@
 # drafft Android: instructions for agents and contributors
 
-drafft for Android is a port of the iPhone app (repository `sylwaninn/drafft`, SwiftUI). Same features,
+drafft for Android is a port of the iPhone app (repository `sylwaninn/drafft-ios`, SwiftUI). Same features,
 same behaviour, same wording, same look, built with Kotlin and Jetpack Compose. When the two apps
 disagree, the iPhone app is right: read its source before changing behaviour here.
 
