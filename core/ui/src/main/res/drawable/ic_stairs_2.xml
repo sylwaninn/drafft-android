@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- stairs-2: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,18 L3,17 L8.664,17 L8.664,11.5 L14.327,11.5 L14.327,6 L21,6 L21,7 L15.337,7 L15.337,12.5 L9.673,12.5 L9.673,18 Z" />
+</vector>

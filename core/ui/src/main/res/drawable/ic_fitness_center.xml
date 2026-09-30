@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- fitness-center: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M13.592,21.4 L12.692,20.5 L16.242,16.95 L7.05,7.758 L3.5,11.308 L2.6,10.408 L4.039,8.958 L3.139,8.058 L5.239,5.958 L3.839,4.546 L4.546,3.839 L5.958,5.239 L8.058,3.139 L8.958,4.039 L10.408,2.6 L11.308,3.5 L7.758,7.05 L16.95,16.242 L20.5,12.692 L21.4,13.592 L19.962,15.042 L20.862,15.942 L18.762,18.042 L20.162,19.454 L19.454,20.162 L18.042,18.762 L15.942,20.862 L15.042,19.962 Z" />
+</vector>

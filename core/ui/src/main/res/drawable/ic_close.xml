@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- close: generated from the Solar / Material Symbols source, see Symbols.kt -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M19.537,5.53 L13.064,12.003 L19.53,18.47 Q19.75,18.689 19.75,19 Q19.75,19.311 19.53,19.53 Q19.311,19.75 19,19.75 Q18.689,19.75 18.47,19.53 L12.003,13.064 L5.537,19.53 Q5.318,19.75 5.007,19.75 Q4.696,19.75 4.477,19.53 Q4.257,19.311 4.257,19 Q4.257,18.689 4.477,18.47 L10.943,12.003 L4.47,5.53 Q4.25,5.311 4.25,5 Q4.25,4.689 4.47,4.47 Q4.689,4.25 5,4.25 Q5.311,4.25 5.53,4.47 L12.003,10.943 L18.476,4.47 Q18.696,4.25 19.007,4.25 Q19.317,4.25 19.537,4.47 Q19.757,4.689 19.757,5 Q19.757,5.311 19.537,5.53 Z" />
+</vector>
