@@ -49,15 +49,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -536,11 +534,6 @@ private fun PausedStrip(visible: Boolean) {
             shrinkVertically(sizeSpec, Alignment.Top, clip = false) + slideOutVertically(offsetSpec) { -it }
         },
     ) {
-        val line = buildAnnotatedString {
-            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(L("Profile paused")) }
-            append(" ")
-            append(L("No one sees you in Discover."))
-        }
         Row(
             Modifier
                 .fillMaxWidth()
@@ -555,10 +548,18 @@ private fun PausedStrip(visible: Boolean) {
                 .padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Radius.xl + DS.Space.md, bottom = DS.Space.md)
                 .semantics(mergeDescendants = true) { },
             horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
-            DrafftIcon("pause.fill", Modifier.clearAndSetSemantics { }, size = symbolSize(TextStyles.footnote), tint = p.onPaused)
-            Text(line, Modifier.weight(1f), style = TextStyles.subheadline, color = p.onPaused)
+            // As tall as the title's line, centred in it: the icon stays by the title when a
+            // translation wraps.
+            val titleLine = with(LocalDensity.current) { TextStyles.subheadline.lineHeight.toDp() }
+            Box(Modifier.height(titleLine), contentAlignment = Alignment.Center) {
+                DrafftIcon("pause.fill", Modifier.clearAndSetSemantics { }, size = symbolSize(TextStyles.footnote), tint = p.onPaused)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(L("Profile paused"), style = TextStyles.subheadline.copy(fontWeight = FontWeight.Bold), color = p.onPaused)
+                Text(L("No one sees you in Discover."), style = TextStyles.footnote, color = p.onPaused)
+            }
         }
     }
 }
