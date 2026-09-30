@@ -119,8 +119,8 @@ class TermsConsentTest {
     fun theConsentWordsExistInEveryLanguage() {
         for (language in AppLanguage.entries) {
             Localization.use(language)
-            val sentence = L("I agree that drafft uses my %s: my gender, the genders I want to see and my lifestyle, if I fill it in.", L("sensitive data"))
-            assertTrue(sentence.contains(L("sensitive data")), "The sensitive data consent lost its link words in ${language.code}")
+            val sentence = L("I agree that drafft uses %s, the genders I want to see and my lifestyle for my suggestions.", L("my gender"))
+            assertTrue(sentence.contains(L("my gender")), "The sensitive data consent lost its link words in ${language.code}")
         }
         Localization.use(AppLanguage.EN)
     }
