@@ -87,6 +87,7 @@ jobs:
           if [ -n "$big" ]; then echo "error: files over 1 MB:"; echo "$big"; exit 1; fi
       - name: Only public keys in build settings
         run: |
-          if grep -nE 'sb_secret_|service_role|PRIVATE KEY' config/*.properties app/build.gradle.kts gradle.properties; then
+          # Values only: comments may name what's forbidden, and build.gradle.kts holds the detector itself.
+          if grep -nE 'sb_secret_|service_role|PRIVATE KEY' config/*.properties gradle.properties | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#'; then
             echo "error: a secret in the build settings: only publishable/public keys belong there"; exit 1
           fi
