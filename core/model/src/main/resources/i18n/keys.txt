@@ -438,7 +438,7 @@ How often?
 How you eat
 How you move
 Hyrox
-I agree that drafft uses my %s: my gender, the genders I want to see and my lifestyle, if I fill it in.
+I agree that drafft uses %s, the genders I want to see and my lifestyle for my suggestions.
 I can do a muscle-up
 I feel most like myself when
 I met someone
@@ -1035,7 +1035,6 @@ They tap for the punchline
 They won't be notified, and you won't see each other again. Reports go to our safety team.
 They won't be notified. The chat closes and you won't see each other again. Reports go to our safety team.
 This %s account is
-This can reveal your sexual orientation, health or beliefs, so drafft asks first.
 This can't be undone.
 This code has expired. Send a new one.
 This file is too large.
@@ -1356,6 +1355,7 @@ kickboxing
 kiting
 lifting
 mountain biking
+my gender
 on the reformer
 on the stepper
 open-water swimming
@@ -1384,7 +1384,6 @@ rowing
 running
 running long
 sailing
-sensitive data
 skating
 ski touring
 skiing
