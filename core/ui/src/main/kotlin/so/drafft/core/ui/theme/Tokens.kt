@@ -114,6 +114,10 @@ class Palette private constructor(val isDark: Boolean) {
     val positive = hex(0x2EAD4B)
     val positiveDeep = c(0x054D28, 0x7FD493)
     val warning = hex(0xFFD11A)
+
+    /** A paused profile: the strip under the You card and the switch that pauses it. */
+    val paused = warning
+    val onPaused = hex(0x0E0F0C)
     val negative = hex(0xD03238)
     val accentOrange = hex(0xFFC091)
     val accentCyan = hex(0x38C8FF)
