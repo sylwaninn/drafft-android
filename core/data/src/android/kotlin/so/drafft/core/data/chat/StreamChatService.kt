@@ -9,6 +9,7 @@ import io.getstream.chat.android.client.channel.state.ChannelState
 import io.getstream.chat.android.client.events.ConnectedEvent
 import io.getstream.chat.android.client.events.NewMessageEvent
 import io.getstream.chat.android.client.logger.ChatLogLevel
+import io.getstream.chat.android.client.subscribeFor
 import io.getstream.chat.android.client.token.TokenProvider
 import io.getstream.chat.android.client.utils.observable.Disposable
 import io.getstream.chat.android.models.Attachment
@@ -485,7 +486,7 @@ class StreamChatService(
         val muted = threads.channels[matchID]?.isMuted ?: false
         scope.launch {
             notifications.notify(
-                NotificationText.Kind.MESSAGE, profile.firstName, profile.portrait, matchID, muted, mapped.previewText,
+                NotificationText.Kind.Message, profile.firstName, profile.portrait, matchID, muted, mapped.previewText,
             )
         }
     }
