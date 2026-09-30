@@ -148,7 +148,6 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
                             modifier = Modifier.clearAndSetSemantics { }.rise(appeared, 0, reduceMotion),
                             size = 26f,
                             color = Color.White,
-                            trail = p.accentOnNight,
                         )
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         // The empty screens' sign, its outline lined up with the text.
@@ -276,9 +275,9 @@ private object HoldArt {
     val selfie = EmptyStateArt(symbol = "faceid")
 }
 
-/** Entrance: each part rises into place a beat after the one above it. */
+/** Entrance of the blocking screens (hold, location): each part rises into place a beat after the one above it. */
 @Composable
-private fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean): Modifier {
+internal fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean): Modifier {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(appeared) {
         if (!appeared) return@LaunchedEffect

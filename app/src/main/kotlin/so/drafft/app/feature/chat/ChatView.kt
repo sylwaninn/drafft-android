@@ -651,14 +651,14 @@ private fun ChatContent(
         val original = counter ?: return@DrafftSheet
         ProposeSessionSheet(
             profile = convo.profile,
-            me = app.me,
+            me = app.publicMe,
             sendTitle = L("Send new times"),
             counterTo = original,
             onSend = { p -> app.counterSession(original.id, conversationID, p) },
         )
     }
     DrafftSheet(visible = proposing, onDismissRequest = { proposing = false }) {
-        ProposeSessionSheet(profile = convo.profile, me = app.me, onSend = { p -> app.proposeSession(p, conversationID) })
+        ProposeSessionSheet(profile = convo.profile, me = app.publicMe, onSend = { p -> app.proposeSession(p, conversationID) })
     }
     val safety = safetyFor
     DrafftSheet(visible = safety != null, onDismissRequest = { safetyFor = null }) {

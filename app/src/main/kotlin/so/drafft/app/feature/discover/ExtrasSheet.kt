@@ -882,7 +882,7 @@ private fun PackFan(lifted: () -> Float, modifier: Modifier = Modifier, badge: @
                 }
                 .shadow(18.dp, shape, clip = false, ambientColor = Color.Black.copy(alpha = 0.4f), spotColor = Color.Black.copy(alpha = 0.4f)),
         ) {
-            Photo(app.me.portrait, Modifier.fillMaxSize().clip(shape), side = 108.dp)
+            Photo(app.publicMe.portrait, Modifier.fillMaxSize().clip(shape), side = 108.dp)
             // The badge sits inside the card's corner: nothing hangs off a block.
             Box(Modifier.align(Alignment.TopEnd).padding(DS.Space.sm)) { badge() }
         }

@@ -39,7 +39,19 @@ interface LocationProvider {
     /** The permission as last read; follows [refreshAuthorization] and the answer to a request. */
     val authorization: StateFlow<Authorization>
 
-    /** Reads the permission again (launch, back from Settings). */
+    /**
+     * The phone's location turned off for every app (the iPhone's Location Services off), read with the
+     * permission.
+     */
+    val servicesOff: StateFlow<Boolean>
+
+    /**
+     * Whether asking again shows the system prompt: never asked, or refused once (Android then still
+     * asks). False once refused for good: only Settings can turn it on.
+     */
+    val canPrompt: StateFlow<Boolean>
+
+    /** Reads the permission and the phone's location switch again (launch, back from Settings). */
     fun refreshAuthorization()
 
     /** Asks for "while using the app"; the answer lands in [authorization]. */

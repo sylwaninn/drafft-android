@@ -53,6 +53,13 @@ interface PlatformUi {
     fun rememberOpenAppSettings(): () -> Unit
 
     /**
+     * The action that opens the phone's location settings, where its location switch is (Android only:
+     * the iPhone can't open Location Services directly).
+     */
+    @Composable
+    fun rememberOpenLocationSettings(): () -> Unit
+
+    /**
      * The system photo picker, images only (the iPhone's `PhotosPicker(matching: .images)`): returns
      * the action that opens it. [onPicked] gets the chosen photo's bytes, read off the main thread;
      * nothing is called when the picker is cancelled or the photo can't be read.
@@ -131,6 +138,9 @@ object DefaultPlatformUi : PlatformUi {
 
     @Composable
     override fun rememberOpenAppSettings(): () -> Unit = {}
+
+    @Composable
+    override fun rememberOpenLocationSettings(): () -> Unit = {}
 
     @Composable
     override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit = {}

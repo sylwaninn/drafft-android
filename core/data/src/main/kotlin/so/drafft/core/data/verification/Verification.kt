@@ -9,6 +9,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber
+import com.google.i18n.phonenumbers.metadata.DefaultMetadataDependenciesProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.exception.AuthErrorCode
 import io.github.jan.supabase.auth.exception.AuthRestException
@@ -197,6 +198,56 @@ data class PhoneCountry(
             return number.takeIf { type == PhoneNumberType.MOBILE || type == PhoneNumberType.FIXED_LINE_OR_MOBILE }
         }
 
+        /**
+         * The number typed the international way ("+44 7...", "0044 7...", or the exit code of the country
+         * picked, like 011 from the US): the country its calling code names, and the national part after
+         * it, formatted when complete ("07700 900123"). Null when it's typed the national way ("06 12...",
+         * "6 12..."): the picked country reads it. Every country libphonenumber knows, shared codes included
+         * (+1 US or Canada, +44 UK or Jersey, +7 Russia or Kazakhstan: the number itself says which).
+         */
+        fun international(typed: String, current: PhoneCountry): Pair<PhoneCountry, String>? {
+            val digits = typed.filter { it in '0'..'9' }
+            val first = typed.firstOrNull { !it.isWhitespace() }
+            val rest = when {
+                first == '+' || first == '\uFF0B' -> digits
+                else -> exitCodeLength(digits, current.region)?.let { digits.drop(it) } ?: return null
+            }
+            // Calling codes are 1 to 3 digits and none is the start of another (E.164): the first match is it.
+            for (length in 1..3) {
+                if (rest.length < length) break
+                val code = rest.take(length).toInt()
+                if (phoneNumbers.getRegionCodesForCountryCode(code).isEmpty()) continue
+                val national = rest.drop(length)
+                val full = try {
+                    phoneNumbers.parse("+$rest", null)
+                } catch (e: NumberParseException) {
+                    null
+                }
+                val region = full?.let { phoneNumbers.getRegionCodeForNumber(it) }?.takeIf { it != "ZZ" }
+                    ?: if (phoneNumbers.getCountryCodeForRegion(current.region) == code) current.region
+                    else phoneNumbers.getRegionCodeForCountryCode(code)
+                val country = country(region) ?: return null
+                val formatted = full?.takeIf { phoneNumbers.isValidNumber(it) }
+                    ?.let { phoneNumbers.format(it, PhoneNumberFormat.NATIONAL) } ?: national
+                return country to formatted
+            }
+            return null
+        }
+
+        /**
+         * How many leading digits are the picked country's exit code (00 in most of the world, 011 in
+         * North America...), from libphonenumber's metadata. Null when the digits don't start with it.
+         */
+        private fun exitCodeLength(digits: String, region: String): Int? {
+            val pattern = runCatching {
+                DefaultMetadataDependenciesProvider.getInstance().phoneNumberMetadataSource
+                    .getMetadataForRegion(region)?.internationalPrefix
+            }.getOrNull() ?: return null
+            val match = Regex("^(?:$pattern)").find(digits) ?: return null
+            val length = match.value.length
+            return length.takeIf { it in 1 until digits.length }
+        }
+
         /** The account's number as Supabase Auth keeps it ("33612345678"), written the international way. */
         fun display(stored: String): String {
             val e164 = "+" + stored.filter(Char::isDigit)
@@ -234,12 +285,23 @@ class PhoneVerificationModel(
         }
 
     private var _number by mutableStateOf("")
+
+    /**
+     * What the field shows. Typed or pasted the international way, the country follows at once and the
+     * field keeps the national part ("+33 6 12..." becomes France and "06 12...").
+     */
     var number: String
         get() = _number
         set(value) {
-            _number = value
             error = null
-            parse()
+            val found = PhoneCountry.international(value, country)
+            if (found != null) {
+                _number = found.second
+                if (found.first != country) country = found.first else parse()
+            } else {
+                _number = value
+                parse()
+            }
         }
 
     /** The typed number, once it's a mobile number of the country. */
@@ -286,7 +348,11 @@ class PhoneVerificationModel(
     }
 
     private fun parse() {
-        parsed = PhoneCountry.mobileNumber(number, country)
+        val found = PhoneCountry.mobileNumber(number, country)
+        parsed = found
+        // A shared calling code: the complete number says which country it is (+1 787 is Puerto Rico).
+        val region = found?.let { PhoneCountry.phoneNumbers.getRegionCodeForNumber(it) }
+        if (region != null && region != country.region) PhoneCountry.country(region)?.let { country = it }
     }
 
     val e164: String

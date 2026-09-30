@@ -62,6 +62,7 @@ val dataModule = module {
             sessionStore = get(),
             sessionCalendar = get(),
             moderation = get(),
+            photoModeration = get(),
             profileSync = get(),
             onboarding = get(),
             safety = get(),

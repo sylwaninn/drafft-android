@@ -247,7 +247,7 @@ fun MeView(modifier: Modifier = Modifier) {
             when (s) {
                 MeSheet.EDIT -> EditProfileView(profile = app.me)
                 MeSheet.PREVIEW -> Box(Modifier.fillMaxSize()) {
-                    ProfileDetailView(profile = app.me, mode = ProfileDetailMode.ME)
+                    ProfileDetailView(profile = app.publicMe, mode = ProfileDetailMode.ME)
                     GlassCircleButton(
                         "xmark",
                         onClick = LocalSheetDismiss.current,
@@ -353,7 +353,7 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
     val app = LocalAppModel.current
     val p = DS.palette
     val completion = app.profileCompletion
-    val me = app.me
+    val me = app.publicMe
     val preview = L("Preview my profile")
     NightBlock(Modifier.fillMaxWidth()) {
         Column(

@@ -258,6 +258,8 @@ fun OnboardingView(modifier: Modifier = Modifier) {
 
 // MARK: - State
 
+private enum class PhotosCheck { EMPTY, CHECKING, READY, FIRST_REFUSED, FIRST_IN_REVIEW, NO_FACE, TOO_SMALL, FAILED }
+
 /** Everything sign-up holds while it runs (the Swift view's `@State`), and what it does with it. */
 @Stable
 private class OnboardingState(
@@ -290,6 +292,28 @@ private class OnboardingState(
 
     /** Face check on the first photo: null while checking or with no photo. */
     var mainFace by mutableStateOf<FaceCheck.Result?>(null)
+
+    /**
+     * Where the photos stand. The step goes on only once moderation has judged every photo and the first
+     * one is approved with a face (checked here, then again on the server): a photo being checked, refused
+     * or waiting for a person never opens a profile. Refused or waiting photos after the first may stay (a
+     * second look can be asked from their tile): the server never shows them.
+     */
+    val photosCheck: PhotosCheck
+        get() {
+            val first = photos.firstOrNull() ?: return PhotosCheck.EMPTY
+            val moderation = app.photoModeration
+            val states = photos.map { moderation.state(it) }
+            return when {
+                moderation.state(first) == PhotoModeration.State.Refused -> PhotosCheck.FIRST_REFUSED
+                mainFace == FaceCheck.Result.NO_FACE -> PhotosCheck.NO_FACE
+                mainFace == FaceCheck.Result.TOO_SMALL -> PhotosCheck.TOO_SMALL
+                states.any { it is PhotoModeration.State.Failed } -> PhotosCheck.FAILED
+                mainFace == null || states.any { it?.isJudged != true } -> PhotosCheck.CHECKING
+                moderation.state(first) == PhotoModeration.State.InReview -> PhotosCheck.FIRST_IN_REVIEW
+                else -> PhotosCheck.READY
+            }
+        }
     var voice by mutableStateOf<VoiceRecorder.Recording?>(null)
     var icebreaker by mutableStateOf(Icebreaker.Kind.TWO_TRUTHS.blank)
 
@@ -340,7 +364,7 @@ private class OnboardingState(
         OnboardingStep.SHOW_ME -> interestedIn.isNotEmpty()
         OnboardingStep.AREA -> area != null
         OnboardingStep.SPORTS, OnboardingStep.RHYTHM -> sports.isNotEmpty()
-        OnboardingStep.PHOTOS -> photos.isNotEmpty() && (mainFace == FaceCheck.Result.FACE || resuming && mainFace == null)
+        OnboardingStep.PHOTOS -> if (resuming) photos.isNotEmpty() else photosCheck == PhotosCheck.READY
         OnboardingStep.VOICE -> voice != null
         OnboardingStep.PROMPTS -> answeredPrompts.isNotEmpty()
         OnboardingStep.LIFESTYLE -> lifestyle.hasLifestyle
@@ -385,11 +409,15 @@ private class OnboardingState(
                     if (area == null && locator.state == AreaLocator.State.Locating) L("Finding your area…") to false else null
                 OnboardingStep.SPORTS -> if (sports.isEmpty()) L("Pick at least one sport.") to false else null
                 OnboardingStep.RHYTHM -> null
-                OnboardingStep.PHOTOS -> when {
-                    photos.isEmpty() -> L("Add at least one photo.") to false
-                    mainFace == null -> L("Checking your first photo…") to false
-                    mainFace == FaceCheck.Result.FACE -> null
-                    else -> L("Put a clear photo of your face first.") to true
+                OnboardingStep.PHOTOS -> when (photosCheck) {
+                    PhotosCheck.EMPTY -> L("Add at least one photo.") to false
+                    PhotosCheck.CHECKING -> L("Checking your photos…") to false
+                    PhotosCheck.READY -> null
+                    PhotosCheck.FIRST_IN_REVIEW ->
+                        L("Our team is checking your first photo. Put another one first, or wait.") to false
+                    PhotosCheck.FIRST_REFUSED, PhotosCheck.NO_FACE, PhotosCheck.TOO_SMALL ->
+                        L("Put a clear photo of your face first.") to true
+                    PhotosCheck.FAILED -> L("A photo couldn't be sent. Tap it to see why, then try again.") to true
                 }
                 OnboardingStep.VOICE -> if (voice == null) L("Record your intro, or skip it for now.") to false else null
                 OnboardingStep.PROMPTS -> if (answeredPrompts.isEmpty()) L("Answer a prompt, or skip it for now.") to false else null
@@ -1166,6 +1194,8 @@ private fun PhotosStep(state: OnboardingState) {
         val first = state.photos.firstOrNull() ?: return@LaunchedEffect
         state.mainFace = FaceCheck.check(first)
     }
+    // A sign-up resumed after the app was closed: each photo's verdict read again (or sent again).
+    LaunchedEffect(state.photos) { state.photos.forEach(moderation::ensureChecked) }
 }
 
 @Composable
@@ -1201,21 +1231,21 @@ private fun AddPhotoTile(onClick: () -> Unit) {
     }
 }
 
-/** The first photo must show a face: it's the one people see first. */
+/** The first photo must show a face and be approved: it's the one people see first. */
 @Composable
 private fun MainFaceHint(state: OnboardingState) {
-    if (state.photos.isEmpty()) {
-        Hint(L("Your first photo needs to show your face clearly."))
-        return
-    }
-    when (state.mainFace) {
-        null -> Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
+    when (state.photosCheck) {
+        PhotosCheck.EMPTY -> Hint(L("Your first photo needs to show your face clearly."))
+        PhotosCheck.CHECKING -> Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.size(12.dp), color = DS.palette.body, strokeWidth = 1.5.dp)
-            Text(L("Checking your first photo…"), style = TextStyles.footnote, color = DS.palette.body)
+            Text(L("Checking your photos…"), style = TextStyles.footnote, color = DS.palette.body)
         }
-        FaceCheck.Result.FACE -> Unit // all good: nothing to say
-        FaceCheck.Result.NO_FACE -> Hint(L("We can't see a face on your first photo. Put a clear photo of you first."), error = true)
-        FaceCheck.Result.TOO_SMALL -> Hint(L("Your face is too small on your first photo. Use a closer one first."), error = true)
+        PhotosCheck.READY -> Unit // all good: nothing to say
+        PhotosCheck.FIRST_REFUSED -> Hint(L("Your first photo wasn't approved. Put another one first."), error = true)
+        PhotosCheck.FIRST_IN_REVIEW -> Hint(L("Our team is checking your first photo. Put another one first, or wait."))
+        PhotosCheck.NO_FACE -> Hint(L("We can't see a face on your first photo. Put a clear photo of you first."), error = true)
+        PhotosCheck.TOO_SMALL -> Hint(L("Your face is too small on your first photo. Use a closer one first."), error = true)
+        PhotosCheck.FAILED -> Hint(L("A photo couldn't be sent. Tap it to see why, then try again."), error = true)
     }
 }
 
