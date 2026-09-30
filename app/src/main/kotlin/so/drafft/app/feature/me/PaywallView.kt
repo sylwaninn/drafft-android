@@ -247,12 +247,9 @@ fun PaywallView(
                     PaywallFooter(
                         plan = plan,
                         purchasing = purchasing,
-                        restoring = restoring,
                         isLinked = store.isLinked,
                         notice = notice,
                         onPurchase = ::purchase,
-                        onRestore = ::restore,
-                        onLegal = { uriHandler.openUri(it.url()) },
                     )
                 },
             ) { padding ->
@@ -304,6 +301,13 @@ fun PaywallView(
                     }
 
                     Plans(store = store, selected = plan, onSelect = { plan = it }, onRetry = { scope.launch { store.load() } })
+
+                    PaywallFinePrint(
+                        restoring = restoring,
+                        restoreEnabled = !restoring && !purchasing && store.isLinked,
+                        onRestore = ::restore,
+                        onLegal = { uriHandler.openUri(it.url()) },
+                    )
                 }
             }
         }
@@ -498,12 +502,9 @@ private fun PlanRow(plan: TempoPlan, pkg: Package, tag: String?, on: Boolean, on
 private fun PaywallFooter(
     plan: TempoPlan?,
     purchasing: Boolean,
-    restoring: Boolean,
     isLinked: Boolean,
     notice: String?,
     onPurchase: () -> Unit,
-    onRestore: () -> Unit,
-    onLegal: (LegalDoc) -> Unit,
 ) {
     val p = DS.palette
     Column(
@@ -533,17 +534,6 @@ private fun PaywallFooter(
             )
         }
 
-        // One row while it fits; otherwise restore on its own line above the two documents.
-        CompositionLocalProvider(LocalContentColor provides Color.White.copy(alpha = 0.7f)) {
-            LegalLinks(
-                restoring = restoring,
-                restoreEnabled = !restoring && !purchasing && isLinked,
-                spinner = Color.White,
-                onRestore = onRestore,
-                onLegal = onLegal,
-            )
-        }
-
         AnimatedVisibility(notice != null, enter = fadeIn(Motion.snappy()), exit = fadeOut(Motion.snappy())) {
             // The last notice stays drawn while it fades out.
             val last = remember { arrayOfNulls<String>(1) }
@@ -552,6 +542,32 @@ private fun PaywallFooter(
                 DrafftIcon("info.circle.fill", size = 16.dp, tint = Color.White)
                 Text(last[0].orEmpty(), style = TextStyles.footnote.semibold, color = Color.White)
             }
+        }
+    }
+}
+
+/** Restore, the two documents and the store's terms: the end of the page, not the pinned bar. */
+@Composable
+private fun PaywallFinePrint(
+    restoring: Boolean,
+    restoreEnabled: Boolean,
+    onRestore: () -> Unit,
+    onLegal: (LegalDoc) -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(DS.Space.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // One row while it fits; otherwise restore on its own line above the two documents.
+        CompositionLocalProvider(LocalContentColor provides Color.White.copy(alpha = 0.7f)) {
+            LegalLinks(
+                restoring = restoring,
+                restoreEnabled = restoreEnabled,
+                spinner = Color.White,
+                onRestore = onRestore,
+                onLegal = onLegal,
+            )
         }
 
         // 0.6 at least: 0.45 white on night fell under 4.5:1.
