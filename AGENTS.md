@@ -6,34 +6,31 @@ disagree, the iPhone app is right: read its source before changing behaviour her
 
 - Product: [PRODUCT.md](PRODUCT.md). Design rules: [DESIGN.md](DESIGN.md) (binding, including the
   "Drafft app rules" section). Wording: [WORDING.md](WORDING.md) (binding for any text people see).
-  DESIGN.md and WORDING.md are synced copies of drafft's: never edit them here. Change them in
-  drafft, then run `../drafft/scripts/sync-wording.sh`. They're written for the iPhone:
+  DESIGN.md and WORDING.md are synced copies of drafft-ios's: never edit them here. Change them in
+  drafft-ios, then run the workspace's `scripts/sync-docs.sh`. They're written for the iPhone:
   "Android forms of the iPhone rules" below says how each iOS term applies here.
-- The iPhone sources live at `../drafft/Drafft/`. Each Kotlin file says which Swift file it ports.
+- The iPhone sources live at `../drafft-ios/Drafft/`. Each Kotlin file says which Swift file it ports.
 - Backend: the `drafft-backend` repository (Supabase), shared with the iPhone app.
 
 ## User-facing text: WORDING.md first (priority rule)
 
 Before writing or changing any text people see (UI strings in any of the 7 languages, CTAs, errors,
 empty states, push, email, paywall, Play Store listing, screenshots, marketing), read and apply
-[WORDING.md](WORDING.md), then run its review checklist (section 10). The `wording` skill
-(`.agents/skills/wording/`) walks through it. Never write "plan" in any sense or language, and never
-present a match as turning into something. App strings come from the iPhone catalog (see "Text"
-below): a new or changed string is written there first. The only text written here is the Android
-wording of the iPhone's platform sentences (`core/model/src/main/resources/i18n/android/`).
+[WORDING.md](WORDING.md), then run its review checklist (section 10). The `wording` skill (workspace
+`.claude/skills/wording/`) walks through it. Never write "plan" in any sense or language, and never
+present a match as turning into something. App strings come from the iPhone catalog (see "Text" below):
+a new or changed string is written there first. The only text written here is the Android wording of the
+iPhone's platform sentences (`core/model/src/main/resources/i18n/android/`).
 
-## Rules for every agent
+## Workspace rules
 
-Read these before committing or opening a pull request. They live in `.agents/` so any agent can use
-them. Claude Code loads them through `CLAUDE.md`, and its skills folder `.claude/skills` links to
-`.agents/skills`.
-
-- Commits and branches: [.agents/rules/commits.md](.agents/rules/commits.md)
-- GitHub (pull requests, comments): [.agents/rules/github.md](.agents/rules/github.md)
-- Skills: `.agents/skills/` (`create-pr`, `technical-writer`, `wording`)
-- Git hooks that enforce them for everyone, agents and humans (`.agents/git-hooks/`): `commit-msg`
-  (format, one line, no Co-Authored-By) and `pre-push` (no push to `main`). Enable once per clone:
-  `git config core.hooksPath .agents/git-hooks`
+This repository lives in the drafft workspace (the parent folder, see `../AGENTS.md`), which holds what
+every repository shares: commit and GitHub rules (`../.claude/rules/`), the `create-pr` and `wording`
+skills (`../.claude/skills/`), and the Claude Code settings and git guard (`../.claude/`). Start agents
+there. In short: work on a branch, one-line commits `type(scope): description` without any
+Co-Authored-By, a pull request into `main`, verify first. The git hooks in `.agents/git-hooks/`
+enforce it for agents and humans (`git config core.hooksPath .agents/git-hooks`, set by the
+workspace's `scripts/bootstrap.sh`).
 
 `main` is protected by convention: work on a branch, open a pull request.
 
@@ -252,10 +249,3 @@ is:
 - The backend is Supabase (supabase-kt for Auth and Realtime, Ktor for the raw REST/RPC/Functions
   calls the iPhone makes with `URLSession`), chat is Stream (low-level client only, every screen is
   ours), purchases are RevenueCat (Google Play).
-
-## Git
-
-Branches, commits and pull requests follow `.agents/rules/` (see "Rules for every agent" above).
-
-@.agents/rules/commits.md
-@.agents/rules/github.md
