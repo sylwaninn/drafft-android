@@ -150,7 +150,7 @@ internal fun LikedProfileSheet(open: Profile?, onClose: () -> Unit) {
     // Kept while the sheet slides down.
     val shown = remember { arrayOfNulls<Profile>(1) }
     if (open != null) shown[0] = open
-    DrafftSheet(visible = open != null, onDismissRequest = onClose) {
+    DrafftSheet(visible = open != null, onDismissRequest = onClose, showsGrabber = false, drawsUnderNavigationBar = true) {
         val p = shown[0] ?: return@DrafftSheet
         ProfileDetailView(
             profile = p,

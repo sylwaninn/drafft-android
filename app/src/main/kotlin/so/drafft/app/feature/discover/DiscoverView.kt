@@ -340,7 +340,7 @@ fun DiscoverView(modifier: Modifier = Modifier) {
         }
     }
     val shownDetail = rememberLast(detail)
-    DrafftSheet(visible = detail != null, onDismissRequest = { detail = null }) {
+    DrafftSheet(visible = detail != null, onDismissRequest = { detail = null }, showsGrabber = false, drawsUnderNavigationBar = true) {
         shownDetail?.let { p ->
             ProfileDetailView(
                 profile = p,

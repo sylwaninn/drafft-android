@@ -643,7 +643,7 @@ private fun ChatContent(
     }
 
     // The profile, presented over the chat; blocking from it closes the chat behind it.
-    DrafftSheet(visible = showProfile, onDismissRequest = { showProfile = false }) {
+    DrafftSheet(visible = showProfile, onDismissRequest = { showProfile = false }, showsGrabber = false, drawsUnderNavigationBar = true) {
         ProfileDetailView(profile = convo.profile, mode = ProfileDetailMode.SHEET, onBlocked = { stack.pop() })
     }
     val counter = counterTo

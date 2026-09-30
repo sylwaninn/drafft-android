@@ -234,6 +234,8 @@ fun MeView(modifier: Modifier = Modifier) {
         DrafftSheet(
             onDismissRequest = { sheet = null },
             detent = if (s == MeSheet.LANGUAGE) SheetDetent.MEDIUM else SheetDetent.LARGE,
+            showsGrabber = s != MeSheet.PREVIEW,
+            drawsUnderNavigationBar = s == MeSheet.PREVIEW,
         ) {
             when (s) {
                 MeSheet.EDIT -> EditProfileView(profile = app.me)
