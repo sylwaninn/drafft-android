@@ -2,6 +2,7 @@ package so.drafft.app.feature.profile
 
 // Ports Drafft/Features/Profile/ProposeSessionSheet.swift.
 
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -145,6 +146,7 @@ fun ProposeSessionSheet(
     }
     var title by rememberSaveable(profile.id) { mutableStateOf(counterTo?.title ?: "") }
     var sending by remember { mutableStateOf(false) }
+    InteractiveDismissDisabled(sending)
     // The times offered (1 to 3). The other person picks one or suggests others.
     // Nothing picked yet: no time card until the person adds one.
     var options by remember { mutableStateOf(emptyList<Instant>()) }

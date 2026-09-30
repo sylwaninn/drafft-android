@@ -1,5 +1,6 @@
 package so.drafft.app.feature.me
 
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -116,6 +117,7 @@ fun AccountSheet(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    InteractiveDismissDisabled(hasChanges)
     val dismiss = LocalSheetDismiss.current
     var confirmDiscard by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
