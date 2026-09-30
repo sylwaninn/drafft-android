@@ -4,22 +4,33 @@ The iPhone app's list lives in `drafft/TODO.md`, backend work in `drafft-backend
 
 ## Configuration
 
-- [ ] **RevenueCat keys.** Paste the Google Play public SDK keys (`goog_...`) into `REVENUECAT_API_KEY` in
-      `config/production.properties` (project "drafft") and `config/staging.properties` (project "drafft
-      staging"). They're public and committed, like the iPhone's `appl_` keys. Until then purchases stay
-      off and the release builds of both environments fail.
-- [ ] **Local backend over http.** The local flavor reaches `http://10.0.2.2:54321` (or the Mac's Wi-Fi
-      address), but no network security config allows cleartext: with targetSdk 36, OkHttp refuses it.
-      Allow cleartext for the local flavor only (a manifest or network security config in `app/src/local/`).
-- [ ] **First build with a JDK.** Check `app/build.gradle.kts` on a real build: `config/<flavor>.properties`
-      loading, `localRelease` disabled (`beforeVariants` with `withFlavor("env" to "local")`), the release
-      check (`onVariants`) failing on a missing value.
-- [ ] **Release signing.** No `signingConfigs` yet: keystore (gitignored) and its passwords kept out of
-      the repository (CI secrets).
+- [x] **RevenueCat keys.** `goog_...` keys in `config/production.properties` (project "drafft") and
+      `config/staging.properties` (project "drafft staging"; the local flavor uses the staging one). Each
+      project has an app "drafft (Google Play)", package `so.drafft.app`, with its service account
+      validated.
+- [x] **Local backend over http.** Cleartext allowed for the local flavor only
+      (`app/src/local/AndroidManifest.xml`).
+- [x] **First build with a JDK.** `assembleLocalDebug` and `bundleProductionRelease` build.
+- [x] **Release signing.** `app/build.gradle.kts` reads `DRAFFT_KEYSTORE_FILE`, `DRAFFT_KEYSTORE_PASSWORD`,
+      `DRAFFT_KEY_ALIAS`, `DRAFFT_KEY_PASSWORD` from the environment. Put them in CI secrets when CI
+      builds releases.
+
+## Google Play and purchases
+
+- [ ] **Subscription and in-app products in Google Play Console**, same ids as the iPhone's, then import
+      them in both RevenueCat projects and attach them to the same entitlement and offerings
+      (`drafft_tempo`; offerings `default`, `boosts`, `super_likes`):
+      - subscriptions `so.drafft.app.tempo.monthly`, `.sixmonths`, `.yearly`, base plan id `base`;
+      - one-time products `so.drafft.app.boost.1`, `.5`, `.10`, `so.drafft.app.superlike.3`, `.15`, `.30`.
+- [ ] **License testers** (Play Console, Settings, License testing) to buy without paying.
+- [ ] **Google developer notifications** (Pub/Sub, real-time events) connected to one RevenueCat project
+      (production): RevenueCat, app "drafft (Google Play)", Google Play notifications.
+- [ ] **Play Console forms** before a public release: privacy policy, data safety, content rating.
 
 ## Push (FCM)
 
-- [ ] `google-services.json` per Firebase project in `app/src/<flavor>/` (gitignored). Without it push
-      stays off.
-- [ ] Backend: `register_push_token` and the push sender accept FCM tokens (the iPhone sends APNs).
-- [ ] Stream: a Firebase push provider named `drafft-fcm`.
+- [x] `google-services.json` for production and staging in `app/src/<flavor>/` (gitignored). The local
+      flavor has none: push stays off there.
+- [x] Stream: a Firebase push provider named `drafft-fcm` in the production and staging apps.
+- [ ] Backend: `register_push_token` and the push sender accept FCM tokens (the iPhone sends APNs). The
+      service account keys are in `~/Secrets/drafft/firebase-fcm/`.
