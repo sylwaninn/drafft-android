@@ -205,7 +205,7 @@ fun LikeComposer(
                         kind = DrafftButtonKind.LIKE,
                         enabled = !closing,
                     ) {
-                        DrafftIcon("heart.fill", size = symbol(17f), tint = p.onLike)
+                        DrafftIcon("heart", size = symbol(17f), tint = p.onLike)
                         Crossfade(hasMessage, label = "sendLike") { with ->
                             Text(if (with) L("Send like with comment") else L("Send like"), maxLines = 2)
                         }
@@ -226,7 +226,7 @@ fun LikeComposer(
                 .background(Color.White.copy(alpha = 0.18f), CircleShape),
             contentDescription = L("Cancel"),
         ) {
-            DrafftIcon("xmark", size = symbol(17f), tint = Color.White)
+            DrafftIcon("close", size = symbol(17f), tint = Color.White)
         }
     }
 }

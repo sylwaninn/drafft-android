@@ -64,7 +64,7 @@ fun CalendarAccessBanner(
     modifier: Modifier = Modifier,
 ) {
     NoticeBannerFrame(onDismiss, modifier) {
-        BannerIcon("calendar.badge.exclamationmark")
+        BannerIcon("calendar-warning")
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
             Text(L("Calendar access is off for drafft."), style = TextStyles.headline, color = Color.White)
             PressScaleButton(

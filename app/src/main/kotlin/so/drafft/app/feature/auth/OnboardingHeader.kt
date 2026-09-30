@@ -73,12 +73,12 @@ fun OnboardingHeader(
             contentAlignment = Alignment.CenterStart,
         ) {
             // `.body.weight(.semibold)`.
-            DrafftIcon("chevron.left", size = (17f * 1.2f).dp, tint = p.ink)
+            DrafftIcon("alt-arrow-left", size = (17f * 1.2f).dp, tint = p.ink)
         }
         DrafftConfirm(
             visible = confirmLeave,
             onDismissRequest = { onConfirmLeaveChange(false) },
-            icon = "arrow.uturn.backward",
+            icon = "undo-left",
             title = L("Leave sign-up?"),
             message = L("Your answers won't be kept. You'll start over next time."),
             cancelTitle = L("Keep going"),

@@ -169,7 +169,7 @@ private fun NumberField(model: PhoneVerificationModel) {
                     style = TextStyles.body.semibold.monospacedDigits,
                     color = p.ink,
                 )
-                DrafftIcon("chevron.down", Modifier.clearAndSetSemantics { }, size = 14.dp, tint = p.body)
+                DrafftIcon("alt-arrow-down", Modifier.clearAndSetSemantics { }, size = 14.dp, tint = p.body)
             }
             Box(
                 Modifier
@@ -231,7 +231,7 @@ private fun ErrorOrHint(error: String?, default: String) {
         ) { e ->
             if (e != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                    DrafftIcon("exclamationmark.circle.fill", size = 16.dp, tint = p.negative)
+                    DrafftIcon("danger-circle", size = 16.dp, tint = p.negative)
                     Text(e, style = TextStyles.footnote.medium, color = p.negative)
                 }
             } else {
@@ -274,7 +274,7 @@ fun CountryPickerSheet(
             if (results.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-                        DrafftIcon("magnifyingglass", size = 40.dp, tint = p.mute)
+                        DrafftIcon("magnifier", size = 40.dp, tint = p.mute)
                         Text(L("No results"), style = TextStyles.title3.semibold, color = p.ink)
                     }
                 }
@@ -349,7 +349,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, modifier
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DrafftIcon("magnifyingglass", size = 18.dp, tint = p.mute)
+        DrafftIcon("magnifier", size = 18.dp, tint = p.mute)
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,

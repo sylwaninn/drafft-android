@@ -137,7 +137,7 @@ fun RootView(app: AppModel) {
             DrafftConfirm(
                 visible = app.sessionEndedNotice,
                 onDismissRequest = { app.sessionEndedNotice = false },
-                icon = "person.crop.circle.badge.exclamationmark",
+                icon = "user-warning",
                 title = L("You've been logged out"),
                 message = L("Your session ended on this iPhone. Log in again to pick up where you left off."),
                 cancelTitle = L("Got it"),

@@ -257,7 +257,7 @@ private fun NextUp(item: Item, onOpen: () -> Unit) {
                         .padding(start = 12.dp)
                         .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
                 ) {
-                    DrafftIcon("bubble.left.fill", size = 20.dp, tint = LocalContentColor.current)
+                    DrafftIcon("chat-round-line", size = 20.dp, tint = LocalContentColor.current)
                     Text(L("Open chat"), maxLines = 2, overflow = TextOverflow.Clip)
                 }
                 CalendarButton(session = s, partner = item.name, chatID = item.chatID, compact = true)

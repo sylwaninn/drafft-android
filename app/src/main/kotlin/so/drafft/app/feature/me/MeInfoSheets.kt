@@ -199,7 +199,7 @@ fun BlockedPeopleSheet(modifier: Modifier = Modifier) {
         ) { empty ->
             if (empty) {
                 SheetBlock(Modifier.semantics(mergeDescendants = true) { }) {
-                    RowBadge("hand.raised.fill")
+                    RowBadge("user-block")
                     Text(L("No one blocked."), style = TextStyles.headline, color = p.ink)
                     Text(L("You can block someone from their profile or a chat."), style = TextStyles.subheadline, color = p.body)
                 }
@@ -230,7 +230,7 @@ fun BlockedPeopleSheet(modifier: Modifier = Modifier) {
     DrafftConfirm(
         visible = person != null,
         onDismissRequest = { pending = null },
-        icon = "hand.raised.slash.fill",
+        icon = "user-check",
         title = person?.let { L("Unblock %s?", it.name) } ?: L("Unblock?"),
         message = L("You'll see each other in Discover again. Your old chat doesn't come back."),
         actions = if (person == null) {
@@ -287,16 +287,16 @@ object SafetyTips {
     /** Before and during a first session. */
     val meeting: List<Tip>
         get() = listOf(
-            Tip("figure.run", L("Meet where people train"), L("A busy track, park, gym or club session, with others around.")),
-            Tip("person.2.fill", L("Tell a friend"), L("Share who you're meeting, where and when. Check in with them after.")),
-            Tip("bicycle", L("Get there on your own"), L("Make your own way there and back. Your address can wait.")),
-            Tip("map.fill", L("Stay on routes you know"), L("For a run or a ride, pick a busy route in daylight and keep your phone charged.")),
-            Tip("bubble.left.and.bubble.right.fill", L("Keep the chat in drafft"), L("Stay in the app until you know them. Never send money.")),
-            Tip("door.left.hand.open", L("Trust your gut"), L("You can end a session anytime, no explanation needed.")),
+            Tip("running", L("Meet where people train"), L("A busy track, park, gym or club session, with others around.")),
+            Tip("users-group-two-rounded", L("Tell a friend"), L("Share who you're meeting, where and when. Check in with them after.")),
+            Tip("bicycling", L("Get there on your own"), L("Make your own way there and back. Your address can wait.")),
+            Tip("map", L("Stay on routes you know"), L("For a run or a ride, pick a busy route in daylight and keep your phone charged.")),
+            Tip("dialog-2", L("Keep the chat in drafft"), L("Stay in the app until you know them. Never send money.")),
+            Tip("exit", L("Trust your gut"), L("You can end a session anytime, no explanation needed.")),
         )
 
     val report: Tip
-        get() = Tip("flag.fill", L("Report anything off"), L("Tap Report or block on their profile or in the chat. Reports are confidential."))
+        get() = Tip("flag", L("Report anything off"), L("Tap Report or block on their profile or in the chat. Reports are confidential."))
 }
 
 /** Tips as rows: round badge, title, one line of detail, hairlines between. */
@@ -378,7 +378,7 @@ fun SessionSafetySheet(
                 NightSurface {
                     IconLabel(
                         L("Session confirmed"),
-                        "checkmark.circle.fill",
+                        "check-circle",
                         style = TextStyles.subheadline.semibold,
                         color = p.accentOnNight,
                     )
@@ -405,9 +405,9 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
     val p = DS.palette
 
     fun icon(doc: LegalDoc): String = when (doc) {
-        LegalDoc.TERMS -> "doc.text.fill"
-        LegalDoc.PRIVACY -> "lock.fill"
-        LegalDoc.COMMUNITY -> "person.3.fill"
+        LegalDoc.TERMS -> "document-text"
+        LegalDoc.PRIVACY -> "lock-keyhole-minimalistic"
+        LegalDoc.COMMUNITY -> "users-group-rounded"
     }
 
     MeInfoSheet(L("Terms & privacy"), modifier) {
@@ -429,7 +429,7 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
                     ) {
                         RowBadge(icon(doc))
                         Text(doc.title, Modifier.weight(1f), style = TextStyles.body.semibold, color = p.ink)
-                        DrafftIcon("chevron.right", size = symbolSize(TextStyles.footnote), tint = p.mute)
+                        DrafftIcon("alt-arrow-right", size = symbolSize(TextStyles.footnote), tint = p.mute)
                     }
                 }
             }

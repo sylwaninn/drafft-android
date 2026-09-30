@@ -230,7 +230,7 @@ fun VoicePlayer(
             contentDescription = if (playing) L("Pause voice message") else L("Play voice message, %d seconds", duration.toInt()),
         ) {
             Crossfade(playing, label = "playPause") { on ->
-                DrafftIcon(if (on) "pause.fill" else "play.fill", size = symbol(16f), tint = buttonGlyph)
+                DrafftIcon(if (on) "pause" else "play", size = symbol(16f), tint = buttonGlyph)
             }
         }
 
@@ -413,7 +413,7 @@ private fun Capture(recorder: VoiceRecorder, recording: Boolean, limit: Double, 
             contentDescription = if (recording) L("Stop recording") else L("Record voice intro"),
         ) {
             Crossfade(recording, label = "mic") { on ->
-                DrafftIcon(if (on) "stop.fill" else "mic.fill", size = symbol(26f), tint = if (on) p.accentOnNight else p.onLime)
+                DrafftIcon(if (on) "stop" else "microphone", size = symbol(26f), tint = if (on) p.accentOnNight else p.onLime)
             }
         }
 
@@ -457,7 +457,7 @@ private fun Recorded(result: VoiceRecorder.Recording, onRecordAgain: () -> Unit,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
             DrafftButton(onClick = onRecordAgain, modifier = Modifier.weight(1f), kind = DrafftButtonKind.SECONDARY) {
-                DrafftIcon("arrow.counterclockwise", size = symbol(17f), tint = p.ink)
+                DrafftIcon("restart", size = symbol(17f), tint = p.ink)
                 Text(L("Record again"), maxLines = 2)
             }
             PressScaleButton(
@@ -465,7 +465,7 @@ private fun Recorded(result: VoiceRecorder.Recording, onRecordAgain: () -> Unit,
                 modifier = Modifier.size(52.dp).background(p.canvasSoft, CircleShape),
                 contentDescription = L("Delete recording"),
             ) {
-                DrafftIcon("trash", size = symbol(17f), tint = p.negative)
+                DrafftIcon("trash-bin-minimalistic", size = symbol(17f), tint = p.negative)
             }
         }
     }

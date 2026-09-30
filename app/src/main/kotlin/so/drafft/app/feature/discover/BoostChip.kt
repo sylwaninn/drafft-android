@@ -101,7 +101,7 @@ fun BoostChip(
                         )
                     }
                 }
-                DrafftIcon("bolt.fill", size = ((if (running) 9f else 13f) * 1.2f).dp, tint = ink)
+                DrafftIcon("bolt", size = ((if (running) 9f else 13f) * 1.2f).dp, tint = ink)
             }
             RollingText(
                 if (running) clock(left) else "$boosts",

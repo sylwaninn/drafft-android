@@ -200,7 +200,7 @@ private fun Mark(item: PurchaseReceipt.Item, modifier: Modifier = Modifier) {
                 .clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
-            DrafftIcon("bolt.fill", size = 34.dp, tint = p.onLime)
+            DrafftIcon("bolt", size = 34.dp, tint = p.onLime)
         }
         is PurchaseReceipt.Item.SuperLikes -> Box(
             modifier

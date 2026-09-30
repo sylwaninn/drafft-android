@@ -144,7 +144,7 @@ fun PromptPickerSheet(
                     .padding(horizontal = DS.Space.lg),
                 horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
             ) {
-                CategoryChip(L("All"), "square.grid.2x2.fill", on = category == null) { category = null }
+                CategoryChip(L("All"), "widget", on = category == null) { category = null }
                 ProfilePrompt.library.forEach { c ->
                     key(c.id) {
                         CategoryChip(c.name, c.icon, on = category == c.id) { category = c.id }
@@ -278,7 +278,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, prompt: 
         horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DrafftIcon("magnifyingglass", size = 18.dp, tint = p.body)
+        DrafftIcon("magnifier", size = 18.dp, tint = p.body)
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
@@ -296,7 +296,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit, prompt: 
         )
         if (query.isNotEmpty()) {
             GlassCircleButton(
-                "xmark.circle.fill",
+                "close-circle",
                 onClick = { onQueryChange("") },
                 size = 36.dp,
                 contentDescription = L("Clear search"),

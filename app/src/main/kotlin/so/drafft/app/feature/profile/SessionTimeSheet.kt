@@ -196,7 +196,7 @@ fun SessionTimeSheet(
                     horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("clock.fill", size = symbol(17f), tint = p.ink)
+                    DrafftIcon("clock-circle", size = symbol(17f), tint = p.ink)
                     Text(L("Time"), Modifier.weight(1f).semantics { heading() }, style = TextStyles.headline, color = p.ink)
                     // The compact picker's pill: tap it for the clock.
                     Text(
@@ -242,7 +242,7 @@ fun SessionTimeSheet(
                     horizontalArrangement = Arrangement.spacedBy(DS.Space.sm, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DrafftIcon("trash", size = symbol(17f), tint = p.negative)
+                    DrafftIcon("trash-bin-minimalistic", size = symbol(17f), tint = p.negative)
                     Text(L("Remove this time"), style = TextStyles.body.semibold, color = p.negative)
                 }
             }

@@ -90,7 +90,7 @@ fun ChangePhoneSheet(modifier: Modifier = Modifier) {
                 // Only a number that exists can be verified.
                 if (app.phoneNumber != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                        DrafftIcon("checkmark.seal.fill", size = 16.dp, tint = p.positiveDeep)
+                        DrafftIcon("verified-check", size = 16.dp, tint = p.positiveDeep)
                         Text(L("Verified"), style = TextStyles.footnote.semibold, color = p.positiveDeep, maxLines = 1, softWrap = false)
                     }
                 }

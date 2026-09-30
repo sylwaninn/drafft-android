@@ -114,7 +114,7 @@ fun LocationRequiredView(modifier: Modifier = Modifier) {
                         Box(Modifier.fillMaxWidth().rise(appeared, 0, reduceMotion)) {
                             // (200 - 54) / 2: the sign sits in the middle of its 200 pt map.
                             EmptyStateIllustration(
-                                EmptyStateArt(symbol = "location.slash.fill"),
+                                EmptyStateArt(symbol = "map-point-remove"),
                                 Modifier.offset(x = (-73).dp),
                                 tint = p.accentOnNight,
                             )
@@ -145,15 +145,15 @@ fun LocationRequiredView(modifier: Modifier = Modifier) {
                 ) {
                     when (situation) {
                         Situation.NOT_ASKED -> DrafftButton(onClick = { location.request() }) {
-                            ButtonIcon("location.fill")
+                            ButtonIcon("map-point")
                             Text(L("Allow location"), maxLines = 2)
                         }
                         Situation.SERVICES_OFF -> DrafftButton(onClick = openLocationSettings) {
-                            ButtonIcon("gearshape.fill")
+                            ButtonIcon("settings")
                             Text(L("Open Settings"), maxLines = 2)
                         }
                         Situation.REFUSED -> DrafftButton(onClick = openSettings) {
-                            ButtonIcon("gearshape.fill")
+                            ButtonIcon("settings")
                             Text(L("Open Settings"), maxLines = 2)
                         }
                     }
