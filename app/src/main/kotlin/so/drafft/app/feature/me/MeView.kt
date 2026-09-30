@@ -109,7 +109,7 @@ import so.drafft.core.ui.theme.semibold
 enum class MeSheet(val rawValue: String) {
     EDIT("edit"), PREVIEW("preview"), FILTERS("filters"), EMAIL("email"), PHONE("phone"), PASSWORD("password"),
     EXPORT("export"), DELETE("delete"), PAYWALL("paywall"), NOTIFICATIONS("notifications"), LANGUAGE("language"),
-    BLOCKED("blocked"), SAFETY("safety"), HELP("help"), LEGAL("legal"), SUBSCRIPTION("subscription");
+    BLOCKED("blocked"), SAFETY("safety"), HELP("help"), LEGAL("legal"), CONSENT("consent"), SUBSCRIPTION("subscription");
 
     val id: String get() = rawValue
 }
@@ -215,16 +215,16 @@ fun MeView(modifier: Modifier = Modifier) {
                 // drafft can't work without the gender: withdrawing the consent is deleting the account.
                 SettingsRow(
                     L("Sensitive data consent"),
-                    "shield-check",
+                    "lock-keyhole-minimalistic",
                     L("Withdrawing it means deleting your account."),
-                ) { sheet = MeSheet.DELETE }
+                ) { sheet = MeSheet.CONSENT }
             }
             Group(L("Help")) {
                 SettingsRow(L("Safety tips"), "shield-check", L("Meeting someone for the first time")) { sheet = MeSheet.SAFETY }
                 Separator()
                 SettingsRow(L("Help center"), "question-circle", null) { sheet = MeSheet.HELP }
                 Separator()
-                SettingsRow(L("Terms & privacy policy"), "document-text", null) { sheet = MeSheet.LEGAL }
+                SettingsRow(L("Legal information"), "document-text", null) { sheet = MeSheet.LEGAL }
             }
             Column(
                 Modifier
@@ -286,8 +286,9 @@ fun MeView(modifier: Modifier = Modifier) {
                 MeSheet.SUBSCRIPTION -> SubscriptionSheet()
                 MeSheet.BLOCKED -> BlockedPeopleSheet()
                 MeSheet.SAFETY -> SafetyTipsSheet()
-                MeSheet.HELP -> SupportSheet(topic = L("General question"))
+                MeSheet.HELP -> SupportSheet()
                 MeSheet.LEGAL -> LegalDocsListSheet()
+                MeSheet.CONSENT -> DeleteAccountSheet(withdrawsConsent = true)
             }
         }
     }
