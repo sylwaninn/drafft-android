@@ -33,6 +33,7 @@ dependencies {
     api(platform(libs.compose.bom))
     api(libs.compose.runtime)
     api(libs.kotlinx.coroutines.android)
+    api(libs.kotlinx.serialization.json)
     api(platform(libs.koin.bom))
     api(libs.koin.core)
     api(libs.koin.android)
@@ -47,6 +48,7 @@ dependencies {
 
     implementation(libs.stream.chat.client)
     implementation(libs.stream.chat.offline)
+    implementation(libs.stream.chat.state)
     implementation(libs.revenuecat)
     implementation(libs.libphonenumber)
     implementation(libs.androidx.core.ktx)
