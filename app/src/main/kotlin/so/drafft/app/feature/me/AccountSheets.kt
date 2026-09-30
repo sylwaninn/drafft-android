@@ -302,7 +302,7 @@ fun ChangeEmailSheet(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     var newEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val flow = remember { EmailCodeModel() }
+    val flow = remember(scope) { EmailCodeModel(scope) }
     var showHelp by remember { mutableStateOf(false) }
 
     val valid = Validation.isEmail(newEmail) && newEmail.lowercase() != app.email.lowercase() && password.isNotEmpty()
@@ -445,7 +445,7 @@ fun ChangePasswordSheet(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     var new by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
-    val flow = remember { EmailCodeModel() }
+    val flow = remember(scope) { EmailCodeModel(scope) }
     var showHelp by remember { mutableStateOf(false) }
     val p = DS.palette
 

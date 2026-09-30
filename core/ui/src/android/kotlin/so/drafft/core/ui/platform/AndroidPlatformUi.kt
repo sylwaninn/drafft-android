@@ -153,7 +153,7 @@ object AndroidPlatformUi : PlatformUi {
         val context = LocalContext.current
         val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
         val camera = remember(context, owner) { AndroidFrontCamera(context, owner) }
-        DisposableEffect(camera) { onDispose { camera.stop() } }
+        DisposableEffect(camera) { onDispose { camera.release() } }
         return camera
     }
 

@@ -88,7 +88,10 @@ fun PhoneVerificationView(model: PhoneVerificationModel, modifier: Modifier = Mo
     AnimatedContent(
         targetState = model.stage,
         modifier = modifier,
-        transitionSpec = { fadeIn(Motion.snappy()).togetherWith(fadeOut(Motion.snappy())) },
+        transitionSpec = {
+            val enter = if (targetState == PhoneVerificationModel.Stage.VERIFIED) codeCardEnter else fadeIn(Motion.snappy())
+            enter.togetherWith(fadeOut(Motion.snappy()))
+        },
         label = "phoneStage",
     ) { stage ->
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.lg)) {

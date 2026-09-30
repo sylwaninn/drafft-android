@@ -4,43 +4,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * Room taken by the floating tab bar at the bottom of a tab (above the system navigation bar). Tab
  * screens scroll under it and end their content with this much extra space, like the iPhone's safe area.
+ * 0 while the bar is hidden (a pushed chat).
  */
 val LocalTabBarInset = compositionLocalOf<Dp> { 0.dp }
 
-/**
- * Whether the floating tab bar shows (`.toolbarVisibility(.hidden, for: .tabBar)`): a tab's stack
- * hides it while a screen is pushed over its root (a chat), and it comes back as soon as Back begins.
- */
+/** Per tab: how many screens on it want the tab bar hidden right now. */
 @Stable
 class TabBarVisibility {
-    private val hiders = mutableStateMapOf<Any, Unit>()
-
-    val hidden: Boolean get() = hiders.isNotEmpty()
-
-    fun set(owner: Any, hidden: Boolean) {
-        if (hidden) hiders[owner] = Unit else hiders.remove(owner)
-    }
+    var hiders by mutableIntStateOf(0)
+        internal set
+    val isHidden: Boolean get() = hiders > 0
 }
 
-/** Provided by `MainTabs`; elsewhere a stand-in that nothing reads. */
-val LocalTabBarVisibility = staticCompositionLocalOf { TabBarVisibility() }
+val LocalTabBarVisibility = compositionLocalOf<TabBarVisibility?> { null }
 
-/** Hides the tab bar while [hidden] (and while this is composed). */
+/**
+ * Hides the tab bar while the calling screen is shown (iOS `.toolbarVisibility(.hidden, for: .tabBar)`):
+ * a chat pushed from Sessions or Chats.
+ */
 @Composable
-fun HidesTabBar(hidden: Boolean) {
-    val visibility = LocalTabBarVisibility.current
-    val owner = remember { Any() }
-    DisposableEffect(visibility, hidden) {
-        visibility.set(owner, hidden)
-        onDispose { visibility.set(owner, false) }
+fun HidesTabBar() {
+    val visibility = LocalTabBarVisibility.current ?: return
+    DisposableEffect(visibility) {
+        visibility.hiders++
+        onDispose { visibility.hiders-- }
     }
 }

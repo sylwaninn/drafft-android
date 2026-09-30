@@ -1,11 +1,6 @@
 package so.drafft.app
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,6 +51,19 @@ import so.drafft.app.feature.matches.MatchBannerView
 import so.drafft.app.feature.matches.MatchView
 import so.drafft.app.feature.matches.NoticeBannerView
 import so.drafft.app.feature.me.MeView
+import so.drafft.app.feature.me.PhotoRefusalBanner
+import so.drafft.app.feature.me.PhotoRefusalPresenter
+import so.drafft.app.feature.me.PurchaseCreditBanner
+import so.drafft.app.feature.me.PurchaseHelpPresenter
+import so.drafft.core.data.moderation.PhotoModeration
+import so.drafft.core.data.store.PurchaseCredit
+import so.drafft.core.ui.components.LocalTabBarVisibility
+import so.drafft.core.ui.components.TabBarVisibility
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import so.drafft.app.feature.me.SessionsView
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.location.LocationGate
@@ -65,8 +73,6 @@ import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.FullScreenCover
 import so.drafft.core.ui.components.LocalTabBarInset
-import so.drafft.core.ui.components.LocalTabBarVisibility
-import so.drafft.core.ui.components.TabBarVisibility
 import so.drafft.core.ui.components.PauseScope
 import so.drafft.core.ui.components.PausedLock
 import so.drafft.core.ui.components.TopOverlayWindow
@@ -104,17 +110,19 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
     val notifications = koinInject<NotificationService>()
     val store = koinInject<Store>()
     val location = koinInject<LocationGate>()
+    val moderation = koinInject<PhotoModeration>()
+    val credit = koinInject<PurchaseCredit>()
     val saveable = rememberSaveableStateHolder()
     // Tabs opened at least once stay composed; the others are built on their first visit (or ahead of
     // it, one after another, while the tabs are still hidden).
     var built by remember { mutableStateOf(setOf(app.tab)) }
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val barInset = TabBarHeight + TabBarMargin + navInset
-    // Hidden while a tab's stack shows a pushed screen (a chat).
-    val tabBar = remember { TabBarVisibility() }
+    val visibilities = remember { tabs.associate { it.tab to TabBarVisibility() } }
+    val barHidden = visibilities.getValue(app.tab).isHidden
+    val barInset = if (barHidden) navInset else TabBarHeight + TabBarMargin + navInset
 
     Box(modifier.fillMaxSize().background(DS.palette.canvasSoft)) {
-        CompositionLocalProvider(LocalTabBarInset provides barInset, LocalTabBarVisibility provides tabBar) {
+        CompositionLocalProvider(LocalTabBarInset provides barInset) {
             for (item in tabs) {
                 if (item.tab !in built) continue
                 val current = item.tab == app.tab
@@ -125,6 +133,7 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                         .alpha(if (current) 1f else 0f)
                         .then(if (current) Modifier else Modifier.clearAndSetSemantics { }),
                 ) {
+                    CompositionLocalProvider(LocalTabBarVisibility provides visibilities.getValue(item.tab)) {
                     saveable.SaveableStateProvider(item.tab.name) {
                         when (item.tab) {
                             AppModel.Tab.DISCOVER -> PausedLock { DiscoverView() }
@@ -134,12 +143,13 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                             AppModel.Tab.ME -> MeView()
                         }
                     }
+                    }
                 }
             }
         }
 
         AnimatedVisibility(
-            visible = !tabBar.hidden,
+            visible = !barHidden,
             modifier = Modifier.align(Alignment.BottomCenter).zIndex(3f),
             enter = slideInVertically(Motion.snappy()) { it } + fadeIn(Motion.snappy()),
             exit = slideOutVertically(Motion.snappy()) { it } + fadeOut(Motion.snappy()),
@@ -161,6 +171,8 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
             app.banner != null -> app.banner
             app.notice != null -> app.notice
             app.boostBanner != null -> BoostToken(app.boostBanner!!)
+            moderation.refusalBanner != null -> moderation.refusalBanner
+            credit.banner != null -> CreditToken(credit.banner!!)
             else -> null
         }
         TopOverlayWindow(banner = banner, modifier = Modifier.statusBarsPadding().padding(top = DS.Space.xs)) { shown ->
@@ -172,8 +184,22 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
                 )
                 is AppModel.Notice -> NoticeBannerView(notice = shown, onDismiss = { app.notice = null })
                 is BoostToken -> BoostBannerView(id = shown.id, onDismiss = { app.boostBanner = null })
+                is PhotoModeration.Refusal -> PhotoRefusalBanner(
+                    refusal = shown,
+                    onOpen = { moderation.refusalBanner = null; PhotoRefusalPresenter.show(shown) },
+                    onDismiss = { moderation.refusalBanner = null },
+                )
+                is CreditToken -> PurchaseCreditBanner(
+                    state = shown.state,
+                    pending = credit.oldest,
+                    onContact = credit::contactSupport,
+                    onDismiss = credit::dismissBanner,
+                )
             }
         }
+
+        PhotoRefusalPresenter.Host()
+        PurchaseHelpPresenter.Host()
 
         // Location is required: if it's turned off, block until it's back on.
         FullScreenCover(visible = isActive && location.isBlocked, onDismissRequest = {}) { LocationRequiredView() }
@@ -227,6 +253,9 @@ fun MainTabs(isActive: Boolean, isVisible: Boolean, modifier: Modifier = Modifie
         if (notifications.openSessions) { app.tab = AppModel.Tab.SESSIONS; notifications.openSessions = false }
     }
 }
+
+/** The purchase credit banner, as a distinct banner value. */
+private data class CreditToken(val state: PurchaseCredit.Banner)
 
 /** The boost banner's identity (a restart of the auto-dismiss per boost). */
 private data class BoostToken(val id: UUID)
