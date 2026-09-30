@@ -1,5 +1,6 @@
 package so.drafft.app.feature.discover
 
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -164,6 +165,7 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
     var showPaywall by remember { mutableStateOf(false) }
     val lifted = remember { Animatable(if (reduceMotion) 1f else 0f) }
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
+    InteractiveDismissDisabled(purchasing || receipt != null)
     /** Set by the confirmation's "Boost now": launch once it has closed. */
     var boostAfterReceipt by remember { mutableStateOf(false) }
     /** A purchase that didn't go through, said plainly under the button. */
