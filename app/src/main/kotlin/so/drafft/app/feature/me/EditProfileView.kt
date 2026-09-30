@@ -432,6 +432,7 @@ private fun CategoryGroup(title: String, pages: List<EditProfilePage>, state: Ed
                             color = if (attention) p.negative else p.body,
                             // A name is never truncated: the identity line wraps instead.
                             maxLines = if (page == EditProfilePage.IDENTITY) Int.MAX_VALUE else 1,
+                            // design-lint: allow truncation - a one-line preview of the person's own profile (bio, sports, goal)
                             overflow = TextOverflow.Ellipsis,
                         )
                     }

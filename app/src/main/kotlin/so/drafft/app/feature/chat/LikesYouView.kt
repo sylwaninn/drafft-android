@@ -130,6 +130,7 @@ internal fun LikeCard(p: Profile) {
         Box(
             Modifier
                 .fillMaxSize()
+                // design-lint: allow gradient - photo scrim under the name
                 .background(Brush.verticalGradient(0.5f to Color.Transparent, 1f to DS.palette.night.copy(alpha = 0.8f))),
         )
         ProfileIdentity(

@@ -145,8 +145,8 @@ private fun WelcomeWordmark(modifier: Modifier) {
         modifier
             .fillMaxWidth()
             .drawBehind {
-                // design-lint: allow gradient - photo scrim under the wordmark (72 pt past it).
                 val h = size.height + 72.dp.toPx()
+                // design-lint: allow gradient - photo scrim under the wordmark (72 pt past it).
                 drawRect(Brush.verticalGradient(*scrim, startY = 0f, endY = h), size = Size(size.width, h))
             }
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
@@ -171,9 +171,9 @@ private fun WelcomePanel(onSignUp: () -> Unit, onLogIn: () -> Unit, modifier: Mo
                     // scrim (smoothstep, no visible edge) rises well above the words and carries their
                     // contrast; the progressive blur starts just above the text, so the photo stays
                     // sharp down to it.
-                    // design-lint: allow gradient - photo scrim under the panel
                     val rise = 120.dp.toPx()
                     drawRect(
+                        // design-lint: allow gradient - photo scrim under the panel
                         Brush.verticalGradient(*scrim, startY = -rise, endY = size.height),
                         topLeft = Offset(0f, -rise),
                         size = Size(size.width, size.height + rise),

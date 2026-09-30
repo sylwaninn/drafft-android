@@ -372,6 +372,7 @@ private fun Backdrop(profile: Profile, modifier: Modifier) {
                 .drawWithContent {
                     drawContent()
                     drawRect(
+                        // design-lint: allow gradient - blur mask over the photo
                         Brush.verticalGradient(
                             0f to Color.Transparent,
                             0.66f to Color.Transparent,
@@ -386,11 +387,11 @@ private fun Backdrop(profile: Profile, modifier: Modifier) {
             blur = 28.dp,
         )
         // Soft tint for legibility: light at the top for the name, deeper under the text.
-        // design-lint: allow gradient - photo scrim for legibility
         Box(
             Modifier
                 .fillMaxSize()
                 .background(
+                    // design-lint: allow gradient - photo scrim for legibility
                     Brush.verticalGradient(
                         0f to night.copy(alpha = 0.45f),
                         0.28f to night.copy(alpha = 0f),

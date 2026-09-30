@@ -471,6 +471,7 @@ private fun Field(
                         style = TextStyles.caption.semibold.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         color = p.accentInk,
                     )
+                    // design-lint: allow truncation - the message being replied to (content, not copy)
                     Text(r.text, style = TextStyles.footnote, color = p.body, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 val cancel = L("Cancel reply")
