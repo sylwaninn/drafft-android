@@ -164,7 +164,15 @@ object AndroidPlatformUi : PlatformUi {
             Box(modifier.background(DS.palette.nightRaised))
             return
         }
-        androidx.compose.ui.viewinterop.AndroidView(factory = { view }, modifier = modifier.clipToBounds())
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = {
+                // One preview view per camera: taken from wherever it was shown last.
+                (view.parent as? android.view.ViewGroup)?.removeView(view)
+                view
+            },
+            modifier = modifier.clipToBounds(),
+            onRelease = { (view.parent as? android.view.ViewGroup)?.removeView(view) },
+        )
     }
 
     override fun smsCodeAutofill(modifier: Modifier): Modifier =
