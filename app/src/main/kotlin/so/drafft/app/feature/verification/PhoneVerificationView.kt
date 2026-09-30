@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import java.text.Collator
+import kotlinx.coroutines.launch
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.verification.PhoneCountry
 import so.drafft.core.data.verification.PhoneVerificationModel
@@ -80,6 +82,7 @@ import so.drafft.core.ui.theme.semibold
  */
 @Composable
 fun PhoneVerificationView(model: PhoneVerificationModel, modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
     // No focus on arrival (the page opens whole); the code step takes focus itself once the
     // person has asked for a code.
     AnimatedContent(
@@ -102,18 +105,13 @@ fun PhoneVerificationView(model: PhoneVerificationModel, modifier: Modifier = Mo
                     hint = L("Check your messages. The code works for 10 minutes."),
                     resendIn = model.resendIn,
                     onEdit = model::changeNumber,
-                    onResend = { model.launchResend() },
+                    onResend = { scope.launch { model.resend() } },
                 )
                 PhoneVerificationModel.Stage.VERIFIED -> CodeVerifiedCard(title = L("Number verified"), detail = model.displayNumber)
                 PhoneVerificationModel.Stage.LOCKED -> CodeLockedCard(message = model.error)
             }
         }
     }
-}
-
-/** Resend runs in the screen's scope, like the iPhone's `Task { await model.resend() }`. */
-private fun PhoneVerificationModel.launchResend() {
-    resendScope?.launch { resend() }
 }
 
 @Composable
