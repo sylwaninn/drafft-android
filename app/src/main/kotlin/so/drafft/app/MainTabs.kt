@@ -105,7 +105,7 @@ private val tabs = listOf(
 )
 
 /** Height of the floating bar itself, without its bottom margin and the system navigation bar. */
-private val TabBarHeight = 62.dp
+private val TabBarHeight = 65.dp
 private val TabBarMargin = 12.dp
 
 /**
@@ -384,7 +384,7 @@ private fun TabBar(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Box {
-                        DrafftIcon(if (isOn) item.filled else item.symbol, size = 24.dp, tint = tint)
+                        DrafftIcon(if (isOn) item.filled else item.symbol, size = 27.dp, tint = tint)
                         if (count > 0) {
                             Text(
                                 if (count > 99) "99+" else count.toString(),
