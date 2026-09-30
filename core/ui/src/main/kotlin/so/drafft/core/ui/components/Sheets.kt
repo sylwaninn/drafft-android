@@ -3,6 +3,7 @@ package so.drafft.core.ui.components
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetValue
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -166,6 +167,7 @@ private fun SheetHost(
     val dismiss: () -> Unit = remember(state, scope) {
         { scope.launch { runCatching { state.hide() } }.invokeOnCompletion { onDismiss() } }
     }
+    val surface = remember { SheetContainer() }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         properties = ModalBottomSheetProperties(shouldDismissOnBackPress = !lock.isLocked),
@@ -173,7 +175,7 @@ private fun SheetHost(
         modifier = if (detent == SheetDetent.LARGE) Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 10.dp) else Modifier,
         sheetState = state,
         shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
-        containerColor = if (raised) p.sheetRaised else p.white,
+        containerColor = surface.color ?: if (raised) p.sheetRaised else p.white,
         contentColor = p.ink,
         tonalElevation = 0.dp,
         scrimColor = Color.Black.copy(alpha = if (LocalIsNightSurface.current || p.isDark) 0.48f else 0.25f),
@@ -195,6 +197,7 @@ private fun SheetHost(
             LocalContentColor provides p.ink,
             LocalSheetDismiss provides dismiss,
             LocalSheetLock provides lock,
+            LocalSheetContainer provides surface,
         ) {
             val height = when (detent) {
                 SheetDetent.LARGE -> Modifier.fillMaxHeight()
@@ -204,6 +207,28 @@ private fun SheetHost(
             Column(modifier.fillMaxWidth().then(height), content = content)
         }
     }
+}
+
+/** The colour the enclosing [DrafftSheet] paints behind its content, set by [SheetContainerColor]. */
+@Stable
+class SheetContainer {
+    internal var color by mutableStateOf<Color?>(null)
+}
+
+private val LocalSheetContainer = compositionLocalOf<SheetContainer?> { null }
+
+/**
+ * A sheet whose content paints its own full-bleed surface (the night paywall) declares that colour
+ * here, once, from inside the content. The sheet then paints the same colour behind everything the
+ * content doesn't cover: the grabber band on top, the navigation bar and the keyboard below. Without
+ * it those bands show the sheet's white around the content. Never rely on the content reaching the
+ * edges: the sheet's container and the content's surface are always the same colour.
+ */
+@Composable
+fun SheetContainerColor(color: Color) {
+    val surface = LocalSheetContainer.current ?: return
+    SideEffect { surface.color = color }
+    DisposableEffect(surface) { onDispose { surface.color = null } }
 }
 
 /**
