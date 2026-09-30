@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -89,7 +91,8 @@ val LocalSheetDismiss = staticCompositionLocalOf<() -> Unit> { {} }
  * the sheet itself is the lifted white ([raised]: `sheetRaised`, a step higher still, for short
  * modal sheets that must stand out over another sheet) and its blocks sink into sage wells; the
  * content is marked as a sheet surface so `canvas` / `canvasSoft` flip by themselves. System back
- * and a drag down close it.
+ * and a drag down close it. [drawsUnderNavigationBar]: the content reaches the bottom edge and pads
+ * itself (a scroll view that runs under the bar, like the iPhone's), the keyboard still lifts it.
  *
  * Present it by composing it (`if (showing) DrafftSheet(onDismissRequest = { showing = false }) { }`);
  * the content closes it with the slide through [LocalSheetDismiss].
@@ -103,12 +106,13 @@ fun DrafftSheet(
     showsGrabber: Boolean = true,
     raised: Boolean = false,
     dismissDisabled: Boolean = false,
+    drawsUnderNavigationBar: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val lock = remember { SheetLock() }
     lock.fixed = dismissDisabled
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true) { it != SheetValue.Hidden || !lock.isLocked }
-    SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, content)
+    SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, drawsUnderNavigationBar, content)
 }
 
 /**
@@ -125,6 +129,7 @@ fun DrafftSheet(
     showsGrabber: Boolean = true,
     raised: Boolean = false,
     dismissDisabled: Boolean = false,
+    drawsUnderNavigationBar: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val lock = remember { SheetLock() }
@@ -139,7 +144,7 @@ fun DrafftSheet(
             shown = false
         }
     }
-    if (shown) SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, content)
+    if (shown) SheetHost(state, lock, onDismissRequest, modifier, detent, showsGrabber, raised, drawsUnderNavigationBar, content)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -152,6 +157,7 @@ private fun SheetHost(
     detent: SheetDetent,
     showsGrabber: Boolean,
     raised: Boolean,
+    drawsUnderNavigationBar: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val p = DS.palette
@@ -173,8 +179,15 @@ private fun SheetHost(
         scrimColor = Color.Black.copy(alpha = if (LocalIsNightSurface.current || p.isDark) 0.48f else 0.25f),
         dragHandle = if (showsGrabber) ({ Grabber() }) else null,
         // The bottom only (navigation bar, keyboard): the top is handled by the detent above, so a
-        // short sheet never gets an empty status-bar band over its content.
-        contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal) },
+        // short sheet never gets an empty status-bar band over its content. A sheet drawn under the
+        // navigation bar keeps only the keyboard: its content pads itself, and scrolls under the bar.
+        contentWindowInsets = {
+            if (drawsUnderNavigationBar) {
+                WindowInsets.ime.only(WindowInsetsSides.Bottom).union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+            } else {
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+            }
+        },
     ) {
         CompositionLocalProvider(
             LocalIsSheetSurface provides true,
