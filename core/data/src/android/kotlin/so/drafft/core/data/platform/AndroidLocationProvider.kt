@@ -2,7 +2,10 @@ package so.drafft.core.data.platform
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
@@ -52,15 +55,52 @@ class AndroidLocationProvider(
     private val client by lazy { LocationServices.getFusedLocationProviderClient(context) }
     private val locationManager by lazy { context.getSystemService<LocationManager>() }
     private val state = MutableStateFlow(read())
+    private val off = MutableStateFlow(readServicesOff())
+    private val prompt = MutableStateFlow(readCanPrompt())
 
     /** Shows the system prompt; set by the activity on screen. */
     @Volatile
     var requester: (() -> Unit)? = null
 
+    /**
+     * Whether Android would still show the prompt after a refusal (`shouldShowRequestPermissionRationale`);
+     * set by the activity on screen, as it needs one.
+     */
+    @Volatile
+    var rationale: (() -> Boolean)? = null
+
+    init {
+        // The location switch can change without the app leaving the screen (quick settings): followed
+        // live, like the iPhone's authorization callback.
+        ContextCompat.registerReceiver(
+            context,
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    refreshAuthorization()
+                }
+            },
+            IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+    }
+
     override val authorization: StateFlow<Authorization> = state.asStateFlow()
+    override val servicesOff: StateFlow<Boolean> = off.asStateFlow()
+    override val canPrompt: StateFlow<Boolean> = prompt.asStateFlow()
 
     override fun refreshAuthorization() {
         state.value = read()
+        off.value = readServicesOff()
+        prompt.value = readCanPrompt()
+    }
+
+    private fun readServicesOff(): Boolean =
+        locationManager?.let { !LocationManagerCompat.isLocationEnabled(it) } ?: false
+
+    private fun readCanPrompt(): Boolean = when (read()) {
+        Authorization.ALLOWED -> false
+        Authorization.NOT_DETERMINED -> true
+        Authorization.DENIED -> rationale?.invoke() ?: false
     }
 
     override fun requestWhenInUseAuthorization() {

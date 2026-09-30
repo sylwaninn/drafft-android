@@ -153,8 +153,7 @@ private fun WelcomeWordmark(modifier: Modifier) {
             .padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Space.lg)
             .clearAndSetSemantics { },
     ) {
-        // The plain word: no trail on a photo.
-        Wordmark(color = Color.White, trailStrength = 0f)
+        Wordmark(color = Color.White)
     }
 }
 

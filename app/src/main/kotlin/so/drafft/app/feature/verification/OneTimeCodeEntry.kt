@@ -249,7 +249,9 @@ fun OneTimeCodeEntry(
                 if (resendIn > 0) L("Resend code in 0:%s", String.format(Locale.ROOT, "%02d", resendIn)) else L("Resend code"),
                 style = TextStyles.subheadline.semibold.monospacedDigits,
                 color = if (resendIn > 0) p.body else p.accentInk,
-                countsDown = true,
+                // The seconds change in place, nothing rolls or fades each tick; only the switch to
+                // "Resend code" cross-fades.
+                rollsDigits = false,
             )
         }
     }

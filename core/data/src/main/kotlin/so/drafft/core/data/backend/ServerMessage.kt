@@ -33,6 +33,8 @@ object ServerMessage {
         "gender_required" -> L("Pick the one that fits you best.")
         "sport_required" -> L("Add at least one sport.")
         "photo_required" -> L("Add at least one photo.")
+        // The first photo isn't approved yet, was refused, or shows no face (server check).
+        "portrait_required" -> L("Put a clear photo of your face first.")
         "birthdate_locked" -> L("Your birthday can't be changed.")
         "email_unconfirmed" -> L("Confirm your email first.")
         "phone_required" -> L("Verify your phone number first.")

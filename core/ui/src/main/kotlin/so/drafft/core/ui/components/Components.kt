@@ -740,6 +740,8 @@ fun CheckDisc(
  * A changing label: its digits roll while the wording stays the same; when the words change
  * ("Any" to "3 selected", "Resend in 0:05" to "Resend code") the old and new labels cross-fade in
  * place instead, so a longer old label never slides out of its block. (`rollingDigits` on iOS.)
+ * [rollsDigits] false: the digits change in place, nothing moves each tick (a countdown); only a
+ * change of wording cross-fades.
  */
 @Composable
 fun RollingText(
@@ -749,10 +751,13 @@ fun RollingText(
     color: Color = Color.Unspecified,
     countsDown: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
+    rollsDigits: Boolean = true,
 ) {
     AnimatedContent(
         targetState = text,
         modifier = modifier,
+        // Same wording, same content: a new count redraws in place, with no transition.
+        contentKey = { if (rollsDigits) it else it.wording },
         transitionSpec = {
             if (initialState.wording == targetState.wording) {
                 val dir = if (countsDown) -1 else 1

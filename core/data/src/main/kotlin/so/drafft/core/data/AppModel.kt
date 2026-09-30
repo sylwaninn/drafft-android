@@ -67,6 +67,7 @@ import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.store.TempoSubscription
 import so.drafft.core.data.verification.PhoneCountry
+import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.DiscoverFilters
@@ -101,6 +102,8 @@ class AppModel(
     private val sessionCalendar: SessionCalendar,
     /** The account's moderation hold (the hold screen reads it). */
     val moderation: AccountModeration,
+    /** Where each of the person's photos stands with moderation (`publicMe` reads it). */
+    val photoModeration: PhotoModeration,
     private val profileSync: ProfileSync,
     private val onboarding: OnboardingStore,
     private val safety: Safety,
@@ -137,6 +140,12 @@ class AppModel(
      * `profileLoad` is `LOADED`: You shows a loading or retry state instead of it until then.
      */
     var me by mutableStateOf(nobody)
+
+    /**
+     * `me` as others see it: only the photos moderation approved. A photo being checked, refused or
+     * waiting for a person stays in Edit profile, never on the profile.
+     */
+    val publicMe: Profile get() = photoModeration.showingApprovedPhotos(me)
     var profileLoad by mutableStateOf(ProfileLoad.LOADING)
 
     /** The signed-in account's last known state on this phone (see `LocalCache`, `refreshAccount`). */
@@ -259,7 +268,7 @@ class AppModel(
     val profileCompletion: ProfileCompletion
         get() {
             val checks = listOf(
-                (me.allPhotos.size >= 4) to L("Add a few more photos"),
+                (publicMe.allPhotos.size >= 4) to L("Add a few more photos"),
                 me.bio.isNotEmpty() to L("Write a short bio"),
                 (me.voiceIntro != null) to L("Record a voice intro"),
                 (me.prompts.size >= 3) to L("Answer a third prompt"),
@@ -825,6 +834,8 @@ class AppModel(
     }
 
     private fun apply(account: ProfileSync.Account) {
+        // Before the profile: a refused or pending photo must never show as the profile, not even for a frame.
+        photoModeration.track(account.photos)
         me = account.profile
         profileLoad = ProfileLoad.LOADED
         applyServerPause(account.paused)

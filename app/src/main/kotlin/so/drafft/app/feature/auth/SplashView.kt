@@ -33,7 +33,7 @@ import so.drafft.core.ui.theme.Motion
 
 /**
  * Launch: the session photos rotate full screen (the log-in's quick crossfade, faster here) under
- * the white wordmark, centred at the bottom, its ghost trail in a darker tone. It stays long enough to
+ * the white wordmark, centred at the bottom. It stays long enough to
  * see a photo, then fades onto the first screen as soon as the app is ready.
  *
  * [isReady]: true once the first screen is ready (tabs mounted, session restored).
@@ -75,7 +75,6 @@ fun SplashView(isReady: Boolean, onFinished: () -> Unit, modifier: Modifier = Mo
                 .padding(bottom = 48.dp),
             size = 34f,
             color = Color.White,
-            trail = p.night,
         )
     }
 

@@ -355,7 +355,7 @@ private fun TierLockup(size: Float, modifier: Modifier = Modifier) {
         modifier.clearAndSetSemantics { contentDescription = Brand.TIER_NAME },
         horizontalArrangement = Arrangement.spacedBy((size * 0.28f).dp),
     ) {
-        Wordmark(Modifier.alignByBaseline(), size = size, color = Color.White, trail = p.accentOnNight.copy(alpha = 0.5f))
+        Wordmark(Modifier.alignByBaseline(), size = size, color = Color.White)
         Text(
             Brand.TIER,
             Modifier.alignByBaseline(),
