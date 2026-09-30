@@ -37,6 +37,7 @@ val sessionsStoreNotificationsModule = module {
             backend = get(),
             defaults = get(),
             lifecycle = get(),
+            network = get(),
             syncPushToken = { get<NotificationService>().syncPushToken() },
             scope = mainScope(),
         )

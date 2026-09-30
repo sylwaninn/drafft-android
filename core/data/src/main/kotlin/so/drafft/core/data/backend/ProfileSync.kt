@@ -6,10 +6,10 @@ import java.time.Period
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -61,10 +61,16 @@ class ProfileSync(
             private fun readResolve(): Any = NotLoaded
         }
 
+        /** A photo of the draft is no longer on the server (removed from another screen or device). */
+        object PhotoGone : SyncError() {
+            private fun readResolve(): Any = PhotoGone
+        }
+
         override val message: String
             get() = when (this) {
                 PhotoUpload -> L("A photo couldn't be sent. Tap it to see why, then try again.")
                 NotLoaded -> L("Your profile hasn't loaded, so nothing was saved. Close and try again.")
+                PhotoGone -> L("A photo is no longer there, so nothing was saved. Close and try again.")
                 is Refused -> message(code)
             }
 
@@ -123,7 +129,7 @@ class ProfileSync(
                 async { updateProfile(fields.toJsonElement() as JsonObject) },
                 async { setSports(s.sports) },
                 async { setPrompts(s.prompts) },
-                async { syncPhotos(s.photos) },
+                async { syncPhotos(s.photos, previous = emptyList()) },
                 async { setLocation(s.location) },
             ).awaitAll()
         }
@@ -186,7 +192,7 @@ class ProfileSync(
                 async { updateProfile(fields.toJsonElement() as JsonObject) },
                 async { if (sportsChanged) setSports(p.sports) },
                 async { if (promptsChanged) setPrompts(p.prompts) },
-                async { if (photosChanged) syncPhotos(p.allPhotos, loadedFirst = true) },
+                async { if (photosChanged) syncPhotos(p.allPhotos, previous = previous.allPhotos, loadedFirst = true) },
             ).awaitAll()
         }
     }
@@ -224,7 +230,13 @@ class ProfileSync(
      * One of the account's photos as the server has it: its link (as the grids show it), its id and
      * moderation's word (`approved`, `pending`, `rejected`).
      */
-    data class OwnPhoto(val link: String, val id: String, val status: String)
+    data class OwnPhoto(
+        val link: String,
+        val id: String,
+        val status: String,
+        /** The server found no face on it (the portrait needs one). False when it did, or never checked. */
+        val faceless: Boolean = false,
+    )
 
     /**
      * The account as saved on the server (a new device, a reinstall, another device's changes), in
@@ -236,7 +248,9 @@ class ProfileSync(
         val id = backend.userID ?: return null
         suspend fun read(withConsent: Boolean): ByteArray = backend.select(
             "profiles?id=eq.$id&select=${accountColumns(withConsent)}" +
-                "&profile_sports.order=position&profile_prompts.order=position&profile_media.order=position",
+                "&profile_sports.order=position&profile_prompts.order=position&profile_media.order=position" +
+                // Drafts (picked, never saved) are never the profile, even the person's own.
+                "&profile_media.published_at=not.is.null",
         )
         val data = try {
             read(withConsent = true)
@@ -265,10 +279,18 @@ class ProfileSync(
             "name", "birthdate", "pronouns", "gender", "neighborhood", "bio", "goal", "favorite_spot",
             "drinks", "smokes", "diet", "chronotype", "icebreaker", "voice_intro_key", "voice_duration",
             "paused", "moderation", "onboarded_at", NotificationSettings.columns,
-            "profile_sports(sport_id,per_week)", "profile_prompts(question,answer)", "profile_media(id,key,kind,status,thumbhash)",
+            "profile_sports(sport_id,per_week)", "profile_prompts(question,answer)", "profile_media(id,key,kind,status,thumbhash,face)",
         ) + if (withConsent) consentColumns else emptyList()).joinToString(",")
 
-        private class MediaRow(val id: String, val key: String, val kind: String, val status: String, val thumbhash: String?)
+        private class MediaRow(
+            val id: String,
+            val key: String,
+            val kind: String,
+            val status: String,
+            val thumbhash: String?,
+            // Three states in the column: a face, none, never checked (null).
+            val face: Boolean?,
+        )
 
         /** The row as the server sends it; the local cache stores these bytes as they are. */
         private class AccountRow(o: JsonObject) {
@@ -298,7 +320,9 @@ class ProfileSync(
             val sports = o.optList("profile_sports") { e -> e.requireObject().let { it.string("sport_id") to it.int("per_week") } }
             val prompts = o.optList("profile_prompts") { e -> e.requireObject().let { ProfilePrompt(it.string("question"), it.string("answer")) } }
             val media = o.optList("profile_media") { e ->
-                e.requireObject().let { MediaRow(it.string("id"), it.string("key"), it.string("kind"), it.string("status"), it.optString("thumbhash")) }
+                e.requireObject().let { 
+                    MediaRow(it.string("id"), it.string("key"), it.string("kind"), it.string("status"), it.optString("thumbhash"), it.optBoolean("face"))
+                }
             }
         }
 
@@ -325,7 +349,7 @@ class ProfileSync(
             // Each photo's blurred preview, shown while it loads.
             for (m in row.media ?: emptyList()) MediaPreviews.register(m.thumbhash, key = m.key)
             val own = (row.media ?: emptyList()).filter { it.kind == "photo" }.mapNotNull { m ->
-                link(m.key)?.let { OwnPhoto(link = it, id = m.id, status = m.status) }
+                link(m.key)?.let { OwnPhoto(link = it, id = m.id, status = m.status, faceless = m.face == false) }
             }
             val photos = own.map { it.link }
             val birthday = row.birthdate?.let(::parseDay)
@@ -418,41 +442,60 @@ class ProfileSync(
     }
 
     /**
-     * Waits for the picked photos to reach the server, drops the ones taken off the profile, and
-     * puts the rest in the profile's order. Photos already on the server (URLs) keep their id.
-     * From Edit profile (`loadedFirst`), only once the server's profile was read in this session:
-     * otherwise the list could be another profile's, and every photo missing from it would go.
+     * Waits for the picked photos to reach the server, then saves the profile's photos in one go
+     * (`save_profile_media`): the list is published in its order, the photos of [previous] no longer in it
+     * are deleted. Picked photos stay drafts, off the profile, until this runs. Photos already on the
+     * server (links) keep their id. From Edit profile ([loadedFirst]), only once the server's profile was
+     * read in this session: otherwise [previous] could be another profile's.
      */
-    private suspend fun syncPhotos(photos: List<String>, loadedFirst: Boolean = false) {
+    private suspend fun syncPhotos(photos: List<String>, previous: List<String>, loadedFirst: Boolean = false) {
         if (loadedFirst) requireLoaded()
+        val list = uploaded(photos)
+        val me = backend.userID ?: throw Backend.BackendError.SignedOut
+        val ids = mediaIDs(me)
+        val order = mutableListOf<String>()
+        for (path in list) {
+            // Gone meanwhile: nothing is saved rather than a profile without it.
+            order += ids(path) ?: throw SyncError.PhotoGone
+        }
+        val removed = mutableListOf<String>()
+        for (path in previous) if (path.isNotEmpty() && path !in list) {
+            ids(path)?.let { if (it !in order) removed += it }
+        }
+        try {
+            backend.rpc("save_profile_media", jsonOf("p_ids" to order, "p_removed" to removed))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (ServerMessage.code(e) == "not_found") throw SyncError.PhotoGone
+            throw refused(e)
+        }
+    }
+
+    /** The photos once every picked one is on the server (registered, moderation may still run). */
+    private suspend fun uploaded(photos: List<String>): List<String> {
         // Only picked files and server URLs: anything else isn't a photo of this account.
-        if (!photos.all { it.isEmpty() || it.startsWith("/") || it.startsWith("http") }) throw SyncError.NotLoaded
-        for (path in photos) if (path.startsWith("/")) {
+        val list = photos.filter { it.isNotEmpty() }
+        if (!list.all { it.startsWith("/") || it.startsWith("http") }) throw SyncError.NotLoaded
+        for (path in list) if (path.startsWith("/")) {
             photoModeration.waitForID(path) ?: throw SyncError.PhotoUpload
         }
-        val me = backend.userID ?: return
+        return list
+    }
+
+    /**
+     * How to find a photo's server id: a link loaded from the server (signed: the key is its path) by its
+     * key, a picked file by what its upload registered.
+     */
+    private suspend fun mediaIDs(me: UUID): (String) -> String? {
         val onServer = backend.select("profile_media?user_id=eq.$me&select=id,key&order=position").jsonArray()
             .map { e -> e.requireObject().let { it.string("id") to it.string("key") } }
-        // Photos loaded from the server are URLs (signed: the key is their path): matched by their key.
-        val order = photos.mapNotNull { path ->
+        return { path ->
             if (path.startsWith("http")) {
                 val key = MediaURL.key(path)
                 onServer.firstOrNull { it.second == key }?.first
             } else {
                 photoModeration.id(path)
-            }
-        }
-        // Photos taken off the profile: removed together rather than one after the other.
-        coroutineScope {
-            for ((id) in onServer) if (id !in order) {
-                launch { attempt { backend.rpc("delete_media", jsonOf("p_id" to id)) } }
-            }
-        }
-        if (order.size > 1) {
-            try {
-                backend.rpc("reorder_media", jsonOf("p_ids" to order))
-            } catch (e: Exception) {
-                throw refused(e)
             }
         }
     }
