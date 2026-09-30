@@ -83,6 +83,7 @@ import so.drafft.core.ui.components.CheckDisc
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftButtonKind
 import so.drafft.core.ui.components.DrafftSheet
+import so.drafft.core.ui.components.SheetContainerColor
 import so.drafft.core.ui.components.EdgeBars
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.NightBlock
@@ -237,6 +238,8 @@ fun PaywallView(
         Perk("bolt.fill", L("Weekly boost"), L("One free boost every week: 30 minutes at the top of decks near you.")),
     )
 
+    // The sheet paints the same night behind the grabber and the bars: no white band around the paywall.
+    SheetContainerColor(p.night)
     Box(modifier.fillMaxSize().background(p.night)) {
         NightSurface {
             BottomBar(
