@@ -21,8 +21,7 @@ The iPhone app's list lives in `drafft/TODO.md`, backend work in `drafft-backend
       prices equal to the App Store's where the currency is the same, 7 languages), imported in both
       RevenueCat projects and attached to `drafft_tempo` and the offerings `default`, `boosts`,
       `super_likes`. Subscriptions use the base plan id `base`.
-      - To check: the product names are lowercase (`1 boost`, WORDING.md 4) while App Store Connect has
-        `1 Boost`, `3 Super Likes`. Fix the App Store side in drafft.
+      - Pack names keep their capitals (`1 Boost`, `3 Super Likes`), as in App Store Connect (WORDING.md 4).
       - Product texts in the 7 languages exist on Google Play only. The App Store side has English only.
 - [ ] **License testers** (Play Console, Settings, License testing) to buy without paying.
 - [ ] **Google developer notifications** (Pub/Sub, real-time events) connected to one RevenueCat project
