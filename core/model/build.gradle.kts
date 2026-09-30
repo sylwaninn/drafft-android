@@ -5,7 +5,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-kotlin { jvmToolchain(libs.versions.java.get().toInt()) }
+java {
+    sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+    targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+}
+
+kotlin {
+    // Bytecode for Java 17 from whichever JDK runs Gradle (a toolchain would require a JDK 17 install).
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.java.get())) }
+}
 
 dependencies {
     api(libs.kotlinx.coroutines.core)

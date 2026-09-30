@@ -21,7 +21,10 @@ android {
     buildFeatures { compose = true }
 }
 
-kotlin { jvmToolchain(libs.versions.java.get().toInt()) }
+kotlin {
+    // Bytecode for Java 17 from whichever JDK runs Gradle (a toolchain would require a JDK 17 install).
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.java.get())) }
+}
 
 dependencies {
     api(project(":core:model"))
@@ -38,6 +41,8 @@ dependencies {
     api(libs.androidx.activity.compose)
     api(libs.androidx.lifecycle.runtime.compose)
     api(libs.coil.compose)
+    // ContextCompat, FileProvider (camera captures, sharing).
+    implementation(libs.androidx.core.ktx)
     // VideoPlayer (AndroidPlatformUi): ExoPlayer drawn by Media3's Compose surface.
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui.compose)

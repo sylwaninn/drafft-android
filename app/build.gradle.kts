@@ -111,7 +111,10 @@ android {
     testOptions { unitTests.isReturnDefaultValues = true }
 }
 
-kotlin { jvmToolchain(libs.versions.java.get().toInt()) }
+kotlin {
+    // Bytecode for Java 17 from whichever JDK runs Gradle (a toolchain would require a JDK 17 install).
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.java.get())) }
+}
 
 dependencies {
     implementation(project(":core:model"))
@@ -124,7 +127,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.exifinterface)
-    implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.transformer)
     implementation(libs.androidx.camera.core)

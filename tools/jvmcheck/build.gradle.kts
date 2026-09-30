@@ -10,7 +10,7 @@ val root = rootDir.resolve("../..")
 kotlin {
     jvmToolchain(21)
     compilerOptions {
-        freeCompilerArgs.addAll("-Xcontext-receivers", "-opt-in=kotlin.RequiresOptIn")
+        freeCompilerArgs.addAll("-Xcontext-receivers", "-opt-in=kotlin.RequiresOptIn", "-opt-in=kotlin.time.ExperimentalTime")
     }
 }
 
@@ -71,6 +71,8 @@ dependencies {
     implementation("io.insert-koin:koin-compose:4.0.4")
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
     implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.4")
+    // 3.1.4, not the app's 3.2.4: 3.2 is built with Kotlin 2.2 and crashes this build's 2.1 compiler.
+    // 3.2 returns kotlin.time.Instant (opted in above), which is where the two can disagree.
     implementation(platform("io.github.jan-tennert.supabase:bom:3.1.4"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
