@@ -75,10 +75,19 @@ object Localization {
         load(language)
     }
 
+    /**
+     * The shared catalog's table for [language], with the Android variants on top: the few sentences
+     * the iPhone writes for its own platform (App Store, Apple Account, iPhone Settings) have an
+     * Android wording under the same key in `i18n/android/` (Google Play, Google account, the phone's
+     * settings). English included, since the catalog's English is the key itself.
+     */
     private fun load(language: AppLanguage): Map<String, String> = cache.getOrPut(language) {
-        val stream = Localization::class.java.getResourceAsStream("/i18n/${language.code}.json")
-            ?: return@getOrPut emptyMap()
-        stream.bufferedReader(Charsets.UTF_8).use { json.decodeFromString<Map<String, String>>(it.readText()) }
+        read("/i18n/${language.code}.json") + read("/i18n/android/${language.code}.json")
+    }
+
+    private fun read(path: String): Map<String, String> {
+        val stream = Localization::class.java.getResourceAsStream(path) ?: return emptyMap()
+        return stream.bufferedReader(Charsets.UTF_8).use { json.decodeFromString<Map<String, String>>(it.readText()) }
     }
 
     fun string(key: String, args: Array<out Any?>): String {
