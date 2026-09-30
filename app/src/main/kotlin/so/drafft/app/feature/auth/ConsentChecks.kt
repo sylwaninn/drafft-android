@@ -30,7 +30,6 @@ import so.drafft.core.model.L
 import so.drafft.core.ui.components.DrafftCheckbox
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
-import so.drafft.core.ui.theme.branded
 
 // Port of Drafft/Features/Auth/ConsentChecks.swift.
 
@@ -38,8 +37,9 @@ import so.drafft.core.ui.theme.branded
  * The two required consents, unchecked until the person ticks them, each in its own white block:
  * the terms (the documents named in the sentence are links), then the use of sensitive data (gender,
  * the genders someone wants to see, lifestyle answers, which can reveal sexual orientation, health or
- * beliefs), which the privacy policy bases on explicit consent. Links open getdrafft.com in the
- * browser. Sign-up and `TermsConsentView` share it.
+ * beliefs), which the privacy policy bases on explicit consent. That sentence stays plain; its link
+ * leads to the privacy policy's section on sensitive data, which says what they can reveal and how to
+ * withdraw the consent. Links open getdrafft.com in the browser. Sign-up and `TermsConsentView` share it.
  */
 @Composable
 fun ConsentChecks(draft: ConsentDraft, onDraftChange: (ConsentDraft) -> Unit, modifier: Modifier = Modifier) {
@@ -53,7 +53,6 @@ fun ConsentChecks(draft: ConsentDraft, onDraftChange: (ConsentDraft) -> Unit, mo
                 isOn = draft.sensitiveData,
                 onToggle = { onDraftChange(draft.copy(sensitiveData = !draft.sensitiveData)) },
                 sentence = sensitiveText(),
-                detail = L("This can reveal your sexual orientation, health or beliefs, so drafft asks first."),
             )
         }
     }
@@ -67,7 +66,7 @@ internal val ConsentSaver = androidx.compose.runtime.saveable.Saver<ConsentDraft
 
 /** The checkbox toggles; the sentence next to it carries the links. */
 @Composable
-private fun Check(isOn: Boolean, onToggle: () -> Unit, sentence: AnnotatedString, detail: String? = null) {
+private fun Check(isOn: Boolean, onToggle: () -> Unit, sentence: AnnotatedString) {
     val p = DS.palette
     Row(
         Modifier.leadingOutset(DS.Space.sm),
@@ -86,14 +85,8 @@ private fun Check(isOn: Boolean, onToggle: () -> Unit, sentence: AnnotatedString
                     selected = isOn
                 },
         )
-        Column(
-            // Level with the box on top, the same room under the last line.
-            Modifier.padding(vertical = 11.dp),
-            verticalArrangement = Arrangement.spacedBy(DS.Space.xs),
-        ) {
-            Text(sentence, style = TextStyles.subheadline, color = p.ink)
-            if (detail != null) Text(branded(detail), style = TextStyles.footnote, color = p.body)
-        }
+        // Level with the box on top, the same room under the last line.
+        Text(sentence, Modifier.padding(vertical = 11.dp), style = TextStyles.subheadline, color = p.ink)
     }
 }
 
@@ -117,8 +110,8 @@ private fun termsText(): AnnotatedString {
 @Composable
 private fun sensitiveText(): AnnotatedString {
     val styles = linkStyles()
-    val name = L("sensitive data")
-    val sentence = L("I agree that drafft uses my %s: my gender, the genders I want to see and my lifestyle, if I fill it in.", name)
+    val name = L("my gender")
+    val sentence = L("I agree that drafft uses %s, the genders I want to see and my lifestyle for my suggestions.", name)
     return remember(sentence, styles) {
         buildAnnotatedString {
             append(sentence)
