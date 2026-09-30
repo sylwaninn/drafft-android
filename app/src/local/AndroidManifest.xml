@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The local Supabase answers over http on the machine (10.0.2.2 or its Wi-Fi address). Debug only:
+         the local flavor has no release build. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
