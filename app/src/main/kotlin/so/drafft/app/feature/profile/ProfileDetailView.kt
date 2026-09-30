@@ -90,7 +90,8 @@ import so.drafft.core.ui.theme.semibold
 enum class ProfileDetailMode { DISCOVER, SHEET, ME }
 
 /**
- * A profile in full, presented in a sheet (`DrafftSheet`). Discover: like, pass or super like it,
+ * A profile in full, presented in a sheet (`DrafftSheet` with no grabber, drawn under the navigation
+ * bar, so the photo meets the sheet's top edge and the profile runs to the bottom). Discover: like, pass or super like it,
  * or like one photo or prompt with a note. Close (top right) closes the sheet it sits in; in `ME`
  * mode the presenter puts its own.
  */
@@ -166,6 +167,9 @@ fun ProfileDetailView(
                 .fillMaxSize()
                 .blur(veil)
                 .verticalScroll(scroll)
+                // The sheet draws under the navigation bar: the bar (Discover) or the scroll's end
+                // clears it.
+                .then(if (discover) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)))
                 .padding(bottom = DS.Space.xxl + if (discover) barHeight else 0.dp),
             verticalArrangement = Arrangement.spacedBy(DS.Space.xl),
         ) {
