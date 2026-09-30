@@ -60,7 +60,7 @@ internal class AndroidFrontCamera(
 
     /** False when there's no front camera (an emulator without one). */
     override suspend fun start(): Boolean {
-        val provider = runCatching { ProcessCameraProvider.awaitInstance(context) }.getOrNull() ?: return false
+        val provider = runCatching { cameraProvider(context) }.getOrNull() ?: return false
         this.provider = provider
         if (!runCatching { provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) }.getOrDefault(false)) return false
         val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
@@ -146,3 +146,14 @@ internal class AndroidFrontCamera(
         }
     }
 }
+
+/** CameraX's process-wide provider, awaited without blocking (its future completes on the main thread). */
+private suspend fun cameraProvider(context: android.content.Context): ProcessCameraProvider =
+    kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+        val future = ProcessCameraProvider.getInstance(context)
+        future.addListener(
+            { runCatching { future.get() }.onSuccess { cont.resume(it) {} }.onFailure { cont.cancel(it) } },
+            ContextCompat.getMainExecutor(context),
+        )
+        cont.invokeOnCancellation { future.cancel(false) }
+    }
