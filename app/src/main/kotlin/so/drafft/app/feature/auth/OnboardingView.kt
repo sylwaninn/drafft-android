@@ -95,6 +95,7 @@ import so.drafft.app.feature.me.PromptPickerSheet
 import so.drafft.app.feature.me.PromptSlot
 import so.drafft.app.feature.me.ReorderablePhotoGrid
 import so.drafft.app.feature.me.inputStyle
+import so.drafft.app.feature.me.profileSaveFailure
 import so.drafft.app.feature.profile.IcebreakerEditor
 import so.drafft.app.feature.profile.LifestylePicker
 import so.drafft.app.feature.profile.VoiceIntroRecorder
@@ -311,6 +312,9 @@ private class OnboardingState(
     /** The last step sends the profile to the server: spinner, then the server's reason if it refuses. */
     var finishing by mutableStateOf(false)
     var finishError by mutableStateOf<String?>(null)
+
+    /** A picked photo that couldn't be opened, until the next pick. */
+    var photoError by mutableStateOf<String?>(null)
     var restored = false
     var confirmLeave by mutableStateOf(false)
     var furthest = 0
@@ -391,7 +395,7 @@ private class OnboardingState(
                     if (area == null && locator.state == AreaLocator.State.Locating) L("Finding your area…") to false else null
                 OnboardingStep.SPORTS -> if (sports.isEmpty()) L("Pick at least one sport.") to false else null
                 OnboardingStep.RHYTHM -> null
-                OnboardingStep.PHOTOS -> photosCheck.reason?.let { it to photosCheck.needsAction }
+                OnboardingStep.PHOTOS -> photoError?.let { it to true } ?: photosCheck.reason?.let { it to photosCheck.needsAction }
                 OnboardingStep.VOICE -> if (voice == null) L("Record your intro, or skip it for now.") to false else null
                 OnboardingStep.PROMPTS -> if (answeredPrompts.isEmpty()) L("Answer a prompt, or skip it for now.") to false else null
                 OnboardingStep.ICEBREAKER -> if (icebreaker.isComplete) null else L("Finish your prompt, or skip it for now.") to false
@@ -544,7 +548,12 @@ private class OnboardingState(
         )
         app.language = language
         app.phoneNumber = phone.displayNumber
-        val birthday = birthday ?: return
+        // Lost from a restored draft: back to its step, where Continue waits for it.
+        val birthday = birthday ?: run {
+            Haptics.warning()
+            go(OnboardingStep.BIRTHDAY.rawValue)
+            return
+        }
         val signUp = ProfileSync.SignUp(
             name = p.name, birthday = birthday, gender = identity, interestedIn = interestedIn,
             neighborhood = area?.name ?: "", location = locator.blurred, bio = p.bio,
@@ -573,16 +582,12 @@ private class OnboardingState(
                     consentError = ServerMessage.text(forCode = "terms_required")
                     go(OnboardingStep.RULES.rawValue)
                 } else {
-                    finishError = e.message
+                    finishError = profileSaveFailure(e, photosCheck)
                 }
                 return@launch
             } catch (e: Exception) {
                 Haptics.warning()
-                finishError = when (e) {
-                    is ProfileSync.SyncError -> e.message
-                    is Backend.BackendError -> e.message
-                    else -> L("Couldn't connect. Check your connection and try again.")
-                }
+                finishError = profileSaveFailure(e, photosCheck)
                 finishing = false
                 return@launch
             }
@@ -1141,7 +1146,14 @@ private fun PhotosStep(state: OnboardingState) {
     val scope = rememberCoroutineScope()
     val pick = LocalPlatformUi.current.rememberPhotoPicker { data ->
         scope.launch {
-            val path = PhotoCompressor.savePicked(data) ?: return@launch
+            state.photoError = null
+            // A photo that can't be read (a cloud copy offline), or a format that won't decode: said, never a
+            // pick that does nothing.
+            val path = data?.let { PhotoCompressor.savePicked(it) } ?: run {
+                Haptics.warning()
+                state.photoError = L("This photo couldn't be opened. Pick another one, or check your connection.")
+                return@launch
+            }
             val kept = store.persist(path)
             // Sent to the backend: compressed, uploaded, then judged by moderation (the tile shows it).
             moderation.submit(kept)
@@ -1174,7 +1186,10 @@ private fun PhotosStep(state: OnboardingState) {
         state.mainFace = face
     }
     // A sign-up resumed after the app was closed: each photo's verdict read again (or sent again).
-    LaunchedEffect(state.photos) { state.photos.forEach(moderation::ensureChecked) }
+    LaunchedEffect(state.photos) {
+        state.photoError = null
+        state.photos.forEach(moderation::ensureChecked)
+    }
 }
 
 @Composable

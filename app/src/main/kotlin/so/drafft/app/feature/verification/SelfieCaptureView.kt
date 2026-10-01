@@ -60,6 +60,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.core.data.AccountModeration
 import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
@@ -404,7 +405,17 @@ class SelfieCaptureModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            error = L("Your selfie couldn't be sent. Try again.")
+            if (ServerMessage.code(e) == "not_requested") {
+                // The team decided meanwhile (the hold was lifted or changed): nothing left to send here.
+                moderation.load()
+                sent = true
+                return
+            }
+            error = if (generateSequence<Throwable>(e) { it.cause }.any { it is java.io.IOException }) {
+                L("Couldn't connect. Check your connection and try again.")
+            } else {
+                L("Your selfie couldn't be sent. Try again.")
+            }
             Haptics.warning()
             stage = Stage.Captured(photo)
         }

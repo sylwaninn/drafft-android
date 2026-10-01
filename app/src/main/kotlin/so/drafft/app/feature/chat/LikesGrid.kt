@@ -414,7 +414,7 @@ fun LockedLikesBanner(count: Int, modifier: Modifier = Modifier) {
 /** With drafft tempo: who they are is right there, like back to match. */
 @Composable
 fun TempoLikesBanner(count: Int, modifier: Modifier = Modifier) {
-    LikesBanner(count = count, message = AnnotatedString(L("Like back and it's a match straight away.")), modifier = modifier)
+    LikesBanner(count = count, message = AnnotatedString(L("Like them back and it's mutual. Then propose a session.")), modifier = modifier)
 }
 
 /** A ThumbHash's RGBA pixels (about 32 × 32) as a bitmap, made once per like. */

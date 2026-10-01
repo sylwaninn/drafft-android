@@ -3,6 +3,7 @@ package so.drafft.core.data.store
 import java.math.BigDecimal
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
+import so.drafft.core.model.L
 
 // Ports Drafft/Services/Store.swift: the interface and the store's values. RevenueCat (Google Play)
 // implements it in src/android (`RevenueCatStore`).
@@ -83,6 +84,65 @@ interface Store {
 
     sealed class StoreError(message: String) : Exception(message) {
         data object NotLinked : StoreError("not linked") { private fun readResolve(): Any = NotLinked }
+
+        /** Google Play or RevenueCat refused or couldn't confirm the purchase (`RevenueCatStore`). */
+        class Failed(val problem: PurchaseProblem, cause: Throwable? = null) : StoreError(problem.name) {
+            init { cause?.let(::initCause) }
+        }
+    }
+
+    /** Why a purchase didn't complete, in words that stay true whatever Google Play did. */
+    enum class PurchaseProblem {
+        /** Waiting for a parent's approval or the bank's: RevenueCat gets the purchase once it goes
+         * through, and the server credits it then. */
+        PENDING,
+
+        /** Purchases aren't allowed on this device or account. */
+        NOT_ALLOWED,
+
+        /** Already owned by this Google account: Restore brings it to this account. */
+        ALREADY_OWNED,
+
+        /** Refused before Google Play took any payment. */
+        NOT_CHARGED,
+
+        /** Not confirmed, and Google Play may have charged: RevenueCat keeps the purchase and sends it
+         * again (next launch, back to the app), and the server credits it then. */
+        UNCONFIRMED,
+
+        /** The account couldn't be linked (offline): nothing was asked of Google Play. */
+        NOT_LINKED;
+
+        /** [restorable]: the screen has Restore purchases. */
+        fun message(restorable: Boolean): String = when (this) {
+            PENDING -> L("Waiting for approval. It'll be added to your account once the payment goes through.")
+            NOT_ALLOWED -> L("Purchases are turned off on this iPhone. You can allow them in Screen Time settings.")
+            ALREADY_OWNED -> if (restorable) {
+                L("This is already on your Apple ID. Tap Restore purchases to get it back.")
+            } else {
+                L("We couldn't confirm the purchase. If you were charged, it'll be added to your account automatically.")
+            }
+            NOT_CHARGED -> L("The purchase didn't go through. You haven't been charged.")
+            UNCONFIRMED -> L("We couldn't confirm the purchase. If you were charged, it'll be added to your account automatically.")
+            NOT_LINKED -> L("Couldn't connect. Check your connection and try again.")
+        }
+
+        companion object {
+            /** The Swift `PurchaseProblem(error)`; anything unexpected can't be said to be free. */
+            fun from(error: Throwable): PurchaseProblem = when (error) {
+                is StoreError.NotLinked -> NOT_LINKED
+                is StoreError.Failed -> error.problem
+                else -> UNCONFIRMED
+            }
+
+            /** A restore that failed: the account not linked (nothing was asked of Google Play), or
+             * Google Play itself. */
+            fun restoreFailure(error: Throwable): String = if (error is StoreError.NotLinked) {
+                L("Couldn't connect. Check your connection and try again.")
+            } else {
+                L("Couldn't reach the App Store. Try again.")
+            }
+        }
     }
 
     /**

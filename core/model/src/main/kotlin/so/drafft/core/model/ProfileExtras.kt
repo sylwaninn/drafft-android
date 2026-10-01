@@ -66,8 +66,11 @@ data class ProfilePrompt(
 
         private val known: Set<String> by lazy { (questions + retired).toSet() }
 
+        /** Saved questions whose catalog key moved off a forbidden word; the saved text stays (WORDING.md 5.3). */
+        private val renamed = mapOf("I'll know it's a match if" to "We're on the same wavelength if")
+
         /** A library question in the app's language (questions not in the library are shown as is). */
-        fun text(question: String): String = if (question in known) L(question) else question
+        fun text(question: String): String = if (question in known) L(renamed[question] ?: question) else question
     }
 }
 

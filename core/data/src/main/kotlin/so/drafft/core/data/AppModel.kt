@@ -4,10 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.exception.AuthSessionMissingException
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.exceptions.RestException
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -36,6 +34,7 @@ import so.drafft.core.data.backend.MatchRow
 import so.drafft.core.data.backend.ProfileCard
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.backend.Safety
+import so.drafft.core.data.backend.SafetyOutbox
 import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.backend.asArray
 import so.drafft.core.data.backend.asBoolean
@@ -150,11 +149,20 @@ class AppModel(
     val publicMe: Profile get() = photoModeration.showingApprovedPhotos(me)
     var profileLoad by mutableStateOf(ProfileLoad.LOADING)
 
+    /** Why the last read failed, in words (`FAILED`): the connection only when it never got through. */
+    var profileLoadFailure by mutableStateOf<String?>(null)
+
     /** The signed-in account's last known state on this phone (see `LocalCache`, `refreshAccount`). */
     private var localCache: LocalCache? = null
 
     /** The account read in flight, shared by everyone who asks meanwhile. */
     private var accountRefresh: Deferred<ProfileSync.Account?>? = null
+
+    /**
+     * In the tabs without knowing whether sign-up is finished: the next account read that answers
+     * decides (`routeWhenAccountRead`), whoever asked for it.
+     */
+    private var routeOnAccountRead = false
 
     /** The last account read, and when: a read asked for right after it reuses it. */
     private var lastAccountRead: Pair<Instant, ProfileSync.Account>? = null
@@ -245,6 +253,9 @@ class AppModel(
      */
     private var pauseEdits = 0
     private var pauseSaves = 0
+
+    /** The latest flip's save: null once saved, else why it wasn't (the switch went back). */
+    private var pauseSave: Deferred<String?>? = null
 
     var notifyMatches by mutableStateOf(true)
     var notifyMessages by mutableStateOf(true)
@@ -364,6 +375,19 @@ class AppModel(
 
     /** Current matches (`my_matches`), newest first. */
     var matches by mutableStateOf<List<Match>>(emptyList())
+
+    /**
+     * Where a list from the server stands before it has anything to show: an empty list means "nobody"
+     * only once it was read (or this phone's copy of a read was shown). A first read that failed shows a
+     * retry, never an empty state.
+     */
+    sealed interface ListLoad {
+        data object Loading : ListLoad
+        data class Failed(val offline: Boolean) : ListLoad
+        data object Loaded : ListLoad
+    }
+    var likesLoad by mutableStateOf<ListLoad>(ListLoad.Loading)
+    var matchesLoad by mutableStateOf<ListLoad>(ListLoad.Loading)
 
     // Chats
 
@@ -547,6 +571,48 @@ class AppModel(
         }
     }
 
+    /**
+     * Logged in, or a password reset: to sign-up if it isn't finished (another device, a reinstall).
+     * Without an answer (offline, a server error), in as far as this phone knows, and to sign-up as soon
+     * as a read says it isn't finished: never left in the tabs with a profile that can't open.
+     */
+    suspend fun enterAfterLogIn() {
+        refreshAccount()?.let {
+            signIn(onboard = !it.onboarded)
+            return
+        }
+        routeOnAccountRead = true
+        signIn(onboard = false)
+        scope.launch { routeWhenAccountRead() }
+    }
+
+    /**
+     * In the tabs without knowing whether sign-up is finished: the account is read again, less often
+     * each time, until a read answers (this loop's or any other: Realtime, back at the front), and that
+     * read brings sign-up back if it isn't finished ([routeIfUnfinished]).
+     */
+    suspend fun routeWhenAccountRead() {
+        val session = sessionID
+        var wait = 2.seconds
+        // Waits first: the read that just failed was the first try, and the tabs are on screen by then.
+        while (routeOnAccountRead) {
+            delay(wait)
+            if (session != sessionID || phase != Phase.MAIN || !routeOnAccountRead) return
+            refreshAccount()?.let(::routeIfUnfinished)
+            wait = minOf(wait * 2, 60.seconds)
+        }
+    }
+
+    /**
+     * The first account read that answers in the tabs after an unknown sign-in: to sign-up if it isn't
+     * finished. One that answers before the tabs show (sign-in's own read) leaves it to the loop's next read.
+     */
+    private fun routeIfUnfinished(account: ProfileSync.Account) {
+        if (!routeOnAccountRead || phase != Phase.MAIN) return
+        routeOnAccountRead = false
+        if (!account.onboarded) phase = Phase.ONBOARDING
+    }
+
     fun finishOnboarding(profile: Profile) {
         onboarding.clear()
         me = profile
@@ -586,8 +652,7 @@ class AppModel(
         } catch (e: Exception) {
             // Refused by Auth (session revoked, user gone): ended. Offline or a server hiccup: the
             // saved session is the best we know.
-            val refused = e is AuthSessionMissingException || (e is RestException && e.statusCode in 400..499)
-            if (refused && session == sessionID) endSession()
+            if (Backend.refusesSession(e) && session == sessionID) endSession()
         }
     }
 
@@ -623,10 +688,14 @@ class AppModel(
         if (answer != null) {
             signIn(onboard = !answer.onboarded, immediately = true)
         } else {
-            // No answer yet (slow or no network): in, as far as this phone knows.
+            // No answer yet (slow or no network): in, as far as this phone knows, until the server says.
+            // The late read, when it answers, decides ([routeIfUnfinished]); else it's tried again.
+            routeOnAccountRead = true
             signIn(onboard = false, immediately = true)
-            val account = read.awaitOrNull()
-            if (account != null && session == sessionID && !account.onboarded && phase == Phase.MAIN) phase = Phase.ONBOARDING
+            scope.launch {
+                read.awaitOrNull()?.let(::routeIfUnfinished)
+                routeWhenAccountRead()
+            }
         }
     }
 
@@ -743,6 +812,9 @@ class AppModel(
         sessionCalendar.forgetAll()
         sessionStore.reset()
         blocked = emptyList()
+        // What's still waiting stays on this phone for the account's next sign-in (SafetyOutbox).
+        safetyRetry?.cancel()
+        safetyAttempts = 0
         dataExportRequestedAt = null
         termsConsent = TermsConsent.Gate.UNKNOWN
         filters = DiscoverFilters()
@@ -754,6 +826,7 @@ class AppModel(
         email = ""
         phoneNumber = null
         applyServerPause(false)
+        routeOnAccountRead = false
         sessionID += 1
         phase = Phase.WELCOME
         tab = Tab.DISCOVER
@@ -791,12 +864,16 @@ class AppModel(
                 lastAccountRead = Instant.now() to account
                 apply(account, pauseReadAt = pauseEdits)
                 applyConsent(fromServer = account.consent)
+                routeIfUnfinished(account)
                 account
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 if (session != sessionID) return@async null
-                if (profileLoad != ProfileLoad.LOADED) profileLoad = ProfileLoad.FAILED
+                if (profileLoad != ProfileLoad.LOADED) {
+                    profileLoadFailure = ServerMessage.text(e, offline = L("Check your connection and try again."))
+                    profileLoad = ProfileLoad.FAILED
+                }
                 retryWhileConsentUnknown()
                 null
             }
@@ -922,18 +999,31 @@ class AppModel(
     suspend fun loadLikes() {
         val premium = isPremium
         if (phase != Phase.MAIN) return
-        val data = attempt { backend.rpc("liked_me", jsonOf("p_limit" to LIKES_PAGE)) } ?: return
+        val data = try {
+            backend.rpc("liked_me", jsonOf("p_limit" to LIKES_PAGE))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (isPremium == premium) likesFailed(e)
+            return
+        }
         if (isPremium != premium) return
         if (premium) {
-            val likes = attemptOrNull { LikeCard.list(data) } ?: return
+            val likes = attemptOrNull { LikeCard.list(data) } ?: return likesFailed(null)
             if (blurredLikes.isNotEmpty()) blurredLikes = emptyList()
             applyLikes(likes)
             openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.LIKES) } }
         } else {
-            val fresh = BlurredLike.list(data) ?: return
+            val fresh = BlurredLike.list(data) ?: return likesFailed(null)
             if (likedMe.isNotEmpty()) likedMe = emptyList()
             if (fresh != blurredLikes) blurredLikes = fresh
         }
+        likesLoad = ListLoad.Loaded
+    }
+
+    /** A read that failed only shows if nothing was read yet: what's on screen stays otherwise. */
+    private fun likesFailed(error: Throwable?) {
+        if (likesLoad != ListLoad.Loaded) likesLoad = ListLoad.Failed(offline = error?.let(ServerMessage::isOffline) ?: false)
     }
 
     private fun applyLikes(likes: List<LikeCard>) {
@@ -959,11 +1049,18 @@ class AppModel(
      */
     suspend fun loadMatches() {
         if (phase != Phase.MAIN) return
-        val data = attempt { backend.rpc("my_matches") } ?: return
-        val rows = attemptOrNull { MatchRow.list(data) } ?: return
-        applyMatches(rows, announce = discovery.matchesRead)
-        discovery.matchesRead = true
-        openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.MATCHES) } }
+        try {
+            val data = backend.rpc("my_matches")
+            val rows = MatchRow.list(data)
+            applyMatches(rows, announce = discovery.matchesRead)
+            discovery.matchesRead = true
+            matchesLoad = ListLoad.Loaded
+            openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.MATCHES) } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (matchesLoad != ListLoad.Loaded) matchesLoad = ListLoad.Failed(offline = ServerMessage.isOffline(e))
+        }
     }
 
     private fun applyMatches(rows: List<MatchRow>, announce: Boolean) {
@@ -1041,11 +1138,17 @@ class AppModel(
         // Cards are only kept with drafft tempo (a free account's list is blurred, read live).
         if (isPremium && likedMe.isEmpty()) {
             cache.entry(LocalCache.Kind.LIKES)?.let { entry -> attemptOrNull { LikeCard.list(entry.data) } }
-                ?.let { applyLikes(it) }
+                ?.let {
+                    applyLikes(it)
+                    likesLoad = ListLoad.Loaded
+                }
         }
         if (matches.isEmpty()) {
             cache.entry(LocalCache.Kind.MATCHES)?.let { entry -> attemptOrNull { MatchRow.list(entry.data) } }
-                ?.let { applyMatches(it, announce = false) }
+                ?.let {
+                    applyMatches(it, announce = false)
+                    matchesLoad = ListLoad.Loaded
+                }
         }
     }
 
@@ -1131,7 +1234,7 @@ class AppModel(
     private sealed interface DeckOutcome {
         class Cards(val data: ByteArray) : DeckOutcome
         class Refused(val code: String) : DeckOutcome
-        data object Failed : DeckOutcome
+        class Failed(val error: Throwable) : DeckOutcome
     }
 
     /** One `discover` call; with no location on file, the location is sent first and it's asked again once. */
@@ -1142,7 +1245,7 @@ class AppModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val code = ServerMessage.code(e) ?: return DeckOutcome.Failed
+                val code = ServerMessage.code(e) ?: return DeckOutcome.Failed(e)
                 if (code == "location_required" && attempt == 0 && locationOnce.send()) continue
                 return DeckOutcome.Refused(code)
             }
@@ -1173,8 +1276,12 @@ class AppModel(
                 }
                 if (queue.isEmpty()) deckState = DeckState.Failed(ServerMessage.text(forCode = outcome.code) ?: ServerMessage.generic)
             }
-            DeckOutcome.Failed ->
-                if (queue.isEmpty()) deckState = DeckState.Failed(L("Couldn't connect. Check your connection and try again."))
+            is DeckOutcome.Failed ->
+                if (queue.isEmpty()) {
+                    deckState = DeckState.Failed(
+                        ServerMessage.text(outcome.error, offline = L("Couldn't connect. Check your connection and try again.")),
+                    )
+                }
         }
     }
 
@@ -1327,7 +1434,7 @@ class AppModel(
 
     /** A refusal or failure, above the tabs, in the person's language. */
     fun say(error: Throwable) {
-        val text = ServerMessage.text(error) ?: L("Couldn't connect. Check your connection and try again.")
+        val text = ServerMessage.text(error, offline = L("Couldn't connect. Check your connection and try again."))
         notice = Notice(text = text)
     }
 
@@ -1390,6 +1497,8 @@ class AppModel(
         history = emptyList()
         likedMe = emptyList()
         matches = emptyList()
+        likesLoad = ListLoad.Loading
+        matchesLoad = ListLoad.Loading
         likesLeft = null
         notice = null
     }
@@ -1522,7 +1631,13 @@ class AppModel(
         val paused = profilePaused
         pauseEdits += 1
         val edit = pauseEdits
-        scope.launch { syncPause(paused, edit) }
+        pauseSave = scope.async { syncPause(paused, edit) }
+    }
+
+    /** Pauses and waits for the server: null once it has it, else what to say (the switch is back). */
+    suspend fun pauseNow(): String? {
+        profilePaused = true
+        return pauseSave?.await()
     }
 
     /**
@@ -1547,22 +1662,31 @@ class AppModel(
 
     /**
      * Sends the switch to the server; if it can't be saved (signed out included), the switch goes
-     * back to the server's state.
+     * back to the server's state and a notice says so. Null once saved, else that notice's text.
      */
-    suspend fun syncPause(paused: Boolean, edit: Int) {
+    suspend fun syncPause(paused: Boolean, edit: Int): String? {
         pauseSaves += 1
         try {
             backend.updateMyProfile(jsonOf("paused" to paused))
             // Resumed: discovery reads the deck again (nothing was read while paused). Only once the
             // server has it: asked sooner, it answers "paused" and the pause came back on.
             if (!paused && edit == pauseEdits) refreshDiscovery()
+            return null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // A later flip is on its way: it decides.
-            if (edit != pauseEdits) return
+            if (edit != pauseEdits) return null
             Haptics.warning()
             applyServerPause(!paused)
+            val offline = generateSequence<Throwable>(e) { it.cause }.any { it is java.io.IOException }
+            val text = when {
+                !offline -> ServerMessage.text(e) ?: ServerMessage.generic
+                paused -> L("Your profile couldn't be paused. Check your connection and try again.")
+                else -> L("Your profile couldn't be resumed. Check your connection and try again.")
+            }
+            notice = Notice(text = text)
+            return text
         } finally {
             pauseSaves -= 1
         }
@@ -1578,7 +1702,14 @@ class AppModel(
 
     // endregion
 
-    // region Safety (AppModel+Safety.swift): blocking and unblocking, at once on the device, then on the server.
+    // region Safety (AppModel+Safety.swift): blocking and unblocking, at once on the device, then on the
+    // server, through an outbox kept on this phone (SafetyOutbox) until the server has it.
+
+    private val safetyOutbox = SafetyOutbox(defaults)
+    /** Blocks and unblocks on their way to the server: the send running, the next try. */
+    private var safetySending: Job? = null
+    private var safetyRetry: Job? = null
+    private var safetyAttempts = 0
 
     /**
      * Block (a report blocks too): they leave your deck, your likes and your chats, and undo
@@ -1586,15 +1717,8 @@ class AppModel(
      */
     fun block(profile: Profile) {
         if (blocked.any { it.id == profile.id }) return
-        blocked = listOf(profile) + blocked
-        queue = queue.filterNot { it.id == profile.id }
-        likedMe = likedMe.filterNot { it.id == profile.id }
-        matches = matches.filterNot { it.profile.id == profile.id }
-        history = history.filterNot { it.profile.id == profile.id }
-        conversations = conversations.filterNot { it.profile.id == profile.id }
-        chat.publish()
-        if (banner?.profile?.id == profile.id) banner = null
-        scope.launch { safety.block(profile.id) }
+        hide(profile)
+        queueSafety(SafetyOutbox.Action.BLOCK, profile)
     }
 
     /**
@@ -1604,7 +1728,107 @@ class AppModel(
     fun unblock(profile: Profile) {
         blocked = blocked.filterNot { it.id == profile.id }
         discovery.swiped -= profile.id
-        scope.launch { safety.unblock(profile.id) }
+        queueSafety(SafetyOutbox.Action.UNBLOCK, profile)
+    }
+
+    /**
+     * The blocked list as the server has it, with what this phone hasn't sent yet on top: Blocked people
+     * shows it after a relaunch or on another device too. Unchanged if it can't be read.
+     */
+    suspend fun loadBlocked() {
+        val session = sessionID
+        val user = backend.userID ?: return
+        val server = attempt { safety.blockedPeople() } ?: return
+        if (session != sessionID) return
+        val pending = safetyOutbox.pending(user)
+        val listedIDs = server.map { it.id }.toSet()
+        val waiting = pending.filter { it.value.action == SafetyOutbox.Action.BLOCK && it.key !in listedIDs }
+            .map { (id, entry) -> blocked.firstOrNull { it.id == id } ?: Safety.blockedProfile(id, entry.name) }
+        val listed = server.filter { pending[it.id]?.action != SafetyOutbox.Action.UNBLOCK }
+            .map { row -> blocked.firstOrNull { it.id == row.id } ?: row }
+        val list = waiting + listed
+        for (person in list) if (blocked.none { it.id == person.id }) hide(person)
+        blocked = list
+    }
+
+    /**
+     * Sends what this phone hasn't sent yet. A failure the server may get over (offline, a server error)
+     * waits and tries again; [announce] says so once, for an action just taken. Signed in, at launch and
+     * back at the front: whatever was left goes too. One send at a time: a block then an unblock reach
+     * the server in that order.
+     */
+    suspend fun sendPendingSafety(announce: Boolean = false) {
+        val previous = safetySending
+        val job = scope.launch {
+            previous?.join()
+            flushSafety(announce)
+        }
+        safetySending = job
+        job.join()
+    }
+
+    private suspend fun flushSafety(announce: Boolean) {
+        val user = backend.userID ?: return
+        for ((id, entry) in safetyOutbox.pending(user)) {
+            // Signed out (or into another account) meanwhile: the rest waits for this account's sign-in,
+            // never sent with someone else's session.
+            if (backend.userID != user) return
+            try {
+                safety.send(entry.action, id)
+                safetyOutbox.remove(entry, id, user)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (Safety.isFinal(e)) {
+                    safetyLog.warning("${entry.action} refused: $e")
+                    safetyOutbox.remove(entry, id, user)
+                    continue
+                }
+                if (announce) {
+                    notice = Notice(
+                        text = if (entry.action == SafetyOutbox.Action.BLOCK) {
+                            L("Couldn't reach drafft. The block goes through as soon as you're back online.")
+                        } else {
+                            L("Couldn't reach drafft. The unblock goes through as soon as you're back online.")
+                        },
+                    )
+                }
+                retrySafety()
+                return
+            }
+        }
+        safetyAttempts = 0
+    }
+
+    private fun hide(profile: Profile) {
+        blocked = listOf(profile) + blocked
+        queue = queue.filterNot { it.id == profile.id }
+        likedMe = likedMe.filterNot { it.id == profile.id }
+        matches = matches.filterNot { it.profile.id == profile.id }
+        history = history.filterNot { it.profile.id == profile.id }
+        conversations = conversations.filterNot { it.profile.id == profile.id }
+        chat.publish()
+        if (banner?.profile?.id == profile.id) banner = null
+    }
+
+    private fun queueSafety(action: SafetyOutbox.Action, profile: Profile) {
+        val user = backend.userID ?: return
+        safetyOutbox.add(SafetyOutbox.Entry(action, profile.name), profile.id, user)
+        safetyAttempts = 0
+        scope.launch { sendPendingSafety(announce = true) }
+    }
+
+    /** Tries again after 10 s, 30 s, 1 min, then every 5 min while the app is open. */
+    private fun retrySafety() {
+        safetyRetry?.cancel()
+        val delays = listOf(10, 30, 60, 300)
+        val wait = delays[minOf(safetyAttempts, delays.size - 1)]
+        safetyAttempts += 1
+        val session = sessionID
+        safetyRetry = scope.launch {
+            delay(wait * 1000L)
+            if (session == sessionID) sendPendingSafety()
+        }
     }
 
     // endregion
@@ -1618,6 +1842,8 @@ class AppModel(
     }
 
     companion object {
+        private val safetyLog = java.util.logging.Logger.getLogger("safety")
+
         /** The language picked last, read at launch before the first screen (`DrafftApplication`). */
         const val LANGUAGE_KEY = "appLanguage"
         /** No one yet: what `me` holds before the server's profile is read, and after signing out. */

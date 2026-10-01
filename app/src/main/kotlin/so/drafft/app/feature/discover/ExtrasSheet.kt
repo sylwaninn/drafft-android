@@ -224,7 +224,7 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
                     throw e
                 } catch (e: Exception) {
                     Haptics.warning()
-                    failure = L("The purchase didn't go through. You haven't been charged.")
+                    failure = Store.PurchaseProblem.from(e).message(restorable = false)
                     return@launch
                 }
                 // Confirmed by the store: the server is asked to credit the pack at once. Slow, the

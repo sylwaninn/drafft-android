@@ -80,6 +80,8 @@ def check_catalog(errors: list[str], warnings: list[str]) -> set[str]:
         # Keys without words ("%s %s", "2×") need no translation.
         if not WORD.search(PLACEHOLDER.sub("", key)):
             continue
+        # The key is the English source: no forbidden word there either, even when `en` overrides it.
+        check_wording(f"keys.txt: {key!r}", key, errors)
         source = tables["en"].get(key, key)
         for lang in LANGUAGES:
             where = f"i18n/{lang}.json: {key!r}"
