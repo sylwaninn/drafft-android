@@ -302,8 +302,9 @@ class PhotoModeration(
     /**
      * Deletes a photo the person took off (refused, or a draft never saved). The screen already let it go,
      * so a failure isn't put back on it: tried again a few times (offline, a server hiccup) so it doesn't
-     * come back with the next read. Already gone (`not_found`) is done; drafts missed here are deleted by
-     * the server after a few days.
+     * come back with the next read. A refusal with a code is the server's answer, never tried again:
+     * already gone (`not_found`) is done, and one it won't delete (`portrait_required`) stays refused.
+     * Drafts missed here are deleted by the server after a few days.
      */
     private suspend fun deleteOnServer(id: String) {
         for (attempt in 0 until 4) {
@@ -313,7 +314,7 @@ class PhotoModeration(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                if (ServerMessage.code(e) == "not_found" || e == Backend.BackendError.SignedOut) return
+                if (ServerMessage.code(e) != null || e == Backend.BackendError.SignedOut) return
                 if (attempt < 3) delay((2L shl attempt).seconds)
             }
         }
