@@ -1,7 +1,6 @@
 package so.drafft.app.feature.me
 
 import androidx.activity.compose.BackHandler
-import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -64,6 +63,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.ZoneOffset
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -75,6 +75,7 @@ import so.drafft.app.feature.profile.LifestylePicker
 import so.drafft.app.feature.profile.VoiceIntroRecorder
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.platform.Haptics
@@ -88,14 +89,15 @@ import so.drafft.core.model.Vitals
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.AdaptiveRow
 import so.drafft.core.ui.components.ConfirmAction
-import so.drafft.core.ui.components.DraftGlyph
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.DrafftTextArea
+import so.drafft.core.ui.components.DraftGlyph
 import so.drafft.core.ui.components.FlowLayout
 import so.drafft.core.ui.components.FocusScrollView
 import so.drafft.core.ui.components.GlassCircleButton
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SportPicker
