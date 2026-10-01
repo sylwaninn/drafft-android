@@ -40,6 +40,8 @@ dependencies {
     api(libs.androidx.activity.compose)
     api(libs.androidx.lifecycle.runtime.compose)
     api(libs.coil.compose)
+    // The image pipeline's HTTP client (installImages): photo download priorities and timing.
+    implementation(libs.coil.network.okhttp)
     // ContextCompat, FileProvider (camera captures, sharing).
     implementation(libs.androidx.core.ktx)
     // VideoPlayer (AndroidPlatformUi): ExoPlayer drawn by Media3's Compose surface.

@@ -36,6 +36,7 @@ import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import androidx.media3.ui.compose.modifiers.resizeWithContentScale
 import androidx.media3.ui.compose.state.rememberPresentationState
 import coil3.request.transformations
+import so.drafft.core.ui.components.CropTransformation
 import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.MessageImage
 import so.drafft.core.ui.components.StackBlurTransformation
@@ -237,11 +238,18 @@ object AndroidPlatformUi : PlatformUi {
 @Volatile
 private var installed = false
 
-/** Installs the Android engines the shared design system code calls: baked blurs, image header sizes. */
+/** Installs the Android engines the shared design system code calls: crops and baked blurs, image header sizes. */
 fun installDrafftUi() {
     if (installed) return
     installed = true
-    ImageStore.blurEngine = { builder, radius -> builder.transformations(StackBlurTransformation(radius)) }
+    ImageStore.transformEngine = { builder, crop, radius ->
+        builder.transformations(
+            listOfNotNull(
+                crop?.let { CropTransformation(it.width, it.height) },
+                radius.takeIf { it > 0 }?.let { StackBlurTransformation(it) },
+            ),
+        )
+    }
     MessageImage.sizeReader = ::imageSize
 }
 

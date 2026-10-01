@@ -415,12 +415,12 @@ private fun Deck(
         }
         // Every photo of the card in play and the next three, fetched ahead at the card's size:
         // swiping or opening a profile never waits on the network.
-        val longest = with(LocalDensity.current) { max(width.roundToPx(), height.roundToPx()) }
-        LaunchedEffect(shown.map { it.id }, longest) {
+        val cardWidth = with(LocalDensity.current) { width.roundToPx() }
+        val cardHeight = with(LocalDensity.current) { (height - 28.dp).roundToPx() }
+        LaunchedEffect(shown.map { it.id }, cardWidth, cardHeight) {
             val loader = SingletonImageLoader.get(context)
-            val bucket = ImageStore.remoteBucket(longest)
             shown.flatMap { it.allPhotos }.filter { it.startsWith("http") || it.startsWith("/") }.forEach {
-                loader.enqueue(ImageStore.remoteRequest(context, it, bucket))
+                loader.enqueue(ImageStore.remoteRequest(context, it, cardWidth, cardHeight))
             }
         }
     }

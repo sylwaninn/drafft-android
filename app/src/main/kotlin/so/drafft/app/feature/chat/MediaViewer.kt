@@ -252,7 +252,7 @@ private fun MediaPage(
                     bundled != null -> Image(painterResource(bundled), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                     asset != null -> {
                         // A photo sent in a chat, from the media bucket (through the shared image pipeline and its caches).
-                        val request = remember(asset) { ImageStore.remoteRequest(context, asset, ImageStore.remoteBucket(2048)) }
+                        val request = remember(asset) { ImageStore.remoteRequest(context, asset, 2048, 2048, fill = false) }
                         AsyncImage(request, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                     }
                 }

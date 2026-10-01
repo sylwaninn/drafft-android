@@ -10,18 +10,24 @@ import androidx.compose.ui.unit.IntSize
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.memory.MemoryCache
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import coil3.request.ImageRequest
+import coil3.size.Precision
 import coil3.size.Scale
 import coil3.size.Size
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.MediaPreviews
+import so.drafft.core.data.media.MediaURL
+import so.drafft.core.data.media.PixelSize
+import so.drafft.core.data.media.Renditions
 import so.drafft.core.model.ThumbHash
 import so.drafft.core.ui.image.BundledImages
 import java.io.File
 import kotlin.math.roundToInt
 
 // Port of Drafft/DesignSystem/ImageStore.swift, with the parts of Services/Media/Images.swift that
-// size remote photos.
+// pick, size and decode remote photos (the requests; the pipeline is set up by `installImages`).
 
 /**
  * Display-ready copies of the bundled photos, through Coil's memory cache.
@@ -33,12 +39,12 @@ import kotlin.math.roundToInt
  */
 object ImageStore {
     /**
-     * Bakes a blur of `radius` pixels into a request's decoded copy. Coil's transformations are
-     * Android-only, so the Android side installs it at launch (`installDrafftUi()`); until then
-     * blurred photos are drawn sharp.
+     * Crops a request's decoded copy to `crop` pixels (centred) and bakes a blur of `radius` pixels into
+     * it. Coil's transformations are Android-only, so the Android side installs it at launch
+     * (`installDrafftUi()`); until then photos are drawn uncropped and sharp.
      */
     @Volatile
-    var blurEngine: (builder: ImageRequest.Builder, radius: Int) -> Unit = { _, _ -> }
+    var transformEngine: (builder: ImageRequest.Builder, crop: IntSize?, radius: Int) -> Unit = { _, _, _ -> }
 
     /** Pixel sizes shared by nearby displays (a 56 pt and a 64 pt avatar use one copy). 0 means the full photo. */
     fun bucket(pixels: Int?): Int {
@@ -62,7 +68,7 @@ object ImageStore {
             .memoryCacheKey(key(name, bucket, blur))
             .size(if (bucket > 0) Size(bucket, bucket) else Size.ORIGINAL)
             .scale(Scale.FILL)
-        if (blur > 0) blurEngine(builder, blur)
+        if (blur > 0) transformEngine(builder, null, blur)
         return builder.build()
     }
 
@@ -88,50 +94,112 @@ object ImageStore {
         blurred.forEach { (name, fraction) -> loader.enqueue(request(context, name, null, fraction)) }
     }
 
-    // MARK: Photos on the server or on this phone
+    // MARK: Photos on the server or on this phone (Services/Media/Images.swift)
 
     /**
-     * Pixel sizes shared by nearby displays: a size change (rotation, animation) reuses a copy
-     * instead of decoding again, and two avatars a few points apart share one.
+     * The request for a photo drawn in a frame of [width] × [height] pixels: `/…` is a file on this
+     * phone, `http…` a photo on the server, downloaded at the copy the frame needs ([closest]). Decoded
+     * at the frame's size ([Renditions.decodeSize]), aspect fill, then cropped to it ([fill]; otherwise
+     * fitted whole, the media viewer). [blur]: a radius as a share of the photo's longer side, applied
+     * once when it's decoded. Cached by the object and width ([PhotoUrls.canonical]), never by its
+     * signed link. [variant]: a rendition kept apart in the caches (the server's blurred copy of a
+     * like), so it can never be served for another rendition of the same object, or the other way
+     * round.
      */
-    fun remoteBucket(pixels: Int): Int = Images.bucket(pixels.toDouble())
+    fun remoteRequest(
+        context: PlatformContext,
+        name: String,
+        width: Int,
+        height: Int,
+        priority: Images.Priority = Images.Priority.NORMAL,
+        blur: Float = 0f,
+        variant: String? = null,
+        fill: Boolean = true,
+    ): ImageRequest {
+        val pixels = PixelSize(width, height)
+        val url = if (name.startsWith("/")) {
+            name
+        } else {
+            closest(context, name, Renditions.neededWidth(pixels, MediaPreviews.aspect(name)), variant)
+        }
+        return make(context, url, Renditions.decodeSize(pixels), priority, blur, variant, fill)
+    }
 
     /**
-     * The request for a photo drawn in a frame whose longer side is [pixels] (a [remoteBucket]):
-     * `/…` is a file on this phone, `http…` a photo on the server (sized by [PhotoUrls.sizer]).
-     * Square box, aspect fill: the copy covers the frame whatever its proportions. [blur]: a radius
-     * as a share of the photo's shorter side, applied once when it's decoded. Cached by the object
-     * ([PhotoUrls.canonical]), never by its signed link. [variant]: a rendition kept apart in the
-     * caches (the server's blurred copy of a like), so it can never be served for another rendition
-     * of the same object, or the other way round.
+     * A small copy of a server photo for the same frame ([Renditions.previewWidth]), decoded at a third
+     * of its pixels: shown first on a slow connection, under the right copy while it arrives.
      */
-    fun remoteRequest(context: PlatformContext, name: String, pixels: Int, blur: Float = 0f, variant: String? = null): ImageRequest {
-        val local = name.startsWith("/")
-        val canonical = (if (local) name else PhotoUrls.canonical(name)).let { key -> variant?.let { "$key#$it" } ?: key }
-        val radius = if (blur > 0f) maxOf(1, (blur * pixels).toInt()) else 0
+    fun preview(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
+        if (!name.startsWith("http")) return null
+        val pixels = PixelSize(width, height)
+        val needed = Renditions.neededWidth(pixels, MediaPreviews.aspect(name))
+        val url = Images.sized(name, Renditions.previewWidth(needed)) ?: return null
+        val decode = Renditions.decodeSize(PixelSize(pixels.width / 3, pixels.height / 3))
+        return make(context, url, decode, Images.Priority.HIGH, blur = 0f, variant = null, fill = true)
+    }
+
+    private fun make(
+        context: PlatformContext,
+        url: String,
+        decode: PixelSize,
+        priority: Images.Priority,
+        blur: Float,
+        variant: String?,
+        fill: Boolean,
+    ): ImageRequest {
+        val local = url.startsWith("/")
+        val w = decode.width.toInt()
+        val h = decode.height.toInt()
+        val key = if (local) url else cacheID(url, variant)
+        val radius = if (blur > 0f) maxOf(1, (blur * maxOf(w, h)).toInt()) else 0
         val builder = ImageRequest.Builder(context)
-            .data(if (local) File(name) else PhotoUrls.sizer(name, pixels))
-            .memoryCacheKey("$canonical@${pixels}b$radius")
-            .size(Size(pixels, pixels))
-            .scale(Scale.FILL)
-        if (!local) builder.diskCacheKey(canonical)
-        if (radius > 0) blurEngine(builder, radius)
+            .data(if (local) File(url) else url)
+            .memoryCacheKey("$key@${w}x$h${if (fill) "" else "fit"}b$radius")
+            .size(Size(w, h))
+            .scale(if (fill) Scale.FILL else Scale.FIT)
+            // Never larger than the photo: a small copy stays small (its frame scales it up when drawn).
+            .precision(Precision.INEXACT)
+        if (!local) {
+            builder.diskCacheKey(key)
+            builder.httpHeaders(NetworkHeaders.Builder().set(Images.PRIORITY_HEADER, priority.ordinal.toString()).build())
+        }
+        // Aspect fill: the copy covers the frame whatever its proportions; then cropped to it, so memory
+        // never keeps the edges the frame hides.
+        transformEngine(builder, if (fill) IntSize(w, h) else null, radius)
         return builder.build()
+    }
+
+    /** The caches' key: the object and width, whatever the signature. */
+    private fun cacheID(url: String, variant: String?): String {
+        val key = PhotoUrls.canonical(url)
+        return variant?.let { "$key#$it" } ?: key
+    }
+
+    /**
+     * The copy to show for [needed] pixels of width: the first of [Renditions.candidates] already on
+     * this phone (a larger copy beats a download), otherwise the one covering it.
+     */
+    private fun closest(context: PlatformContext, name: String, needed: Double, variant: String?): String {
+        val candidates = Renditions.candidates(needed)
+        val disk = SingletonImageLoader.get(context).diskCache
+        if (disk != null) {
+            for (width in candidates) {
+                val url = Images.sized(name, width) ?: continue
+                if (disk.openSnapshot(cacheID(url, variant))?.use { true } == true) return url
+            }
+        }
+        return Images.sized(name, candidates.first()) ?: name
     }
 }
 
 /** Hooks the data layer sets for photos on the server. */
 object PhotoUrls {
     /**
-     * The link to download for a photo shown [width] pixels wide: the media Worker sends a copy at the
-     * display width instead of the original when a smaller one is enough (`Images.sized`).
+     * The object a link points to (and the width asked of the media Worker), without its signature: the
+     * cache key, stable when the link is renewed.
      */
     @Volatile
-    var sizer: (url: String, width: Int) -> String = { url, width -> Images.sized(url, width) ?: url }
-
-    /** The object a link points to, without its signature: the cache key, stable when the link is renewed. */
-    @Volatile
-    var canonical: (url: String) -> String = { it }
+    var canonical: (url: String) -> String = MediaURL::canonical
 
     /** The ThumbHash preview of a server photo, drawn while it loads (`MediaPreviews`); null when unknown. */
     @Volatile

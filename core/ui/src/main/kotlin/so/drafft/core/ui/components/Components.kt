@@ -79,10 +79,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.min
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
+import so.drafft.core.data.media.Images
+import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.model.L
 import so.drafft.core.model.Sport
 import so.drafft.core.ui.image.BundledImages
@@ -456,6 +459,7 @@ private fun FieldError(error: String?) {
  * (starting with "/") for photos the user picked, or a link for photos on the server. Give [side]
  * (the frame's shorter side) for small displays: a downsampled copy is drawn instead of the full
  * photo. [blur] (with [side]) draws a copy with the blur baked in, instead of a live blur.
+ * [priority]: download order among photos waiting (the deck: the card in play first).
  */
 @Composable
 fun Photo(
@@ -463,12 +467,13 @@ fun Photo(
     modifier: Modifier = Modifier,
     side: Dp? = null,
     blur: Dp = 0.dp,
+    priority: Images.Priority = Images.Priority.NORMAL,
 ) {
     val fraction = if (blur > 0.dp) blur / max(side ?: 200.dp, 1.dp) else 0f
     Box(modifier.clipToBounds().clearAndSetSemantics { }) {
         if (name.startsWith("http") || name.startsWith("/")) {
             // Blurred at decode time, never a live blur (locked likes).
-            LoadedPhoto(name, fraction)
+            LoadedPhoto(name, fraction, priority)
         } else {
             BundledPhoto(name, side, fraction)
         }
@@ -493,20 +498,24 @@ private fun BundledPhoto(name: String, side: Dp?, fraction: Float) {
 }
 
 /**
- * A photo on the server (`http…`) or picked on this phone (`/…`): decoded in the background at the
- * frame's size, shared downloads, capped caches. A copy already in memory shows on the first frame;
- * otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile, stands in until it's there.
+ * A photo on the server (`http…`) or picked on this phone (`/…`), through `ImageStore`: the copy the
+ * frame needs, decoded in the background at the frame's size, capped caches. A copy already in memory
+ * shows on the first frame; otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile,
+ * stands in until it's there. On a slow connection a large frame first shows a small copy
+ * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives.
  */
 @Composable
-private fun LoadedPhoto(name: String, blur: Float) {
+private fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val longest = maxOf(
-            if (constraints.hasBoundedWidth) constraints.maxWidth else 0,
-            if (constraints.hasBoundedHeight) constraints.maxHeight else 0,
-        ).takeIf { it > 0 } ?: 1440
-        val pixels = ImageStore.remoteBucket(longest)
+        val boundedWidth = if (constraints.hasBoundedWidth) constraints.maxWidth else 0
+        val boundedHeight = if (constraints.hasBoundedHeight) constraints.maxHeight else 0
+        val fallback = maxOf(boundedWidth, boundedHeight).takeIf { it > 0 } ?: 1440
+        val width = boundedWidth.takeIf { it > 0 } ?: fallback
+        val height = boundedHeight.takeIf { it > 0 } ?: fallback
         val context = LocalPlatformContext.current
-        val request = remember(name, pixels, blur) { ImageStore.remoteRequest(context, name, pixels, blur) }
+        val request = remember(name, width, height, blur, priority) {
+            ImageStore.remoteRequest(context, name, width, height, priority, blur)
+        }
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
         val state by painter.state.collectAsState()
         val ready = state is AsyncImagePainter.State.Success
@@ -521,6 +530,12 @@ private fun LoadedPhoto(name: String, blur: Float) {
         Box(Modifier.fillMaxSize().background(DS.palette.canvasSoft))
         if (!ready && preview != null) {
             Image(preview, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+        if (!ready && blur == 0f && min(maxWidth, maxHeight) >= 200.dp && NetworkQuality.shared.isLimited) {
+            val small = remember(name, width, height) { ImageStore.preview(context, name, width, height) }
+            if (small != null) {
+                AsyncImage(small, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            }
         }
         Image(
             painter,

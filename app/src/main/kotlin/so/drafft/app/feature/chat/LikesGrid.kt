@@ -280,10 +280,12 @@ fun LockedLikeTile(like: BlurredLike, now: Instant, modifier: Modifier = Modifie
 @Composable
 private fun ServerBlurredPhoto(url: String) {
     BoxWithConstraints(Modifier.fillMaxSize().clearAndSetSemantics { }) {
-        val longest = maxOf(constraints.maxWidth, constraints.maxHeight).takeIf { it in 1..<Int.MAX_VALUE } ?: 720
-        val pixels = ImageStore.remoteBucket(longest)
+        val width = constraints.maxWidth.takeIf { it in 1..<Int.MAX_VALUE } ?: 540
+        val height = constraints.maxHeight.takeIf { it in 1..<Int.MAX_VALUE } ?: 720
         val context = LocalPlatformContext.current
-        val request = remember(url, pixels) { ImageStore.remoteRequest(context, url, pixels, blur = 0.03f, variant = "blurred") }
+        val request = remember(url, width, height) {
+            ImageStore.remoteRequest(context, url, width, height, blur = 0.03f, variant = "blurred")
+        }
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
         val state by painter.state.collectAsState()
         val ready = state is AsyncImagePainter.State.Success
