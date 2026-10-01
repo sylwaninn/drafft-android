@@ -93,9 +93,22 @@ object Localization {
         return stream.bufferedReader(Charsets.UTF_8).use { json.decodeFromString<Map<String, String>>(it.readText()) }
     }
 
+    /** The plural form of a count for [language] (CLDR, for the numbers drafft shows): "one" or "other". */
+    fun pluralCategory(language: AppLanguage, count: Long): String = when (language) {
+        // French and Portuguese: 0 and 1 are singular.
+        AppLanguage.FR, AppLanguage.PT -> if (count == 0L || count == 1L) "one" else "other"
+        else -> if (count == 1L) "one" else "other"
+    }
+
     fun string(key: String, args: Array<out Any?>): String {
         val language = this.language
-        val template = table[key] ?: (if (language != AppLanguage.EN) load(AppLanguage.EN)[key] else null) ?: key
+        // A string with plural variations keeps each form under `key|one`...: the first argument is the count.
+        val count = (args.firstOrNull() as? Number)?.toLong()
+        val form = count?.let { "$key|${pluralCategory(language, it)}" }
+        // Only this language's own forms: a language without a "one" form (the same word either way)
+        // must not fall back to English's.
+        val template = form?.let { table[it] }
+            ?: table[key] ?: (if (language != AppLanguage.EN) load(AppLanguage.EN)[key] else null) ?: key
         if (args.isEmpty() && !template.contains("%%")) return template
         return runCatching { String.format(language.locale, template, *args) }.getOrDefault(template)
     }

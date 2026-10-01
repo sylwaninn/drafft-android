@@ -18,6 +18,8 @@ I18N = ROOT / "core/model/src/main/resources/i18n"
 LANGUAGES = ["en", "fr", "es", "de", "it", "pt", "nl"]
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?(s|d|f|\.\d+f|%)")
 WORD = re.compile(r"[A-Za-zÀ-ÿ]{2,}")
+# A plural variation of a key ("%d years ago|one"), written by scripts/sync-strings.py next to the key itself.
+PLURAL_FORM = re.compile(r"^(.*)\|(zero|one|two|few|many)$", re.S)
 # Copy that lives outside the catalog but still reaches people.
 HARD_CODED_COPY = [ROOT / "core/data/src/main/kotlin/so/drafft/core/data/notifications/NotificationText.kt"]
 
@@ -68,6 +70,11 @@ def check_catalog(errors: list[str], warnings: list[str]) -> set[str]:
     tables = {lang: load(I18N / f"{lang}.json") for lang in LANGUAGES}
     for lang, table in tables.items():
         for key in sorted(set(table) - keys):
+            form = PLURAL_FORM.match(key)
+            if form and form.group(1) in keys:
+                source = tables["en"].get(form.group(1), form.group(1))
+                check_value(f"i18n/{lang}.json: {key!r}", source, table[key], lang, errors, warnings)
+                continue
             errors.append(f"i18n/{lang}.json: key not in keys.txt (run scripts/sync-strings.py): {key!r}")
     for key in sorted(keys):
         # Keys without words ("%s %s", "2×") need no translation.

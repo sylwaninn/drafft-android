@@ -6,6 +6,10 @@ Both apps share the same keys (the English source text) and the same wording (WO
 catalog stays the single source. Placeholders are converted to Java's: %@ -> %s, %lld -> %d, with
 positions kept (%1$@ -> %1$s).
 
+Plural variations (`variations.plural`, one per number-bearing string such as "%lld years ago") become
+the "other" form under the key itself plus one `key|one` (`key|few`...) entry per other category;
+`L(key, count)` picks the form from the count (see Localization.kt).
+
 Usage: scripts/sync-strings.py [path/to/Localizable.xcstrings]
 """
 import json
@@ -57,7 +61,19 @@ def main():
             continue
         jkey = java(key)
         for lang in LANGS:
-            unit = entry.get("localizations", {}).get(lang, {}).get("stringUnit")
+            loc = entry.get("localizations", {}).get(lang, {})
+            unit = loc.get("stringUnit")
+            forms = loc.get("variations", {}).get("plural")
+            if forms:
+                for case, sub in forms.items():
+                    text = sub.get("stringUnit", {}).get("value")
+                    if text is None:
+                        continue
+                    if case == "other":
+                        tables[lang][jkey] = java(text)
+                    else:
+                        tables[lang][f"{jkey}|{case}"] = java(text)
+                continue
             if unit and unit.get("value") is not None:
                 value = java(unit["value"])
             elif lang == "en":

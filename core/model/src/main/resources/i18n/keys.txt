@@ -2,10 +2,14 @@
 %d boosts
 %d boosts added.
 %d boosts left
+%d days ago
+%d hr ago
 %d kilometres
 %d km
 %d left
 %d likes a day
+%d min ago
+%d months ago
 %d new messages, go to the latest
 %d of %d
 %d of %d likes left
@@ -24,6 +28,7 @@
 %d too many
 %d unread
 %d written
+%d years ago
 %d years old
 %d×
 %d× a week
@@ -537,6 +542,7 @@ Lie
 Lifestyle
 Like
 Like %s
+Like back
 Like them back and it's mutual. Then propose a session.
 Like this answer
 Like this photo
@@ -655,11 +661,11 @@ No limit
 No name
 No new likes right now. Keep swiping, they'll show up here.
 No one
-No one\nhere.
 No one blocked.
 No one here
 No one new for now.
 No one sees you in Discover.
+No one\nhere.
 No pitch yet
 No profiles right now.
 No prompt matches “%s”.
@@ -958,6 +964,7 @@ Smoking
 Snowboarding
 Socially
 Someone from our team will review it, usually within 24 hours. It stays off your profile until then.
+Someone super liked you. Unlock with drafft tempo
 Someone who likes you. Unlock with drafft tempo
 Something I'm training for outside of sport
 Something casual, no pressure
@@ -1055,7 +1062,6 @@ There's already an account with this email. Log in instead.
 They agree or disagree
 They can't see your profile or message you, and you won't see them.
 They guess the right answer
-They like you.
 They offered
 They pick a side, then see yours
 They see you first, with a red heart on your profile. It doesn't use a daily like.
@@ -1401,6 +1407,7 @@ fencing
 foiling
 golfing
 hiking
+just now
 kayaking
 kickboxing
 kiting

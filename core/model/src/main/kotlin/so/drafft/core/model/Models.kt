@@ -145,6 +145,8 @@ data class Profile(
     /** They super liked you: their card comes first in your deck, marked in red, with their note. */
     val superLikedMe: Boolean = false,
     val superLikeNote: String? = null,
+    /** When they liked you (`liked_me`, drafft tempo): the age label on their Likes tile. Null elsewhere. */
+    val likedAt: Instant? = null,
     /** From the server's card, or set when the user edits their own profile. */
     val vitalsOverride: Vitals? = null,
     val promptsOverride: List<ProfilePrompt>? = null,
