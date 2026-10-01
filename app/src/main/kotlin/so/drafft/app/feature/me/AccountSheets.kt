@@ -340,8 +340,11 @@ fun ChangeEmailSheet(modifier: Modifier = Modifier) {
         val email = newEmail.trim()
         val current = app.email
         val typed = password
-        flow.messages = mapOf(AuthProblem.WRONG_CREDENTIALS to L("Your password is incorrect."))
-        flow.formProblems = setOf(AuthProblem.EMAIL_TAKEN)
+        flow.messages = mapOf(
+            AuthProblem.WRONG_CREDENTIALS to L("Your password is incorrect."),
+            AuthProblem.EMAIL_TAKEN to L("This email is already linked to another drafft account. Use another one."),
+        )
+        flow.formProblems = setOf(AuthProblem.EMAIL_TAKEN, AuthProblem.INVALID_EMAIL)
         scope.launch {
             flow.send(
                 to = email,
