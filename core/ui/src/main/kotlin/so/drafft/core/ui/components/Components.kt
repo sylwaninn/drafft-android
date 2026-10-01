@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -35,22 +34,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -84,15 +78,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.min
 import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberAsyncImagePainter
-import kotlinx.coroutines.delay
 import so.drafft.core.data.media.Images
-import so.drafft.core.data.media.NetworkQuality
-import so.drafft.core.data.media.PhotoDownloads
 import so.drafft.core.model.L
 import so.drafft.core.model.Sport
 import so.drafft.core.ui.image.BundledImages
@@ -503,86 +491,6 @@ private fun BundledPhoto(name: String, side: Dp?, fraction: Float) {
         Image(painterResource(res), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
     }
 }
-
-/**
- * A photo on the server (`http…`) or picked on this phone (`/…`), through `ImageStore`: the copy the
- * frame needs, decoded in the background at the frame's size, capped caches. A copy already in memory
- * shows on the first frame; otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile,
- * stands in until it's there. On a slow connection a large frame first shows a small copy
- * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives.
- */
-@Composable
-private fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val boundedWidth = if (constraints.hasBoundedWidth) constraints.maxWidth else 0
-        val boundedHeight = if (constraints.hasBoundedHeight) constraints.maxHeight else 0
-        val fallback = maxOf(boundedWidth, boundedHeight).takeIf { it > 0 } ?: 1440
-        val width = boundedWidth.takeIf { it > 0 } ?: fallback
-        val height = boundedHeight.takeIf { it > 0 } ?: fallback
-        val context = LocalPlatformContext.current
-        // Not keyed by the priority: a card moving up the deck keeps its download running, raised.
-        val request = remember(name, width, height, blur) {
-            ImageStore.remoteRequest(context, name, width, height, priority, blur)
-        }
-        val photo = request.diskCacheKey
-        LaunchedEffect(photo, priority) { if (photo != null) PhotoDownloads.shared.prioritize(photo, priority.ordinal) }
-        val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
-        val state by painter.state.collectAsState()
-        val ready = state is AsyncImagePainter.State.Success
-        // Already in memory: no fade. Otherwise a 0.2 s ease-out once decoded.
-        val readyAtFirstFrame = remember(request) { ready }
-        val alpha by animateFloatAsState(
-            if (ready) 1f else 0f,
-            if (readyAtFirstFrame) tween(0) else tween(200, easing = Motion.EaseOut),
-            label = "photoFade",
-        )
-        val preview = remember(name) { PhotoUrls.preview(name) }
-        Box(Modifier.fillMaxSize().background(DS.palette.canvasSoft))
-        if (!ready && preview != null) {
-            Image(preview, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        if (!ready && blur == 0f && min(maxWidth, maxHeight) >= 200.dp && NetworkQuality.shared.isLimited) {
-            val small = remember(name, width, height) { ImageStore.preview(context, name, width, height) }
-            if (small != null) {
-                AsyncImage(small, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            }
-        }
-        Image(
-            painter,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = if (readyAtFirstFrame) 1f else alpha },
-            contentScale = ContentScale.Crop,
-        )
-        if (!ready && blur == 0f && min(maxWidth, maxHeight) >= 200.dp) {
-            // The sharp copy is on its way: the blurred preview or the small copy says so.
-            PhotoLoader(Modifier.align(Alignment.Center))
-        }
-    }
-}
-
-/**
- * A spinner over a large photo still showing its blurred preview or small copy. It appears after a
- * moment, so a photo that arrives quickly (a good connection, the cache) never flashes it.
- */
-@Composable
-private fun PhotoLoader(modifier: Modifier = Modifier) {
-    val shown = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        delay(300)
-        shown.animateTo(1f, tween(200, easing = Motion.EaseOut))
-    }
-    Box(modifier.graphicsLayer { alpha = shown.value }.clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
-        // Its soft shadow, so it reads on a light photo too (a plain faint ring where blur isn't available).
-        CircularProgressIndicator(
-            Modifier.size(PhotoLoaderSize).blur(6.dp, BlurredEdgeTreatment.Unbounded),
-            color = Color.Black.copy(alpha = 0.35f),
-            strokeWidth = 3.5.dp,
-        )
-        CircularProgressIndicator(Modifier.size(PhotoLoaderSize), color = Color.White, strokeWidth = 2.5.dp)
-    }
-}
-
-private val PhotoLoaderSize = 24.dp
 
 /** A chat photo or poster from its bytes, decoded off the main thread at the bubble's size (see [MessageImage]). */
 @Composable
