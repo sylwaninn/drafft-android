@@ -108,6 +108,7 @@ A long-term relationship
 A mistake? Contact us
 A photo couldn't be sent. Tap it to see why, then try again.
 A photo is no longer there, so nothing was saved. Close and try again.
+A photo or video couldn't be opened. Pick it again, or check your connection.
 A photo wasn't approved
 A sport photo and a voice intro help. New likes land here.
 A stat I'm weirdly proud of
@@ -1072,7 +1073,9 @@ This one is true
 This or that
 This or that? Pick a side.
 This photo can't go on your profile
+This photo couldn't be opened. Pick another one, or check your connection.
 This photo has already been reviewed.
+This photo is no longer there. Remove it, then add it again.
 This profile isn't available.
 This session is already closed.
 This session is no longer available.
@@ -1343,6 +1346,7 @@ Your subscription
 Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
 Your subscription is up to date.
 Your turn
+Your voice intro couldn't be sent, so nothing was saved. Record it again, or remove it.
 at CrossFit
 at barre
 at hot yoga
