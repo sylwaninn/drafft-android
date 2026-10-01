@@ -32,6 +32,7 @@ import so.drafft.app.feature.me.PaywallView
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
+import so.drafft.core.model.LikeAge
 import so.drafft.core.model.Profile
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftButton
@@ -122,9 +123,10 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                             itemKey = { it.id },
                             visitKey = "likes-tab",
                             banner = { TempoLikesBanner(app.likedMe.size) },
-                        ) { p ->
+                        ) { p, now ->
                             LikeTile(
                                 profile = p,
+                                now = now,
                                 onOpen = {
                                     Haptics.tap()
                                     open = p
@@ -139,19 +141,22 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                         itemKey = { it.id },
                         visitKey = "likes-tab",
                         banner = { LockedLikesBanner(app.blurredLikes.size) },
-                    ) { like ->
+                    ) { like, now ->
                         PressScaleButton(
                             onClick = {
                                 Haptics.tap()
                                 showPaywall = true
                             },
                             scale = 0.97f,
-                            contentDescription = if (like.superLike) {
-                                L("Someone super liked you. Unlock with drafft tempo")
-                            } else {
-                                L("Someone who likes you. Unlock with drafft tempo")
-                            },
-                        ) { LockedLikeTile(like) }
+                            contentDescription = listOfNotNull(
+                                if (like.superLike) {
+                                    L("Someone super liked you. Unlock with drafft tempo")
+                                } else {
+                                    L("Someone who likes you. Unlock with drafft tempo")
+                                },
+                                LikeAge.text(like.likedAt, now),
+                            ).joinToString(", "),
+                        ) { LockedLikeTile(like, now) }
                     }
                 }
             }

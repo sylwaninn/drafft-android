@@ -70,9 +70,10 @@ fun LikesYouView(modifier: Modifier = Modifier) {
                     itemKey = { it.id },
                     visitKey = "likes-sheet",
                     banner = { TempoLikesBanner(app.likedMe.size) },
-                ) { p ->
+                ) { p, now ->
                     LikeTile(
                         profile = p,
+                        now = now,
                         onOpen = {
                             Haptics.tap()
                             open = p

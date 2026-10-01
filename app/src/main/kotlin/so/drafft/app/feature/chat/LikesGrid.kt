@@ -57,6 +57,7 @@ import so.drafft.app.feature.discover.ProfileIdentity
 import so.drafft.core.data.BlurredLike
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
+import so.drafft.core.model.LikeAge
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ThumbHash
 import so.drafft.core.ui.components.EmptyStateArt
@@ -77,6 +78,8 @@ import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.display
+import so.drafft.core.ui.theme.semibold
+import java.time.Instant
 
 // Port of Drafft/Features/Chat/LikesGrid.swift.
 
@@ -104,7 +107,7 @@ fun <T> LikesGrid(
     visitKey: String,
     modifier: Modifier = Modifier,
     banner: @Composable () -> Unit,
-    tile: @Composable (T) -> Unit,
+    tile: @Composable (T, Instant) -> Unit,
 ) {
     // Every tab stays composed: on screen is the current tab, with the tabs themselves showing.
     val onScreen = LocalTabIsCurrent.current && LocalTabsOnScreen.current
@@ -126,6 +129,9 @@ fun <T> LikesGrid(
         onDispose { if (onScreen) StickerVisits.leave(visitKey) }
     }
 
+    // One clock for every tile: the age labels stay true while the screen is open.
+    val now = rememberMinuteClock()
+
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(DS.Space.md)) {
         Box(Modifier.draftIn(0, tucked, arrival)) { banner() }
         // Inside the page's scroll: rows of two, each tile the same shape (a lazy grid can't nest here).
@@ -135,7 +141,7 @@ fun <T> LikesGrid(
                     pair.forEachIndexed { column, item ->
                         val order = minOf(row * 2 + column + 1, STAGGER_CAP)
                         key(itemKey(item)) {
-                            Box(Modifier.weight(1f).draftIn(order, tucked, arrival)) { tile(item) }
+                            Box(Modifier.weight(1f).draftIn(order, tucked, arrival)) { tile(item, now) }
                         }
                     }
                     // A lone last tile keeps its column's width.
@@ -144,6 +150,22 @@ fun <T> LikesGrid(
             }
         }
     }
+}
+
+/**
+ * The time now, read again at each minute (`EveryMinute` on the iPhone): one state write a minute
+ * for the whole grid.
+ */
+@Composable
+private fun rememberMinuteClock(): Instant {
+    var now by remember { mutableStateOf(Instant.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000 - (System.currentTimeMillis() % 60_000))
+            now = Instant.now()
+        }
+    }
+    return now
 }
 
 /** One element filing in: from a little to the left and slightly smaller, faded, to its place. */
@@ -173,6 +195,25 @@ private fun Modifier.draftIn(order: Int, tucked: Boolean, arrival: Int): Modifie
 // Tiles
 
 /**
+ * "5 min ago": a small translucent night capsule at the top of a tile. Night at 45 % so white text
+ * reads over a blurred photo and a sharp one alike; one line, never cut.
+ */
+@Composable
+private fun LikeAgeLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        modifier
+            .background(DS.palette.night.copy(alpha = 0.45f), CircleShape)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .clearAndSetSemantics { },
+        style = TextStyles.caption.semibold,
+        color = Color.White,
+        maxLines = 1,
+        softWrap = false,
+    )
+}
+
+/**
  * The one tile frame: 3:4 portrait, whatever the screen width, so every row of the grid is the same
  * height. Content fills it; nothing in it sizes it.
  */
@@ -188,7 +229,7 @@ private fun PortraitFrame(modifier: Modifier = Modifier, content: @Composable ()
  * a super like.
  */
 @Composable
-fun LockedLikeTile(like: BlurredLike, modifier: Modifier = Modifier) {
+fun LockedLikeTile(like: BlurredLike, now: Instant, modifier: Modifier = Modifier) {
     val preview = remember(like.id) { like.preview?.let(::previewBitmap) }
     val shape = RoundedCornerShape(DS.Radius.xl)
     Box(modifier.fillMaxWidth().border(1.dp, DS.palette.blockEdge, shape)) {
@@ -218,7 +259,15 @@ fun LockedLikeTile(like: BlurredLike, modifier: Modifier = Modifier) {
         ) {
             DrafftIcon("lock-keyhole-minimalistic", size = 18.dp, tint = Color.White)
         }
-        if (like.superLike) SuperLikeDisc(Modifier.align(Alignment.TopEnd).padding(DS.Space.sm))
+        Row(
+            Modifier.align(Alignment.TopStart).fillMaxWidth().padding(DS.Space.sm),
+            horizontalArrangement = Arrangement.spacedBy(DS.Space.xs),
+            verticalAlignment = Alignment.Top,
+        ) {
+            LikeAge.text(like.likedAt, now)?.let { LikeAgeLabel(it) }
+            Spacer(Modifier.weight(1f))
+            if (like.superLike) SuperLikeDisc()
+        }
     }
 }
 
@@ -258,13 +307,14 @@ private fun ServerBlurredPhoto(url: String) {
  * likes them back at once (it's mutual from there).
  */
 @Composable
-fun LikeTile(profile: Profile, onOpen: () -> Unit, onLike: () -> Unit, modifier: Modifier = Modifier) {
+fun LikeTile(profile: Profile, now: Instant, onOpen: () -> Unit, onLike: () -> Unit, modifier: Modifier = Modifier) {
+    val age = LikeAge.text(profile.likedAt, now)
     Box(modifier.fillMaxWidth()) {
         PressScaleButton(
             onClick = onOpen,
             modifier = Modifier.fillMaxWidth(),
             scale = 0.97f,
-            contentDescription = L("%s, %d. Open profile", profile.name, profile.age),
+            contentDescription = listOfNotNull(L("%s, %d. Open profile", profile.name, profile.age), age).joinToString(", "),
         ) {
             PortraitFrame {
                 Photo(profile.portrait, Modifier.fillMaxSize(), side = 240.dp)
@@ -275,6 +325,7 @@ fun LikeTile(profile: Profile, onOpen: () -> Unit, onLike: () -> Unit, modifier:
                         .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to DS.palette.night.copy(alpha = 0.85f))),
                 )
                 Box(Modifier.fillMaxSize()) {
+                    if (age != null) LikeAgeLabel(age, Modifier.align(Alignment.TopStart).padding(DS.Space.sm))
                     ProfileIdentity(
                         profile = profile,
                         nameSize = 20f,

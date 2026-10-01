@@ -8,7 +8,10 @@ import so.drafft.core.data.backend.jsonArray
 import so.drafft.core.data.backend.optString
 import so.drafft.core.data.backend.requireObject
 import so.drafft.core.data.backend.string
+import so.drafft.core.data.sessions.ServerDate
 import so.drafft.core.model.ThumbHash
+import so.drafft.core.model.newestFirst
+import java.time.Instant
 
 // Ports Drafft/Services/AppModel+BlurredLikes.swift.
 
@@ -22,6 +25,8 @@ import so.drafft.core.model.ThumbHash
 class BlurredLike(
     val id: String,
     val superLike: Boolean,
+    /** When they liked you (the server's `likedAt`). Null if it didn't send one: no age label then. */
+    val likedAt: Instant?,
     /**
      * About 32 x 32 px, decoded once when the list is read. Null: a night tile stands in. Also the
      * placeholder and the fallback of [blurUrl].
@@ -34,8 +39,9 @@ class BlurredLike(
     val blurUrl: String? = null,
 ) {
     override fun equals(other: Any?): Boolean =
-        other is BlurredLike && other.id == id && other.superLike == superLike && other.blurUrl == blurUrl
-    override fun hashCode(): Int = (id.hashCode() * 31 + superLike.hashCode()) * 31 + (blurUrl?.hashCode() ?: 0)
+        other is BlurredLike && other.id == id && other.superLike == superLike && other.likedAt == likedAt && other.blurUrl == blurUrl
+    override fun hashCode(): Int =
+        ((id.hashCode() * 31 + superLike.hashCode()) * 31 + (likedAt?.hashCode() ?: 0)) * 31 + (blurUrl?.hashCode() ?: 0)
 
     companion object {
         /**
@@ -45,7 +51,13 @@ class BlurredLike(
         suspend fun list(from: ByteArray): List<BlurredLike>? {
             val rows = attemptOrNull {
                 from.jsonArray().map { e ->
-                    e.requireObject().let { Row(it.string("likeId"), it.boolean("superLike"), it.optString("thumbhash"), it.optString("blurUrl")) }
+                    e.requireObject().let { Row(
+                            it.string("likeId"),
+                            it.boolean("superLike"),
+                            it.optString("likedAt")?.let { at -> attemptOrNull { ServerDate.parse(at) } },
+                            it.optString("thumbhash"),
+                            it.optString("blurUrl"),
+                        ) }
                 }
             } ?: return null
             return withContext(Dispatchers.Default) {
@@ -53,13 +65,14 @@ class BlurredLike(
                     BlurredLike(
                         row.id,
                         row.superLike,
+                        row.likedAt,
                         row.thumbhash?.let { ThumbHash.image(fromBase64 = it) },
                         row.blurUrl?.takeIf { it.startsWith("http") },
                     )
-                }
+                }.newestFirst(date = { it.likedAt }, id = { it.id })
             }
         }
     }
 }
 
-private class Row(val id: String, val superLike: Boolean, val thumbhash: String?, val blurUrl: String?)
+private class Row(val id: String, val superLike: Boolean, val likedAt: Instant?, val thumbhash: String?, val blurUrl: String?)

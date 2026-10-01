@@ -2,10 +2,14 @@
 %d boosts
 %d boosts added.
 %d boosts left
+%d days ago
+%d hr ago
 %d kilometres
 %d km
 %d left
 %d likes a day
+%d min ago
+%d months ago
 %d new messages, go to the latest
 %d of %d
 %d of %d likes left
@@ -24,6 +28,7 @@
 %d too many
 %d unread
 %d written
+%d years ago
 %d years old
 %d×
 %d× a week
@@ -1384,6 +1389,7 @@ fencing
 foiling
 golfing
 hiking
+just now
 kayaking
 kickboxing
 kiting
