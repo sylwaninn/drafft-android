@@ -1,6 +1,6 @@
 # drafft for Android
 
-The Android app of drafft, the sports dating app where the first date is a training session. It is a
+The Android app of drafft, the dating app for people who train. It is a
 port of the iPhone app (`sylwaninn/drafft`): same features, same behaviour, same wording, same look,
 in Kotlin and Jetpack Compose. Conventions for contributors and agents: [AGENTS.md](AGENTS.md).
 

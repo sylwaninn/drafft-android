@@ -590,6 +590,7 @@ Meat lover
 Meat lover (man)
 Meat lover (woman)
 Meet safely
+Meet someone who gets your rhythm.
 Meet up and move together.
 Meet where others train
 Meet where people train
@@ -661,11 +662,11 @@ No limit
 No name
 No new likes right now. Keep swiping, they'll show up here.
 No one
+No one\nhere.
 No one blocked.
 No one here
 No one new for now.
 No one sees you in Discover.
-No one\nhere.
 No pitch yet
 No profiles right now.
 No prompt matches “%s”.
@@ -1123,7 +1124,6 @@ Try again
 Turn location back on.
 Turn on notifications
 Turn them on in iPhone Settings to hear about matches and sessions.
-Turn your matches into sessions, and meet at the start line.
 Two lines under your name: how you train, and what you're like after.
 Two of your times are the same.
 Two taps from any profile or chat. Every report is reviewed.
