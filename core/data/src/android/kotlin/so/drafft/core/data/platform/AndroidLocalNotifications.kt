@@ -38,7 +38,15 @@ class AndroidLocalNotifications(
     private val manager = NotificationManagerCompat.from(context)
     private val nextID = AtomicInteger((System.currentTimeMillis() % 100_000).toInt())
 
-    override fun permission(): PermissionStatus = when {
+    override fun permission(): PermissionStatus {
+        // Read at launch and at every return to the app: the channels exist (in the app's language) before
+        // the first push, which FCM files by `channel_id` itself while the app is in the background, or in
+        // its fallback channel when that one doesn't exist yet.
+        ensureChannels()
+        return status()
+    }
+
+    private fun status(): PermissionStatus = when {
         manager.areNotificationsEnabled() -> PermissionStatus.ALLOWED
         // Before Android 13 there's no prompt: off means turned off in Settings.
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> PermissionStatus.DENIED
