@@ -183,7 +183,7 @@ private fun WelcomePanel(onSignUp: () -> Unit, onLogIn: () -> Unit, modifier: Mo
             verticalArrangement = Arrangement.spacedBy(DS.Space.xl),
         ) {
             Text(
-                L("Meet singles who share your rhythm."),
+                L("Meet someone who gets your rhythm."),
                 style = TextStyles.title3.semibold,
                 color = Color.White,
             )
