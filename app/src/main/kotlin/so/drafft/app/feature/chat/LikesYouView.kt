@@ -46,7 +46,7 @@ import so.drafft.core.ui.theme.display
 // Port of Drafft/Features/Chat/LikesYouView.swift.
 
 /**
- * drafft tempo: everyone who already liked you. Like back and it's a match right away. Shown in a
+ * drafft tempo: everyone who already liked you. Like back and it's mutual right away. Shown in a
  * sheet (`DrafftSheet`); Close is its own (`LocalSheetDismiss`).
  */
 @Composable
@@ -72,7 +72,7 @@ fun LikesYouView(modifier: Modifier = Modifier) {
             NightBlock(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(DS.Space.xl), verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
                     Text(L("They like you."), Modifier.semantics { heading() }, style = display(34f), color = DS.palette.accentOnNight)
-                    Text(L("Like back and it's a match straight away."), style = TextStyles.subheadline, color = Color.White.copy(alpha = 0.72f))
+                    Text(L("Like them back and it's mutual. Then propose a session."), style = TextStyles.subheadline, color = Color.White.copy(alpha = 0.72f))
                 }
             }
 

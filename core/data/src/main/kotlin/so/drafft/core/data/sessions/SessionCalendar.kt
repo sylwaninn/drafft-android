@@ -104,7 +104,7 @@ class SessionCalendar(
             title = title,
             start = start,
             end = start.plusSeconds(90 * 60),
-            notes = L("%s session planned on drafft.", session.sport.displayName),
+            notes = L("%s session, confirmed on drafft.", session.sport.displayName),
             url = marker(session.id),
             alarmMinutesBefore = 60,
         ) ?: return null
