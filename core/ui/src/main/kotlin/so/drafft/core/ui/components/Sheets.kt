@@ -275,12 +275,13 @@ private fun Grabber() {
 /**
  * The inline navigation bar of an iPhone sheet: the title in the middle (Inter Display ExtraBold
  * 17), close top-right as a glass circle (Close is top-right on every sheet and modal), an optional
- * [leading] control (back) on the left. 44 pt targets.
+ * [leading] control (back) on the left. 44 pt targets. A null [onClose] drops the close button: the
+ * sheet's only action already just closes it ("Got it", "Done"), never two ways out.
  */
 @Composable
 fun SheetNavBar(
     title: String,
-    onClose: () -> Unit = LocalSheetDismiss.current,
+    onClose: (() -> Unit)? = LocalSheetDismiss.current,
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
 ) {
@@ -302,7 +303,9 @@ fun SheetNavBar(
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
-        GlassCircleButton("close", onClose, Modifier.align(Alignment.CenterEnd), contentDescription = L("Close"))
+        if (onClose != null) {
+            GlassCircleButton("close", onClose, Modifier.align(Alignment.CenterEnd), contentDescription = L("Close"))
+        }
     }
 }
 
