@@ -23,9 +23,9 @@ class LocalizationTest {
     @Test
     fun androidVariantsReplaceIphoneWording() {
         Localization.use(AppLanguage.EN)
-        assertEquals("Open Google Play subscriptions", L("Open App Store subscriptions"))
+        assertEquals("Couldn't reach Google Play. Try again.", L("Couldn't reach the App Store. Try again."))
         Localization.use(AppLanguage.FR)
-        assertEquals("Ouvrir les abonnements Google Play", L("Open App Store subscriptions"))
+        assertEquals("Impossible de joindre Google Play. Réessaie.", L("Couldn't reach the App Store. Try again."))
     }
 
     @Test
@@ -34,7 +34,7 @@ class LocalizationTest {
         for (language in AppLanguage.entries) {
             val text = javaClass.getResourceAsStream("/i18n/android/${language.code}.json")!!.bufferedReader().readText()
             val variants = kotlinx.serialization.json.Json.decodeFromString<Map<String, String>>(text)
-            assertEquals(18, variants.size, language.code)
+            assertEquals(17, variants.size, language.code)
             variants.keys.forEach { assert(it in keys) { "${language.code}: unknown key $it" } }
             variants.values.forEach { assert(!Regex("iPhone|Apple|App Store").containsMatchIn(it)) { it } }
         }

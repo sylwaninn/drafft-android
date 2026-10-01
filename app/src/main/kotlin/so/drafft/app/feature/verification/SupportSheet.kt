@@ -197,6 +197,7 @@ fun SupportSheet(
             (sentTopic != null && hasMessage && hasEmail && session != Session.UNKNOWN && captchaReady),
         loading = sending,
         error = error,
+        finished = reference != null,
         hasChanges = reference == null && hasMessage,
         action = {
             if (reference != null) {
