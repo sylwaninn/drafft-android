@@ -945,7 +945,7 @@ private fun GenderStep(state: OnboardingState) {
 
 @Composable
 private fun ShowMeStep(state: OnboardingState) {
-    StepTitle(L("Who do you want to meet?"), L("Pick as many as you like."))
+    StepTitle(L("Who do you want to meet?"), L("Pick as many as you like. This never shows on your profile."))
     ChoiceRows(listOf("Women", "Men", "Non-binary people", "Everyone"), isOn = { it in state.interestedIn }) { o ->
         if (o == "Everyone") {
             state.interestedIn = if (o in state.interestedIn) emptySet() else setOf("Everyone")
