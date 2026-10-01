@@ -76,6 +76,7 @@ sealed class VerificationError(message: String) : Exception(message) {
         fun from(error: Throwable): VerificationError = when {
             error is VerificationError -> error
             error is IOException -> Network
+            error is Backend.PhoneAlreadyRegistered -> NumberTaken
             error is AuthRestException && error.errorCode == AuthErrorCode.PhoneExists -> NumberTaken
             error is Backend.BackendError.Http -> serverCodes[error.serverMessage] ?: SendFailed
             // Supabase answers the same for a mistyped code and an old one.
@@ -442,22 +443,41 @@ class PhoneVerificationModel(
             error = L("This code has expired. Send a new one.")
             code = ""
             Haptics.warning()
+        } catch (e: VerificationError.NumberTaken) {
+            // Verified on another account meanwhile: no code fixes that, the number has to change.
+            changeNumber()
+            error = e.message
+            Haptics.warning()
         } catch (e: CancellationException) {
             busy = false
             throw e
-        } catch (e: Exception) {
-            attemptsLeft -= 1
-            code = ""
-            Haptics.warning()
-            if (attemptsLeft <= 0) {
-                stage = Stage.LOCKED
-                error = L("Too many wrong codes. For your security, verification is paused.")
-                needsHelp = true
+        } catch (e: VerificationError) {
+            if (e == VerificationError.WrongCode) {
+                wrongCode()
             } else {
-                error = if (attemptsLeft == 1) L("Wrong code. 1 try left.") else L("Wrong code. %d tries left.", attemptsLeft)
+                // Not the code's fault (offline, a server error): no try used up, the same code can go again.
+                error = if (e == VerificationError.Network) e.message else L("Something went wrong. Try again in a moment.")
+                needsHelp = e != VerificationError.Network
+                Haptics.warning()
             }
+        } catch (e: Exception) {
+            wrongCode()
         }
         busy = false
+    }
+
+    /** A wrong code uses up a try; the last one locks the step. */
+    private fun wrongCode() {
+        attemptsLeft -= 1
+        code = ""
+        Haptics.warning()
+        if (attemptsLeft <= 0) {
+            stage = Stage.LOCKED
+            error = L("Too many wrong codes. For your security, verification is paused.")
+            needsHelp = true
+        } else {
+            error = if (attemptsLeft == 1) L("Wrong code. 1 try left.") else L("Wrong code. %d tries left.", attemptsLeft)
+        }
     }
 
     suspend fun resend() {

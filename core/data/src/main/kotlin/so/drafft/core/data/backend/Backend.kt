@@ -7,11 +7,13 @@ import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.realtime.Realtime
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
 import io.ktor.content.TextContent
 import io.ktor.http.ContentType
@@ -22,10 +24,13 @@ import java.util.UUID
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.model.AppLanguage
@@ -102,16 +107,39 @@ class Backend(
 
     class EmailAlreadyRegistered : Exception()
 
+    /** A number another account has (Auth's `phone_exists`, or one a banned account used). */
+    class PhoneAlreadyRegistered : Exception()
+
+    /**
+     * A refusal from the database behind Auth (a trigger on auth.users), which Auth passes on as is: its
+     * `private.fail` code. An address or number a banned account used is `email_taken` / `phone_taken`,
+     * like any taken one. supabase-kt keeps no field for it: read from the response, which Ktor kept.
+     */
+    private suspend fun <T> identityChecked(block: suspend () -> T): T = try {
+        block()
+    } catch (e: RestException) {
+        val hint = runCatching {
+            (Json.parseToJsonElement(e.response.bodyAsText()) as? JsonObject)?.get("hint")?.jsonPrimitive?.contentOrNull
+        }.getOrNull()
+        when (hint) {
+            "email_taken" -> throw EmailAlreadyRegistered()
+            "phone_taken" -> throw PhoneAlreadyRegistered()
+            else -> throw e
+        }
+    }
+
     /**
      * A new account. With email confirmation on, there's no session until the 6-digit code in the
      * email is typed in (`confirmSignUp`). `language` starts the profile in it, so the confirmation
      * email (backend auth-email) is already in that language.
      */
     suspend fun signUp(email: String, password: String, language: AppLanguage): SignUpResult {
-        val user = client.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
-            data = buildJsonObject { put("language", language.code) }
+        val user = identityChecked {
+            client.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+                data = buildJsonObject { put("language", language.code) }
+            }
         }
         val session = client.auth.currentSessionOrNull()
         // An address that already has an account: Supabase doesn't say so (that would tell who's signed up),
@@ -157,12 +185,12 @@ class Backend(
 
     /** Emails a 6-digit code to the new address (the "Change email address" template shows `{{ .Token }}`). */
     suspend fun updateEmail(email: String) {
-        client.auth.updateUser { this.email = email }
+        identityChecked { client.auth.updateUser { this.email = email } }
     }
 
     /** The code from `updateEmail`: the address switches once it checks out. */
     suspend fun confirmEmailChange(email: String, code: String) {
-        client.auth.verifyEmailOtp(type = OtpType.Email.EMAIL_CHANGE, email = email, token = code)
+        identityChecked { client.auth.verifyEmailOtp(type = OtpType.Email.EMAIL_CHANGE, email = email, token = code) }
     }
 
     /** Emails a 6-digit code to the current address, to prove it's them before a password change. */
@@ -192,7 +220,7 @@ class Backend(
     }
 
     suspend fun confirmPhoneChange(e164: String, code: String) {
-        client.auth.verifyPhoneOtp(type = OtpType.Phone.PHONE_CHANGE, phone = e164, token = code)
+        identityChecked { client.auth.verifyPhoneOtp(type = OtpType.Phone.PHONE_CHANGE, phone = e164, token = code) }
     }
 
     /**
