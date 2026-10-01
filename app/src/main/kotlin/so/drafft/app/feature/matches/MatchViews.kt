@@ -104,9 +104,9 @@ fun MatchView(
         profile.sports.map { it.sport }.firstOrNull { s -> me.sports.any { it.sport == s } }
     }
     val subtitle = if (shared != null) {
-        L("You and %s both do %s. Say hi, then plan a first session.", profile.name, shared.inSentence)
+        L("You and %s both do %s. Say hi, or propose a session while it's fresh.", profile.name, shared.inSentence)
     } else {
-        L("You and %s liked each other. Say hi, then plan a first session.", profile.name)
+        L("%s likes you too. Say hi, or propose a session while it's fresh.", profile.name)
     }
 
     NightSurface {
@@ -131,7 +131,7 @@ fun MatchView(
                     verticalArrangement = Arrangement.spacedBy(DS.Space.md),
                 ) {
                     Text(
-                        L("It's a match."),
+                        L("It's mutual."),
                         Modifier.semantics { heading() },
                         style = display(64f),
                         color = DS.palette.accentOnNight,
@@ -306,7 +306,7 @@ fun MatchBannerView(
                 Avatar(banner.profile.portrait, size = 48.dp, ring = true)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(L("%s liked you back", banner.profile.name), style = TextStyles.headline, color = Color.White)
-                    Text(L("It's a match. Tap to say hi."), style = TextStyles.subheadline, color = p.accentOnNight)
+                    Text(L("It's mutual. Tap to say hi."), style = TextStyles.subheadline, color = p.accentOnNight)
                 }
                 DrafftIcon(
                     "heart",
