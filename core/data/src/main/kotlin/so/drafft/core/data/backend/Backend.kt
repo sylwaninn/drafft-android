@@ -5,6 +5,7 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.exception.AuthSessionMissingException
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.exceptions.RestException
@@ -21,6 +22,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import java.util.Base64
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -92,12 +94,22 @@ class Backend(
     val userID: UUID?
         get() = client.auth.currentUserOrNull()?.id?.let(::uuidOrNull)
 
-    /** A valid access token (refreshed first when it's about to expire). */
+    /**
+     * A valid access token (refreshed first when it's about to expire). Signed out only when Auth turned
+     * the session down; a refresh that couldn't reach it (offline, a server error) throws that error,
+     * and the session stays.
+     */
     suspend fun accessToken(): String {
         client.auth.awaitInitialization()
         val session = client.auth.currentSessionOrNull() ?: throw BackendError.SignedOut
         if (session.expiresAt.epochSeconds - System.currentTimeMillis() / 1000 > TOKEN_MARGIN_SECONDS) return session.accessToken
-        attempt { client.auth.refreshCurrentSession() } ?: throw BackendError.SignedOut
+        try {
+            client.auth.refreshCurrentSession()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw if (refusesSession(e)) BackendError.SignedOut else e
+        }
         return client.auth.currentSessionOrNull()?.accessToken ?: throw BackendError.SignedOut
     }
 
@@ -309,6 +321,13 @@ class Backend(
     }
 
     companion object {
+        /**
+         * Whether Auth turned the session down for good (none saved, revoked, expired, the account gone),
+         * as opposed to not answering: only that ends a session.
+         */
+        fun refusesSession(error: Throwable): Boolean = error is AuthSessionMissingException ||
+            (error is RestException && error.statusCode in 400..499 && error.statusCode != 429)
+
         /** A token with less than this left is refreshed before it's sent. */
         private const val TOKEN_MARGIN_SECONDS = 30
 

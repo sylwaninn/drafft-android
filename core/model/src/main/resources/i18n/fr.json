@@ -260,6 +260,8 @@
 "Cool morning run in Parc de la Tête d'Or?":"Footing matinal, avant que le parc se remplisse ?",
 "Copy":"Copier",
 "Couldn't connect. Check your connection and try again.":"Connexion impossible. Vérifie ta connexion et réessaie.",
+"Couldn't reach drafft. The block goes through as soon as you're back online.":"Impossible de joindre drafft. Le blocage sera pris en compte dès que tu seras de nouveau en ligne.",
+"Couldn't reach drafft. The unblock goes through as soon as you're back online.":"Impossible de joindre drafft. Le déblocage sera pris en compte dès que tu seras de nouveau en ligne.",
 "Couldn't reach the App Store. Try again.":"Impossible de joindre l'App Store. Réessaie.",
 "Couldn't send it. Check your connection and try again.":"Envoi impossible. Vérifie ta connexion et réessaie.",
 "Country code":"Indicatif",
