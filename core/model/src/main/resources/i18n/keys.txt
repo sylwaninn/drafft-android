@@ -1297,7 +1297,7 @@ You've seen every profile within %s. Widen it to see more.
 You've seen everyone around you for now. Widen your filters or catch up with your matches in Chats.
 You've seen everyone for now.
 You've seen everyone within %s.
-You've sent several messages already. Try again in an hour.
+You've sent several messages already. Try again later.
 You've sent several reports already. Try again later.
 You: 
 Your account has been closed.
@@ -1311,6 +1311,7 @@ Your area, like a district, and a distance rounded to the kilometre. Never your 
 Your bio
 Your birthday can't be changed.
 Your chat ends for both of you, and you won't see each other in Discover again.
+Your chats couldn't load
 Your consent couldn't be saved. Check your connection and try again.
 Your conversations with matches
 Your current password is incorrect.
@@ -1319,10 +1320,12 @@ Your face is too small on your first photo. Use a closer one first.
 Your first photo needs to show your face clearly.
 Your first photo wasn't approved. Put another one first.
 Your last super like
+Your likes couldn't load
 Your likes refill at midnight, or go unlimited with drafft tempo.
 Your matches and chats are kept.
 Your matches and chats stay safe. Log back in to see them.
 Your message couldn't be sent. Check your connection and try again.
+Your message is too long. Shorten it, then send it again.
 Your new number is saved.
 Your new password needs all three checks.
 Your own photos, your real first name and your real age.

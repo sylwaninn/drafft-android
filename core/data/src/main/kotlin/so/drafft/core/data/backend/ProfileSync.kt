@@ -424,10 +424,20 @@ class ProfileSync(
         }
     }
 
-    /** Best effort: the area can be set again later from the app. */
+    /**
+     * Not sent (no connection, a server error): sign-up fails like the other writes and is tried again,
+     * or Discover would open on "share your location" right after it was shared. A refusal of the
+     * place itself doesn't hold sign-up back: Discover sends the location again (`LocationOnce`).
+     */
     private suspend fun setLocation(c: Coordinate?) {
         c ?: return
-        attempt { backend.rpc("set_location", jsonOf("p_lat" to c.latitude, "p_lng" to c.longitude)) }
+        try {
+            backend.rpc("set_location", jsonOf("p_lat" to c.latitude, "p_lng" to c.longitude))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (ServerMessage.code(e) == null) throw e
+        }
     }
 
     private suspend fun setSports(sports: List<SportEntry>) {

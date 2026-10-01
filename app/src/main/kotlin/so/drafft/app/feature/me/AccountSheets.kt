@@ -1,7 +1,6 @@
 package so.drafft.app.feature.me
 
 import androidx.activity.compose.BackHandler
-import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.Instant
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.AuthProblem
@@ -67,9 +67,11 @@ import so.drafft.app.feature.auth.Validation
 import so.drafft.app.feature.verification.CodeLockedCard
 import so.drafft.app.feature.verification.CodeVerifiedCard
 import so.drafft.app.feature.verification.EmailCodeModel
+import so.drafft.app.feature.verification.GetHelpButton
 import so.drafft.app.feature.verification.OneTimeCodeEntry
 import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -83,6 +85,7 @@ import so.drafft.core.ui.components.DrafftField
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.FlowLayout
 import so.drafft.core.ui.components.FocusScrollView
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetBlock
@@ -115,6 +118,8 @@ fun AccountSheet(
     enabled: Boolean,
     loading: Boolean = false,
     error: String? = null,
+    /** With an error, a Get help link on this topic (where the person can't be left stuck). */
+    helpTopic: String? = null,
     hasChanges: Boolean = false,
     action: () -> Unit,
     modifier: Modifier = Modifier,
@@ -162,6 +167,7 @@ fun AccountSheet(
                 }
                 if (error != null) {
                     Text(error, style = TextStyles.footnote.medium, color = p.negative, textAlign = TextAlign.Center)
+                    if (helpTopic != null) GetHelpButton(topic = helpTopic)
                 }
             }
         },
@@ -638,9 +644,13 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
                     backend.rpc("request_data_export", emptyMap<String, Any?>())
                     Haptics.success()
                     app.dataExportRequestedAt = Instant.now()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Haptics.warning()
-                    exportError = L("Your request couldn't be sent. Check your connection and try again.")
+                    exportError = ServerMessage.text(
+                        e, offline = L("Your request couldn't be sent. Check your connection and try again."),
+                    )
                 } finally {
                     sending = false
                 }
@@ -717,6 +727,7 @@ fun DeleteAccountSheet(withdrawsConsent: Boolean = false, modifier: Modifier = M
     var understood by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
+    var loggedOut by remember { mutableStateOf(false) }
     val p = DS.palette
 
     AccountSheet(
@@ -727,6 +738,7 @@ fun DeleteAccountSheet(withdrawsConsent: Boolean = false, modifier: Modifier = M
         enabled = understood,
         loading = loading,
         error = failure,
+        helpTopic = if (failure == null || loggedOut) null else L("Delete account"),
         action = {
             loading = true
             failure = null
@@ -735,14 +747,21 @@ fun DeleteAccountSheet(withdrawsConsent: Boolean = false, modifier: Modifier = M
                     app.deleteAccount()
                     Haptics.success()
                     dismiss()
-                } catch (e: Backend.BackendError.SignedOut) {
-                    Haptics.warning()
+                } catch (e: CancellationException) {
                     loading = false
-                    failure = L("You're logged out, so nothing was deleted. Log in again, then delete your account.")
+                    throw e
                 } catch (e: Exception) {
                     Haptics.warning()
                     loading = false
-                    failure = L("We couldn't delete your account. Check your connection and try again.")
+                    // Deleting is a right: a refusal that isn't about the connection comes with Get help.
+                    loggedOut = ServerMessage.isSignedOut(e)
+                    failure = if (loggedOut) {
+                        L("You're logged out, so nothing was deleted. Log in again, then delete your account.")
+                    } else {
+                        ServerMessage.text(
+                            e, offline = L("We couldn't delete your account. Check your connection and try again."),
+                        )
+                    }
                 }
             }
         },
