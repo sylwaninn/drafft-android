@@ -59,6 +59,7 @@ import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ThumbHash
+import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.LocalTabsOnScreen
@@ -67,6 +68,7 @@ import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.StickerVisits
+import so.drafft.core.ui.components.StillSticker
 import so.drafft.core.ui.components.SuperLikeMark
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
@@ -322,7 +324,7 @@ private fun SuperLikeDisc(modifier: Modifier = Modifier) {
 // Banner
 
 /**
- * The top of Likes: a night banner with the likes sign, how many people like you (counted from the
+ * The top of Likes: a night banner with the likes sticker (the empty tab's, still), how many people like you (counted from the
  * list the server sent, never a made-up figure) and one sentence on what to do. It holds no button:
  * the screen's one action is pinned at the bottom (or on each tile with drafft tempo).
  */
@@ -334,12 +336,7 @@ fun LikesBanner(count: Int, message: AnnotatedString, modifier: Modifier = Modif
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
         ) {
-            Box(
-                Modifier.size(48.dp).background(DS.palette.accentOnNight, CircleShape).clearAndSetSemantics { },
-                contentAlignment = Alignment.Center,
-            ) {
-                DrafftIcon("user-heart", size = 22.dp, tint = DS.palette.onAccentOnNight)
-            }
+            StillSticker(EmptyStateArt.likes)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
                 RollingText(
                     if (count == 1) L("1 person likes you.") else L("%d people like you.", count),
