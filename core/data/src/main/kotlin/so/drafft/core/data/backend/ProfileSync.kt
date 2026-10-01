@@ -18,6 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import so.drafft.core.data.AccountHold
 import so.drafft.core.data.media.EdgeFunctionTicketProvider
 import so.drafft.core.data.media.MediaPreviews
+import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.media.MediaUploads
 import so.drafft.core.data.moderation.PhotoModeration
@@ -66,8 +67,14 @@ class ProfileSync(
             private fun readResolve(): Any = PhotoGone
         }
 
+        /** The voice intro's upload was turned down or failed on the server's side (not the connection). */
+        object VoiceUpload : SyncError() {
+            private fun readResolve(): Any = VoiceUpload
+        }
+
         override val message: String
             get() = when (this) {
+                VoiceUpload -> L("Your voice intro couldn't be sent, so nothing was saved. Record it again, or remove it.")
                 PhotoUpload -> L("A photo couldn't be sent. Tap it to see why, then try again.")
                 NotLoaded -> L("Your profile hasn't loaded, so nothing was saved. Close and try again.")
                 PhotoGone -> L("A photo is no longer there, so nothing was saved. Close and try again.")
@@ -502,7 +509,13 @@ class ProfileSync(
 
     /** Uploads a voice intro (.m4a) and returns the profile columns that point to it. */
     private suspend fun uploadVoice(voice: Voice): Map<String, Any?> {
-        val key = MediaUploads.voice(voice.url, tickets = tickets)
+        val key = try {
+            MediaUploads.voice(voice.url, tickets = tickets)
+        } catch (e: MediaUploadError) {
+            // A hold (`moderated`) has its own screen, which takes over; anything else, the recording's fault
+            // or the server's, is said as such (never "check your connection").
+            throw SyncError.VoiceUpload
+        }
         val fields = linkedMapOf<String, Any?>("voice_intro_key" to key, "voice_duration" to minOf(60.0, voice.duration))
         if (voice.levels.isNotEmpty()) fields["voice_levels"] = voice.levels.take(200).map { it.toDouble() }
         return fields

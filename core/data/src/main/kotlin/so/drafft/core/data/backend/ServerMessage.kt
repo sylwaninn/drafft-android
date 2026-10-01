@@ -23,6 +23,16 @@ object ServerMessage {
     /** The words for a refusal the app knows, or nil (not a refusal, or a code it doesn't know). */
     fun text(of: Throwable): String? = code(of)?.let(::text)
 
+    /**
+     * An action that failed, in words: the known refusal's, the connection's only when the request
+     * never got through, else the generic line. Never the server's reply.
+     */
+    fun failure(of: Throwable): String = when {
+        generateSequence(of) { it.cause }.any { it is java.io.IOException } -> L("Couldn't connect. Check your connection and try again.")
+        of is Backend.BackendError -> of.message
+        else -> text(of) ?: generic
+    }
+
     /** A code is one word (`media_limit`); anything with a space is a sentence from the server. */
     fun isCode(message: String): Boolean = message.isNotEmpty() && !message.contains(" ")
 

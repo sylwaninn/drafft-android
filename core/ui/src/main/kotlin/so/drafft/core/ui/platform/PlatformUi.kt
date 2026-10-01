@@ -68,11 +68,11 @@ interface PlatformUi {
 
     /**
      * The system photo picker, images only (the iPhone's `PhotosPicker(matching: .images)`): returns
-     * the action that opens it. [onPicked] gets the chosen photo's bytes, read off the main thread;
-     * nothing is called when the picker is cancelled or the photo can't be read.
+     * the action that opens it. [onPicked] gets the chosen photo's bytes, read off the main thread, or
+     * null when the photo can't be read (the screen says so); nothing is called when the picker is cancelled.
      */
     @Composable
-    fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit
+    fun rememberPhotoPicker(onPicked: (ByteArray?) -> Unit): () -> Unit
 
     /**
      * The front camera for the selfie check (CameraX on Android): live face boxes and one photo when
@@ -105,7 +105,8 @@ interface PlatformUi {
      * The system photo picker for a chat: photos and videos, up to [maxSelection] (the iPhone's
      * `photosPicker(maxSelectionCount: 5, matching: .any(of: [.images, .videos]))`). Returns the action
      * that opens it. [onPicked] gets the items in the order picked, read off the main thread: a photo's
-     * bytes, a video copied to a file of the app's; nothing when cancelled.
+     * bytes, a video copied to a file of the app's, [PickedMedia.Unreadable] for one that can't be read;
+     * nothing when cancelled.
      */
     @Composable
     fun rememberMediaPicker(maxSelection: Int, onPicked: (List<PickedMedia>) -> Unit): () -> Unit
@@ -153,7 +154,7 @@ object DefaultPlatformUi : PlatformUi {
     override fun rememberDial(): (number: String) -> Unit = {}
 
     @Composable
-    override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit = {}
+    override fun rememberPhotoPicker(onPicked: (ByteArray?) -> Unit): () -> Unit = {}
 
     @Composable
     override fun rememberFrontCamera(): FrontCamera = NoFrontCamera
@@ -271,6 +272,9 @@ sealed interface PickedMedia {
 
     /** A copy of the video in the app's cache: a local path. */
     class Video(val path: String) : PickedMedia
+
+    /** One that couldn't be read (a cloud copy offline, a file gone meanwhile). */
+    data object Unreadable : PickedMedia
 }
 
 /** What the camera took (see [PlatformUi.rememberCameraCapture]): a photo, or a video file in the app's cache. */

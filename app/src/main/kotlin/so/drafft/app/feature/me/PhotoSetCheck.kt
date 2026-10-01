@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.model.L
@@ -33,6 +35,18 @@ import so.drafft.core.ui.theme.medium
  * or waiting for a person never opens or keeps a profile. Refused or waiting photos after the first may
  * stay (a second look can be asked from their tile): the server never shows them.
  */
+/**
+ * A failed sign-up or save, in words (the Swift `ProfileSync.failure`). The first photo still with the team
+ * answers `portrait_required`: said as that, not as a photo to change.
+ */
+fun profileSaveFailure(error: Throwable, photos: PhotoSetCheck): String {
+    if (error is ProfileSync.SyncError.Refused && error.code == "portrait_required" && photos == PhotoSetCheck.FIRST_IN_REVIEW) {
+        photos.reason?.let { return it }
+    }
+    if (error is ProfileSync.SyncError) return error.message
+    return ServerMessage.failure(error)
+}
+
 enum class PhotoSetCheck {
     EMPTY, CHECKING, READY, FIRST_REFUSED, FIRST_IN_REVIEW, NO_FACE, TOO_SMALL, FAILED;
 

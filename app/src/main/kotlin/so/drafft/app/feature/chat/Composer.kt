@@ -78,6 +78,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
+import so.drafft.core.data.AppModel
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.platform.Haptics
@@ -85,6 +86,7 @@ import so.drafft.core.data.platform.PermissionPrompter
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
 import so.drafft.core.model.clock
+import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.glass
 import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.platform.LocalPlatformUi
@@ -253,8 +255,15 @@ fun Composer(
         }
     }
 
+    val app = LocalAppModel.current
     val pickMedia = platform.rememberMediaPicker(maxSelection = 5) { items ->
-        scope.launch { sendPicked(items, platform) { send(it) } }
+        scope.launch {
+            // An item that can't be read (a cloud copy offline), or a file that won't decode: said, never skipped.
+            if (!sendPicked(items, platform) { send(it) }) {
+                Haptics.warning()
+                app.notice = AppModel.Notice(L("A photo or video couldn't be opened. Pick it again, or check your connection."))
+            }
+        }
     }
     val openCamera = rememberCameraPicker { capture ->
         scope.launch {
@@ -734,17 +743,21 @@ fun LiveWave(levels: List<Float>, modifier: Modifier = Modifier) {
 
 // MARK: Actions
 
-private suspend fun sendPicked(items: List<PickedMedia>, platform: PlatformUi, send: (MessageContent) -> Unit) {
+/** Sends what was picked; false when an item couldn't be opened. */
+private suspend fun sendPicked(items: List<PickedMedia>, platform: PlatformUi, send: (MessageContent) -> Unit): Boolean {
+    var allRead = true
     for (item in items) {
         when (item) {
             is PickedMedia.Video -> sendVideo(item.path, platform, send)
             is PickedMedia.Photo -> {
                 // At most 2048 px, decoded off the main thread: the thread never holds a 48 MP original.
-                val photo = runCatching { PhotoCompressor.prepare(item.data).data }.getOrNull() ?: item.data
-                send(MessageContent.Photo(asset = null, imageData = photo))
+                val photo = runCatching { PhotoCompressor.prepare(item.data).data }.getOrNull()
+                if (photo == null) allRead = false else send(MessageContent.Photo(asset = null, imageData = photo))
             }
+            PickedMedia.Unreadable -> allRead = false
         }
     }
+    return allRead
 }
 
 /** A video bubble: its first frame as the poster, and its length. */
