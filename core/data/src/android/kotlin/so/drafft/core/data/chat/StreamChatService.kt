@@ -60,6 +60,8 @@ import so.drafft.core.data.notifications.NotificationService
 import so.drafft.core.data.notifications.NotificationText
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.sessions.SessionStore
+import so.drafft.core.model.DeliveryState
+import so.drafft.core.model.Message
 import so.drafft.core.model.MessageContent
 import so.drafft.core.model.SessionProposal
 import io.getstream.chat.android.models.Message as StreamMessage
@@ -181,6 +183,7 @@ class StreamChatService(
                 client.connectUser(User(id = me), tokens).value()
                 if (threads.userID != me || !currentCoroutineContext().isActive) return
                 connected = true
+                threads.waitingTexts().forEach(::sendText)
                 watchChannels(client, me)
                 deviceToken?.let(::addDevice)
             } catch (e: CancellationException) {
@@ -356,17 +359,14 @@ class StreamChatService(
         val id = UUID.randomUUID().toString().lowercase()
         when (content) {
             is MessageContent.Text -> {
-                val client = client ?: return
-                val message = StreamMessage(id = id, cid = cid(matchID), text = content.text, replyMessageId = replyTo)
-                scope.launch {
-                    try {
-                        client.channel(TYPE, matchID).sendMessage(message).value()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        log.log(Level.WARNING, "send failed: ${e.message}")
-                    }
-                }
+                // Not connected yet (just launched offline): the bubble shows as sending and goes once the chat
+                // connects, never dropped. Connected, Stream keeps its own copy and resends it.
+                val upload = ChatThreads.Upload(
+                    Message(id = id, content = content, fromMe = true, state = DeliveryState.SENDING, replyTo = replyTo),
+                    matchID, ChatThreads.Upload.Source.Text(content.text),
+                )
+                threads.queueText(upload)
+                sendText(upload)
             }
             is MessageContent.Photo -> {
                 val data = content.imageData ?: return
@@ -383,6 +383,28 @@ class StreamChatService(
                 )
             is MessageContent.Session -> app?.proposeSession(content.proposal, matchID)
             else -> Unit
+        }
+    }
+
+    /**
+     * A text, handed to Stream once it can take it (written before the chat connected, it waits). Stream's
+     * own copy, with the same id, replaces its bubble as soon as it exists.
+     */
+    private fun sendText(upload: ChatThreads.Upload) {
+        val client = client?.takeIf { connected } ?: return
+        val text = (upload.source as? ChatThreads.Upload.Source.Text)?.text ?: return
+        val message = StreamMessage(id = upload.message.id, cid = cid(upload.matchID), text = text, replyMessageId = upload.message.replyTo)
+        scope.launch {
+            val sent = try {
+                client.channel(TYPE, upload.matchID).sendMessage(message).value()
+                true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log.log(Level.WARNING, "send failed: ${e.message}")
+                false
+            }
+            threads.textSent(upload, sent)
         }
     }
 
@@ -404,7 +426,12 @@ class StreamChatService(
     override fun retry(messageID: String, matchID: String) {
         val upload = threads.upload(messageID, matchID)
         if (upload != null) {
-            startUpload(upload)
+            if (upload.source is ChatThreads.Upload.Source.Text) {
+                threads.queueText(upload)
+                sendText(upload)
+            } else {
+                startUpload(upload)
+            }
             return
         }
         val client = client ?: return

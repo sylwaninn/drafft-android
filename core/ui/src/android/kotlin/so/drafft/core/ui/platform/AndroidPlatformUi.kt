@@ -146,7 +146,7 @@ object AndroidPlatformUi : PlatformUi {
     }
 
     @Composable
-    override fun rememberPhotoPicker(onPicked: (ByteArray) -> Unit): () -> Unit {
+    override fun rememberPhotoPicker(onPicked: (ByteArray?) -> Unit): () -> Unit {
         val context = LocalContext.current
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val deliver = androidx.compose.runtime.rememberUpdatedState(onPicked)
@@ -157,7 +157,7 @@ object AndroidPlatformUi : PlatformUi {
             scope.launch {
                 val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-                } ?: return@launch
+                }
                 deliver.value(bytes)
             }
         }

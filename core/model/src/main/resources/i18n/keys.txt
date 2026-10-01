@@ -42,10 +42,11 @@
 %s each
 %s every 6 months
 %s liked you back
+%s likes you too. Say hi, or propose a session while it's fresh.
 %s only sees it if you match.
 %s sees you first.
 %s session
-%s session planned on drafft.
+%s session, confirmed on drafft.
 %s sessions per week
 %s super liked you
 %s together, then coffee?
@@ -108,6 +109,7 @@ A long-term relationship
 A mistake? Contact us
 A photo couldn't be sent. Tap it to see why, then try again.
 A photo is no longer there, so nothing was saved. Close and try again.
+A photo or video couldn't be opened. Pick it again, or check your connection.
 A photo wasn't approved
 A sport photo and a voice intro help. New likes land here.
 A stat I'm weirdly proud of
@@ -223,8 +225,8 @@ Cancelled
 Cancelled. You keep everything until %s.
 Center your face in the oval.
 Change
+Change or cancel it in Apple's subscription settings.
 Change or remove this time
-Change plan or cancel in Apple's subscription settings.
 Change time
 Change your password
 Chat not found
@@ -272,6 +274,8 @@ Continue with Google
 Cool morning run in Parc de la Tête d'Or?
 Copy
 Couldn't connect. Check your connection and try again.
+Couldn't reach drafft. The block goes through as soon as you're back online.
+Couldn't reach drafft. The unblock goes through as soon as you're back online.
 Couldn't reach the App Store. Try again.
 Couldn't send it. Check your connection and try again.
 Country code
@@ -460,7 +464,6 @@ I understand my account will be deleted for good.
 I was SO sure that was the lie. Tell me it's not true
 I will never shut up about
 I'd drop everything to watch
-I'll know it's a match if
 I'm 18 or older and I accept the %s, the %s and the %s.
 I'm looking for someone who
 I've confirmed my email
@@ -491,8 +494,8 @@ It broke the drafft community rules. This decision is final.
 It couldn't be sent. Check your connection and try again.
 It goes to %s.
 It shows on your profile as “Training for…”. Big or small, it's a great conversation starter.
-It's a match.
-It's a match. Tap to say hi.
+It's mutual.
+It's mutual. Tap to say hi.
 It's never your fault
 It's not on your profile. Tap to see why.
 Jiu-jitsu
@@ -527,12 +530,13 @@ Leave sign-up?
 Leg day, I'll spot you?
 Legal Notice
 Legal information
+Length
 Less than 1 km
 Lie
 Lifestyle
 Like
 Like %s
-Like back and it's a match straight away.
+Like them back and it's mutual. Then propose a session.
 Like this answer
 Like this photo
 Like with this answer
@@ -543,8 +547,8 @@ Liked your profile
 Likes
 Likes & matches
 Likes you
+Loading options
 Loading packs
-Loading plans
 Loading profiles
 Loading your profile
 Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.
@@ -716,6 +720,7 @@ Opens the chat
 Opens their profile
 Optional
 Optional. It helps us make drafft better.
+Options couldn't load. Check your connection and try again.
 Or steal one of these
 Other times suggested
 Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
@@ -759,10 +764,10 @@ Photos you added will be deleted, and the others go back as they were.
 Pick 1 to 3 times that haven't passed.
 Pick While Using the App
 Pick a format for your interactive prompt. Matches play it and reply in one tap.
-Pick a plan to continue.
 Pick a prompt
 Pick a stronger password.
 Pick a time above
+Pick an option to continue.
 Pick as many as you like.
 Pick at least one sport.
 Pick at least one time to send.
@@ -780,8 +785,6 @@ Pilates
 Pitch
 Pitch it
 Place your face in the oval.
-Plan
-Plans couldn't load. Check your connection and try again.
 Play %s's voice intro
 Play voice message, %d seconds
 Playback speed
@@ -805,6 +808,7 @@ Prompts
 Propose a session
 Punchline, hidden until they tap
 Purchase
+Purchases are turned off on this iPhone. You can allow them in Screen Time settings.
 Push day then smoothies?
 Put a clear photo of your face first.
 Question: %s. Change it
@@ -1044,7 +1048,7 @@ The security check didn't go through. Try again.
 The snack that fuels my entire personality
 The sport I'm secretly bad at
 The two new passwords don't match.
-The way to win me over
+To convince me, propose
 The worst run of my life happened when
 There's already an account with this email. Log in instead.
 They agree or disagree
@@ -1062,9 +1066,11 @@ They won't be notified. The chat closes and you won't see each other again. Repo
 This %s account is
 This can't be undone.
 This code has expired. Send a new one.
+This email is already linked to another drafft account. Use another one.
 This file is too large.
 This file type isn't supported.
 This invite has already been answered.
+This is already on your Apple ID. Tap Restore purchases to get it back.
 This is taking longer than usual.
 This number can't get codes. Use a mobile number.
 This number is already used by another drafft account.
@@ -1072,7 +1078,9 @@ This one is true
 This or that
 This or that? Pick a side.
 This photo can't go on your profile
+This photo couldn't be opened. Pick another one, or check your connection.
 This photo has already been reviewed.
+This photo is no longer there. Remove it, then add it again.
 This profile isn't available.
 This session is already closed.
 This session is no longer available.
@@ -1090,6 +1098,7 @@ Tomorrow
 Too many codes sent. Try again later.
 Too many emails sent. Wait a few minutes and try again.
 Too many tries.
+Too many tries. Wait a few minutes and try again.
 Too many wrong codes. For your security, this change is paused.
 Too many wrong codes. For your security, verification is paused.
 Topic
@@ -1170,11 +1179,13 @@ Voice message (%s)
 Volleyball
 WOD together, no mercy?
 Waiting
+Waiting for approval. It'll be added to your account once the payment goes through.
 Walking
 Warm-up first
 Watch for red flags
 We can't see a face on your first photo. Put a clear photo of you first.
 We couldn't check this number right now. Try again in a moment.
+We couldn't confirm the purchase. If you were charged, it'll be added to your account automatically.
 We couldn't delete your account. Check your connection and try again.
 We couldn't find your area. Try again.
 We couldn't see your face clearly. Try again.
@@ -1192,6 +1203,7 @@ We'll text a 6-digit code to %s.
 We'll text you a code. Your number never shows on your profile.
 We're adding your purchase to your account.
 We're checking your account.
+We're on the same wavelength if
 We're preparing your export. A download link goes to %s, usually within 24 hours of %s. The link works for 7 days.
 We've set it to your phone's language. You can change it anytime in You.
 Weekday dawn runner, weekend long rides…
@@ -1252,8 +1264,7 @@ Yoga
 Yoga then a long lunch?
 You
 You already offer this time.
-You and %s both do %s. Say hi, then plan a first session.
-You and %s liked each other. Say hi, then plan a first session.
+You and %s both do %s. Say hi, or propose a session while it's fresh.
 You can block someone from their profile or a chat.
 You can close this. We'll switch as soon as you confirm.
 You can end a session anytime, no explanation needed.
@@ -1286,7 +1297,7 @@ You've seen every profile within %s. Widen it to see more.
 You've seen everyone around you for now. Widen your filters or catch up with your matches in Chats.
 You've seen everyone for now.
 You've seen everyone within %s.
-You've sent several messages already. Try again in an hour.
+You've sent several messages already. Try again later.
 You've sent several reports already. Try again later.
 You: 
 Your account has been closed.
@@ -1300,6 +1311,7 @@ Your area, like a district, and a distance rounded to the kilometre. Never your 
 Your bio
 Your birthday can't be changed.
 Your chat ends for both of you, and you won't see each other in Discover again.
+Your chats couldn't load
 Your consent couldn't be saved. Check your connection and try again.
 Your conversations with matches
 Your current password is incorrect.
@@ -1308,10 +1320,12 @@ Your face is too small on your first photo. Use a closer one first.
 Your first photo needs to show your face clearly.
 Your first photo wasn't approved. Put another one first.
 Your last super like
+Your likes couldn't load
 Your likes refill at midnight, or go unlimited with drafft tempo.
 Your matches and chats are kept.
 Your matches and chats stay safe. Log back in to see them.
 Your message couldn't be sent. Check your connection and try again.
+Your message is too long. Shorten it, then send it again.
 Your new number is saved.
 Your new password needs all three checks.
 Your own photos, your real first name and your real age.
@@ -1323,6 +1337,8 @@ Your position is rounded to about 1 km. Your exact spot is never sent or stored.
 Your post-workout food ritual
 Your profile
 Your profile and chats are no longer visible.
+Your profile couldn't be paused. Check your connection and try again.
+Your profile couldn't be resumed. Check your connection and try again.
 Your profile couldn't load
 Your profile hasn't loaded, so nothing was saved. Close and try again.
 Your profile is hidden until then.
@@ -1340,9 +1356,10 @@ Your session ended on this iPhone. Log in again to pick up where you left off.
 Your sport
 Your sports
 Your subscription
-Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
+Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
 Your subscription is up to date.
 Your turn
+Your voice intro couldn't be sent, so nothing was saved. Record it again, or remove it.
 at CrossFit
 at barre
 at hot yoga

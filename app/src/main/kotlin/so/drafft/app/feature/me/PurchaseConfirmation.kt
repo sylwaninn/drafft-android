@@ -261,7 +261,7 @@ private fun Recap(item: PurchaseReceipt.Item) {
     val p = DS.palette
     val rows: List<Pair<String, String>> = when (item) {
         is PurchaseReceipt.Item.Tempo -> listOf(
-            L("Plan") to item.subscription.plan.title,
+            L("Length") to item.subscription.plan.title,
             L("Price") to item.subscription.billing,
             L("Renews") to DateText.format("yMMMMd", item.subscription.periodEnds),
         )

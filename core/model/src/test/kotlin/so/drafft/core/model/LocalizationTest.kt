@@ -34,7 +34,7 @@ class LocalizationTest {
         for (language in AppLanguage.entries) {
             val text = javaClass.getResourceAsStream("/i18n/android/${language.code}.json")!!.bufferedReader().readText()
             val variants = kotlinx.serialization.json.Json.decodeFromString<Map<String, String>>(text)
-            assertEquals(16, variants.size, language.code)
+            assertEquals(18, variants.size, language.code)
             variants.keys.forEach { assert(it in keys) { "${language.code}: unknown key $it" } }
             variants.values.forEach { assert(!Regex("iPhone|Apple|App Store").containsMatchIn(it)) { it } }
         }

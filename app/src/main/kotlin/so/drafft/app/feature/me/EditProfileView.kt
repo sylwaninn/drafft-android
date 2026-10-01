@@ -1,7 +1,6 @@
 package so.drafft.app.feature.me
 
 import androidx.activity.compose.BackHandler
-import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -64,6 +63,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.ZoneOffset
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -73,7 +73,6 @@ import so.drafft.app.feature.profile.IcebreakerEditor
 import so.drafft.app.feature.profile.LifestylePicker
 import so.drafft.app.feature.profile.VoiceIntroRecorder
 import so.drafft.core.data.audio.VoiceRecorder
-import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
@@ -88,14 +87,15 @@ import so.drafft.core.model.Vitals
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.AdaptiveRow
 import so.drafft.core.ui.components.ConfirmAction
-import so.drafft.core.ui.components.DraftGlyph
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftConfirm
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.DrafftTextArea
+import so.drafft.core.ui.components.DraftGlyph
 import so.drafft.core.ui.components.FlowLayout
 import so.drafft.core.ui.components.FocusScrollView
 import so.drafft.core.ui.components.GlassCircleButton
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SportPicker
@@ -346,13 +346,11 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
                 // Saved on the server first; nothing changes in the app if it fails (signed out included).
                 try {
                     profileSync.save(result, previous, recorded?.let { ProfileSync.Voice(it.url, it.duration, it.levels) })
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Haptics.warning()
-                    state.saveError = when (e) {
-                        is Backend.BackendError -> e.message
-                        is ProfileSync.SyncError -> e.message
-                        else -> null
-                    } ?: L("Couldn't connect. Check your connection and try again.")
+                    state.saveError = profileSaveFailure(e, state.photosCheck)
                     return@launch
                 }
                 Haptics.success()
@@ -374,7 +372,13 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
 
     val pickPhoto = LocalPlatformUi.current.rememberPhotoPicker { data ->
         scope.launch {
-            val path = PhotoCompressor.savePicked(data) ?: return@launch
+            // A photo that can't be read (a cloud copy offline), or a format that won't decode: said, never a
+            // pick that does nothing. Shown with the save line, cleared by the next change.
+            val path = data?.let { PhotoCompressor.savePicked(it) } ?: run {
+                Haptics.warning()
+                state.saveError = L("This photo couldn't be opened. Pick another one, or check your connection.")
+                return@launch
+            }
             state.picked = state.picked + path
             state.setPhotos(state.allPhotos + path)
             Haptics.success()

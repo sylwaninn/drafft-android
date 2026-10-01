@@ -92,6 +92,8 @@ fun AuthScaffold(
     action: () -> Unit,
     modifier: Modifier = Modifier,
     footnote: String? = null,
+    /** A problem that isn't about one field (no connection, a server error), in red under the action. */
+    error: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val p = DS.palette
@@ -123,6 +125,9 @@ fun AuthScaffold(
             ) {
                 DrafftButton(onClick = action, enabled = actionEnabled && !loading) {
                     if (loading) ButtonSpinner() else Text(actionTitle, maxLines = 2)
+                }
+                if (error != null) {
+                    Text(error, style = TextStyles.footnote.medium, color = p.negative, textAlign = TextAlign.Center)
                 }
                 if (footnote != null) {
                     Text(footnote, style = TextStyles.caption, color = p.body, textAlign = TextAlign.Center)
@@ -209,11 +214,13 @@ fun SignUpView(modifier: Modifier = Modifier) {
     var emailFocused by remember { mutableStateOf(false) }
 
     val emailError: String? = when {
-        problem == AuthProblem.EMAIL_TAKEN -> problem?.message
+        problem == AuthProblem.EMAIL_TAKEN || problem == AuthProblem.INVALID_EMAIL -> problem?.message
         !emailTouched || email.isEmpty() || Validation.isEmail(email) -> null
         else -> L("That doesn't look like an email address. Check for typos.")
     }
-    val passwordError: String? = problem?.takeIf { it != AuthProblem.EMAIL_TAKEN }?.message
+    val passwordError: String? = problem?.takeIf { it == AuthProblem.WEAK_PASSWORD }?.message
+    // Not about one field (no connection, too many emails, a server error): under the action.
+    val formError: String? = problem?.takeIf { it != AuthProblem.EMAIL_TAKEN && it != AuthProblem.INVALID_EMAIL && it != AuthProblem.WEAK_PASSWORD }?.message
     val passedRules = PasswordRule.all.count { it.test(password) }
     val canSubmit = Validation.isEmail(email) && passedRules == PasswordRule.all.size
 
@@ -255,6 +262,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
         loading = loading,
         action = ::submit,
         modifier = modifier,
+        error = formError,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.xl)) {
             DrafftField(
@@ -262,7 +270,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
                 text = email,
                 onTextChange = {
                     email = it
-                    if (problem == AuthProblem.EMAIL_TAKEN) problem = null
+                    if (problem != AuthProblem.WEAK_PASSWORD) problem = null
                 },
                 modifier = Modifier.onFocusChanged {
                     // Leaving the field counts as done with it.
@@ -283,7 +291,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
                     text = password,
                     onTextChange = {
                         password = it
-                        if (problem != AuthProblem.EMAIL_TAKEN) problem = null
+                        if (problem != AuthProblem.EMAIL_TAKEN && problem != AuthProblem.INVALID_EMAIL) problem = null
                     },
                     modifier = Modifier.focusRequester(passwordFocus),
                     prompt = L("Create a password"),
@@ -367,6 +375,8 @@ fun LogInView(modifier: Modifier = Modifier) {
     // Errors sit on the field they're about.
     var emailError by rememberSaveable { mutableStateOf<String?>(null) }
     var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
+    // Not about one field (no connection, too many tries, a server error): under the action.
+    var formError by rememberSaveable { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     val emailFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
@@ -388,34 +398,42 @@ fun LogInView(modifier: Modifier = Modifier) {
             return
         }
         loading = true
+        formError = null
         scope.launch {
             try {
                 backend.signIn(email = email, password = password)
                 Haptics.success()
                 app.email = email
+                focusManager.clearFocus()
                 // Someone who stopped mid sign-up goes back to it.
                 // (The account read here is the one sign-in then uses: read once.)
-                val onboarded = app.refreshAccount()?.onboarded ?: true
-                focusManager.clearFocus()
-                app.signIn(onboard = !onboarded)
+                app.enterAfterLogIn()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Haptics.warning()
                 val problem = AuthProblem(e)
-                if (problem == AuthProblem.EMAIL_NOT_CONFIRMED) {
-                    // A new code, then the code step: confirming it signs in and goes on to sign-up.
-                    val sent = try {
-                        backend.resendConfirmation(to = email)
-                        true
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (_: Exception) {
-                        false
+                when (problem) {
+                    AuthProblem.EMAIL_NOT_CONFIRMED -> {
+                        // A new code, then the code step (confirming it signs in and goes on to sign-up).
+                        // Too many emails means a recent code is still on its way: the code step too,
+                        // where Resend waits. Anything else is said, not a code screen without a code.
+                        val resent = try {
+                            backend.resendConfirmation(to = email)
+                            null
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            AuthProblem(e)
+                        }
+                        if (resent == null || resent == AuthProblem.TOO_MANY_EMAILS) {
+                            nav.push(ConfirmEmailRoute(email))
+                        } else {
+                            formError = resent.message
+                        }
                     }
-                    if (sent) nav.push(ConfirmEmailRoute(email)) else emailError = problem.message
-                } else {
-                    passwordError = problem.message
+                    AuthProblem.WRONG_CREDENTIALS -> passwordError = problem.message
+                    else -> formError = problem.message
                 }
             } finally {
                 loading = false
@@ -431,6 +449,7 @@ fun LogInView(modifier: Modifier = Modifier) {
         loading = loading,
         action = ::submit,
         modifier = modifier,
+        error = formError,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.xl)) {
             DrafftField(
@@ -439,6 +458,7 @@ fun LogInView(modifier: Modifier = Modifier) {
                 onTextChange = {
                     email = it
                     emailError = null
+                    formError = null
                 },
                 modifier = Modifier.focusRequester(emailFocus),
                 prompt = L("you@example.com"),
@@ -453,6 +473,7 @@ fun LogInView(modifier: Modifier = Modifier) {
                     onTextChange = {
                         password = it
                         passwordError = null
+                        formError = null
                     },
                     modifier = Modifier.focusRequester(passwordFocus),
                     prompt = L("Your password"),

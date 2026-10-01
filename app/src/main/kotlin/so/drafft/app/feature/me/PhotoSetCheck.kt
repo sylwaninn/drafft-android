@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.model.L
@@ -82,6 +84,18 @@ enum class PhotoSetCheck {
             return FaceCheck.check(path)
         }
     }
+}
+
+/**
+ * A failed sign-up or save, in words (the Swift `ProfileSync.failure`). The first photo still with the team
+ * answers `portrait_required`: said as that, not as a photo to change.
+ */
+fun profileSaveFailure(error: Throwable, photos: PhotoSetCheck): String {
+    if (error is ProfileSync.SyncError.Refused && error.code == "portrait_required" && photos == PhotoSetCheck.FIRST_IN_REVIEW) {
+        photos.reason?.let { return it }
+    }
+    if (error is ProfileSync.SyncError) return error.message
+    return ServerMessage.failure(error)
 }
 
 /** Under the photo grid: what the first photo still needs, or that the photos are being checked. */

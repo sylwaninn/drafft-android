@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -16,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import so.drafft.core.model.L
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.TextStyles
@@ -56,6 +59,31 @@ fun EmptyStateView(
             }
         }
         actions()
+    }
+}
+
+/**
+ * An empty tab whose first read failed: what didn't load and a way to try again, never "nobody yet".
+ * [offline]: the read never reached the server (else the server failed: no connection advice).
+ */
+@Composable
+fun ListLoadFailureView(
+    art: EmptyStateArt,
+    title: String,
+    offline: Boolean,
+    retry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    EmptyStateView(
+        art = art,
+        title = title,
+        message = if (offline) L("Check your connection and try again.") else L("Something went wrong. Try again in a moment."),
+        modifier = modifier,
+    ) {
+        DrafftButton(onClick = retry, fullWidth = false) {
+            DrafftIcon("refresh", size = (TextStyles.body.fontSize.value * 1.2f).dp, tint = LocalContentColor.current)
+            Text(L("Try again"), maxLines = 2, overflow = TextOverflow.Clip)
+        }
     }
 }
 

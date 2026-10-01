@@ -1,7 +1,7 @@
 {
  "Apple emails your receipt.": "Google Play schickt dir die Quittung per E-Mail.",
  "Apple emails your receipt. Manage your subscription anytime in You.": "Google Play schickt dir die Quittung per E-Mail. Verwalte dein Abo jederzeit unter Du.",
- "Change plan or cancel in Apple's subscription settings.": "Ändere oder kündige dein Abo in deinen Google-Play-Abos.",
+ "Change or cancel it in Apple's subscription settings.": "Ändere oder kündige dein Abo in deinen Google-Play-Abos.",
  "Couldn't reach the App Store. Try again.": "Google Play nicht erreichbar. Versuch es noch mal.",
  "Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.": "Der Standort ist auf diesem Handy deaktiviert. Aktiviere ihn in den Schnelleinstellungen oder unter Einstellungen, Standort.",
  "No drafft tempo purchase on this Apple ID.": "Kein Kauf von drafft tempo mit diesem Google-Konto.",
@@ -10,9 +10,11 @@
  "Open App Store subscriptions": "Google-Play-Abos öffnen",
  "Payment is charged to your Apple Account. The subscription renews automatically at the same price unless you cancel it at least 24 hours before the end of the period. Manage or cancel it in your App Store settings.": "Die Zahlung wird deinem Google-Konto belastet. Das Abo verlängert sich automatisch zum gleichen Preis, sofern du es nicht mindestens 24 Stunden vor Ablauf des Zeitraums kündigst. Verwalte oder kündige es in deinen Google-Play-Abos.",
  "Pick While Using the App": "Wähle „Nur während der Nutzung der App zulassen“",
+ "Purchases are turned off on this iPhone. You can allow them in Screen Time settings.": "Käufe sind auf diesem Handy nicht erlaubt. Prüf deine Google-Play-Einstellungen.",
  "Tap Location": "Tippe auf „Berechtigungen“, dann auf „Standort“",
+ "This is already on your Apple ID. Tap Restore purchases to get it back.": "Das ist schon mit deinem Google-Konto verknüpft. Tippe auf „Käufe wiederherstellen“, um es zurückzuholen.",
  "Turn them on in iPhone Settings to hear about matches and sessions.": "Aktiviere sie in den Einstellungen deines Handys, um von Matches und Sessions zu erfahren.",
  "Your session ended on this iPhone. Log in again to pick up where you left off.": "Melde dich auf diesem Handy wieder an, um weiterzumachen.",
- "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "Dein Abo wird über dein Google-Konto abgerechnet und verlängert sich automatisch, sofern du es nicht mindestens 24 Stunden vor Ende des aktuellen Zeitraums kündigst. Zum Ändern oder Kündigen geh zu deinen Google-Play-Abos. Das Löschen von drafft kündigt es nicht.",
+ "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "Dein Abo wird über dein Google-Konto abgerechnet und verlängert sich automatisch, sofern du es nicht mindestens 24 Stunden vor Ende des aktuellen Zeitraums kündigst. Zum Ändern oder Kündigen geh zu deinen Google-Play-Abos. Das Löschen von drafft kündigt es nicht.",
  "drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.": "drafft braucht ihn, um dir Leute in deiner Nähe zu zeigen. Ihn nur während der Nutzung der App zuzulassen reicht, und es wird immer nur deine Gegend angezeigt."
 }

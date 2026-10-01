@@ -11,6 +11,8 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
@@ -137,14 +139,32 @@ class RevenueCatStore(
     override suspend fun purchase(pkg: Package): Store.Outcome {
         if (!link()) throw Store.StoreError.NotLinked
         val native = pkg.native as RCPackage
-        val activity = activity?.get() ?: throw IllegalStateException("No activity on screen for the purchase sheet")
+        // No purchase sheet without an activity on screen: nothing was asked of Google Play.
+        val activity = activity?.get() ?: throw Store.StoreError.Failed(Store.PurchaseProblem.NOT_CHARGED)
         return try {
             val result = purchases.awaitPurchase(PurchaseParams.Builder(activity, native).build())
             // Google Play's order id (GPA.…): the reference support asks for, like the App Store's transaction id.
             Store.Outcome.Purchased(result.customerInfo.toInfo(), result.storeTransaction.orderId)
         } catch (e: PurchasesTransactionException) {
-            if (e.userCancelled) Store.Outcome.Cancelled else throw e
+            if (e.userCancelled) Store.Outcome.Cancelled else throw Store.StoreError.Failed(problem(e.code), e)
+        } catch (e: PurchasesException) {
+            if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
+                Store.Outcome.Cancelled
+            } else {
+                throw Store.StoreError.Failed(problem(e.code), e)
+            }
         }
+    }
+
+    /** The Swift `PurchaseProblem(error)`'s cases, from RevenueCat's code. */
+    private fun problem(code: PurchasesErrorCode): Store.PurchaseProblem = when (code) {
+        PurchasesErrorCode.PaymentPendingError -> Store.PurchaseProblem.PENDING
+        PurchasesErrorCode.PurchaseNotAllowedError -> Store.PurchaseProblem.NOT_ALLOWED
+        PurchasesErrorCode.ProductAlreadyPurchasedError -> Store.PurchaseProblem.ALREADY_OWNED
+        PurchasesErrorCode.PurchaseInvalidError, PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+        PurchasesErrorCode.IneligibleError, PurchasesErrorCode.OperationAlreadyInProgressError,
+        -> Store.PurchaseProblem.NOT_CHARGED
+        else -> Store.PurchaseProblem.UNCONFIRMED
     }
 
     override suspend fun restore(): CustomerInfo {
