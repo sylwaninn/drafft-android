@@ -77,6 +77,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import so.drafft.app.feature.me.SessionsView
 import so.drafft.core.data.AppModel
+import so.drafft.core.data.DiscoveryFreshness
 import so.drafft.core.data.location.LocationGate
 import so.drafft.core.data.notifications.NotificationService
 import so.drafft.core.data.store.Store
@@ -260,6 +261,15 @@ fun MainTabs(
         }
     }
     LaunchedEffect(app.tab) { built = built + app.tab }
+    // Discover shown again (its tab, a notification, a button elsewhere): what's grown old since,
+    // read quietly. Never during the walk under the splash or the welcome screen.
+    var shownTab by remember { mutableStateOf(app.tab) }
+    LaunchedEffect(app.tab) {
+        val old = shownTab
+        shownTab = app.tab
+        if (app.tab != AppModel.Tab.DISCOVER || old == AppModel.Tab.DISCOVER || !isActive || mayPrebuild) return@LaunchedEffect
+        app.refreshDiscovery(DiscoveryFreshness.Moment.TAB_SHOWN)
+    }
 
     // Location is required: read again each time the app comes back (from Settings, say).
     LaunchedEffect(isActive) {
@@ -276,7 +286,7 @@ fun MainTabs(
     // In (sign-in, end of sign-up, a hold lifted): discovery as the server has it; notification status.
     LaunchedEffect(isActive) {
         if (!isActive) return@LaunchedEffect
-        app.refreshDiscovery()
+        app.refreshDiscovery(DiscoveryFreshness.Moment.ENTERED)
         location.refresh()
         notifications.refresh()
     }

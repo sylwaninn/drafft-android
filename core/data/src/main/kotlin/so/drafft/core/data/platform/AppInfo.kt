@@ -40,6 +40,14 @@ fun interface AppLifecycle {
     fun isActive(): Boolean
 }
 
+/**
+ * Seconds on a monotonic clock that keeps counting while the phone sleeps (the iPhone's
+ * `ContinuousClock`): an evening in the background ages what's on screen. Only differences mean anything.
+ */
+fun interface MonotonicClock {
+    fun seconds(): Double
+}
+
 /** Stops whatever audio is playing (`AudioPlayback.shared.stop()`), bound by the audio service. */
 fun interface PlaybackControl {
     fun stop()

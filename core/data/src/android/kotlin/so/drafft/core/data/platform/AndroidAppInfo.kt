@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -41,4 +42,9 @@ class AndroidAppInfo(private val context: Context, override val environment: Str
 object ProcessAppLifecycle : AppLifecycle {
     override fun isActive(): Boolean =
         ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+}
+
+/** `SystemClock.elapsedRealtime`: monotonic, deep sleep included. */
+object ElapsedRealtimeClock : MonotonicClock {
+    override fun seconds(): Double = SystemClock.elapsedRealtimeNanos() / 1e9
 }

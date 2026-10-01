@@ -59,6 +59,7 @@ import so.drafft.core.data.notifications.NotificationService
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.platform.MonotonicClock
 import so.drafft.core.data.platform.PlaybackControl
 import so.drafft.core.data.sessions.ServerDate
 import so.drafft.core.data.sessions.SessionCalendar
@@ -113,6 +114,8 @@ class AppModel(
     /** Where the local cache keeps each account's copy (never backed up). */
     private val cacheDirectory: File,
     private val lifecycle: AppLifecycle,
+    /** The age of reads and the swipe pace. */
+    private val clock: MonotonicClock,
     private val playback: PlaybackControl? = null,
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -622,7 +625,7 @@ class AppModel(
         tab = Tab.DISCOVER
         phase = Phase.MAIN
         // The first deck, now that the profile is open.
-        refreshDiscovery()
+        refreshDiscovery(DiscoveryFreshness.Moment.ENTERED)
     }
 
     /**
@@ -994,31 +997,49 @@ class AppModel(
      * Everyone waiting for an answer, newest first: the one read of `liked_me`. With drafft tempo
      * the server sends their cards; without, only a blurred list (`blurredLikes`, decision 5.5). Read
      * again when Likes opens, on a `like` or `wallet` event (drafft tempo starting or ending) and on
-     * each (re)connection. Unchanged if it can't be read.
+     * each (re)connection, and quietly back at the front once old enough (`refreshDiscovery`).
+     * Unchanged if it can't be read, or if a newer read already landed.
      */
     suspend fun loadLikes() {
         val premium = isPremium
         if (phase != Phase.MAIN) return
+        val read = startRead(DiscoveryFreshness.Part.LIKES)
         val data = try {
             backend.rpc("liked_me", jsonOf("p_limit" to LIKES_PAGE))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            readLanded(read, ok = false)
+            if (read.session != sessionID) return
             if (isPremium == premium) likesFailed(e)
             return
         }
-        if (isPremium != premium) return
+        if (isPremium != premium) {
+            readLanded(read, ok = false)
+            return
+        }
         if (premium) {
-            val likes = attemptOrNull { LikeCard.list(data) } ?: return likesFailed(null)
+            val likes = attemptOrNull { LikeCard.list(data) }
+            if (!readLanded(read, ok = likes != null) || likes == null) return likesReadDropped(read)
             if (blurredLikes.isNotEmpty()) blurredLikes = emptyList()
             applyLikes(likes)
             openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.LIKES) } }
         } else {
-            val fresh = BlurredLike.list(data) ?: return likesFailed(null)
+            val fresh = BlurredLike.list(data)
+            if (!readLanded(read, ok = fresh != null) || fresh == null) return likesReadDropped(read)
             if (likedMe.isNotEmpty()) likedMe = emptyList()
             if (fresh != blurredLikes) blurredLikes = fresh
         }
         likesLoad = ListLoad.Loaded
+    }
+
+    /**
+     * A likes read that isn't applied (unreadable, or older than one already shown): a failure only
+     * for this account, and only while nothing was read yet (`likesFailed`).
+     */
+    private fun likesReadDropped(read: StartedRead) {
+        if (read.session != sessionID) return
+        likesFailed(null)
     }
 
     /** A read that failed only shows if nothing was read yet: what's on screen stays otherwise. */
@@ -1045,13 +1066,16 @@ class AppModel(
 
     /**
      * The current matches. The first read of a session only takes them in; a later one that finds a
-     * new match (they liked you back) shows the banner. Unchanged if it can't be read.
+     * new match (they liked you back) shows the banner. Unchanged if it can't be read, or if a newer
+     * read already landed.
      */
     suspend fun loadMatches() {
         if (phase != Phase.MAIN) return
+        val read = startRead(DiscoveryFreshness.Part.MATCHES)
         try {
             val data = backend.rpc("my_matches")
             val rows = MatchRow.list(data)
+            if (!readLanded(read, ok = true)) return
             applyMatches(rows, announce = discovery.matchesRead)
             discovery.matchesRead = true
             matchesLoad = ListLoad.Loaded
@@ -1059,6 +1083,8 @@ class AppModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            readLanded(read, ok = false)
+            if (read.session != sessionID) return
             if (matchesLoad != ListLoad.Loaded) matchesLoad = ListLoad.Failed(offline = ServerMessage.isOffline(e))
         }
     }
@@ -1162,9 +1188,10 @@ class AppModel(
     //   so it sends both), asked again early enough to arrive before the end at the pace the person swipes
     //   (`DeckPace`, at least 10 cards ahead). Each batch is the server's fresh order: the cards on screen stay in place if the server still has them, and any
     //   card it no longer returns (paused, blocked, swiped on another device, no longer eligible) goes.
-    //   The deck is also read again at the front, when the account's channel (re)joins, when the
-    //   filters or the person's own preferences change (from scratch then), and when a pause ends: no
-    //   card outlives what the server knows (decision 3.8).
+    //   The deck is also read again, quietly, back at the front or on Discover shown again once it's
+    //   old enough (`DiscoveryFreshness`), when the account's channel (re)joins, when the filters or the
+    //   person's own preferences change (from scratch then), and when a pause ends: no card outlives what
+    //   the server knows (decision 3.8).
     // - Stale-while-revalidate: the last batch is kept on this phone (`LocalCache`, `DECK`) and shown
     //   at launch while the fresh one loads, only if it's recent (its media links are signed for about an
     //   hour) and was read with the same filters.
@@ -1173,18 +1200,45 @@ class AppModel(
     //   reason in the person's language. A like the server turns down as `not_eligible` (or a card gone,
     //   or already swiped elsewhere) just stays gone, without a message.
 
-    enum class DeckLoad { REFRESH, RESTART }
+    /**
+     * `REFRESH`: a read asked on screen (a retry, a swipe). `RESTART`: from scratch. `REVALIDATE`: a
+     * quiet read nobody asked for (`refreshDiscovery`), which replaces one already on its way.
+     */
+    enum class DeckLoad { REFRESH, RESTART, REVALIDATE }
 
     /**
-     * Everything discovery shows, read again (entering the app, back at the front, the channel
-     * rejoined): the deck, who liked you, the matches and the likes left.
+     * Everything discovery shows, read again when [moment] finds it old enough (`DiscoveryFreshness`):
+     * the deck, who liked you, the matches and the likes left. Quiet: what's on screen stays until the
+     * fresh copy lands, and a failure keeps it. Back at the front on another tab, the deck waits for
+     * Discover to show (`TAB_SHOWN`). An empty deck ("no one new", a failure) is read whatever its age:
+     * anyone new shows as soon as the person is back.
      */
-    fun refreshDiscovery() {
+    fun refreshDiscovery(moment: DiscoveryFreshness.Moment) {
         if (phase != Phase.MAIN) return
-        loadDeck(DeckLoad.REFRESH)
-        scope.launch { loadLikes() }
-        scope.launch { loadMatches() }
-        scope.launch { loadLikesLeft() }
+        val now = clock.seconds()
+        val freshness = discovery.freshness
+        fun due(part: DiscoveryFreshness.Part, empty: Boolean = false) = freshness.isDue(part, moment, now, empty)
+        if (due(DiscoveryFreshness.Part.DECK, empty = queue.isEmpty()) &&
+            (moment != DiscoveryFreshness.Moment.FOREGROUND || tab == Tab.DISCOVER)
+        ) {
+            loadDeck(DeckLoad.REVALIDATE)
+        }
+        if (due(DiscoveryFreshness.Part.LIKES)) scope.launch { loadLikes() }
+        if (due(DiscoveryFreshness.Part.MATCHES)) scope.launch { loadMatches() }
+        if (due(DiscoveryFreshness.Part.LIKES_LEFT)) scope.launch { loadLikesLeft() }
+    }
+
+    /** A read of a part, and the account it was started for. */
+    private class StartedRead(val read: DiscoveryFreshness.Read, val session: Int, val state: DiscoveryState)
+
+    /** A read of [part] starts (`DiscoveryFreshness`). */
+    private fun startRead(part: DiscoveryFreshness.Part) =
+        StartedRead(discovery.freshness.start(part, now = clock.seconds()), sessionID, discovery)
+
+    /** A read came back: whether to apply it (still this account's, it worked, and nothing newer was applied). */
+    private fun readLanded(started: StartedRead, ok: Boolean): Boolean {
+        if (started.session != sessionID || started.state !== discovery) return false
+        return discovery.freshness.finish(started.read, ok)
     }
 
     /** The last known deck, likes and matches, shown at once at launch (then revalidated). */
@@ -1205,9 +1259,10 @@ class AppModel(
 
     /**
      * Reads a batch. `RESTART` drops the deck on screen first (new filters or preferences): a card
-     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it. [bySwipe]: the
-     * read a swipe asks for as the deck runs low; any other (the front, the channel, the filters) also
-     * tries again after the server ran out of new cards.
+     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it; a `REVALIDATE`
+     * replaces it (its caller found it too old or lost). [bySwipe]: the read a swipe asks for as the deck
+     * runs low; any other (the front, the channel, the filters) also tries again after the server ran
+     * out of new cards.
      */
     fun loadDeck(mode: DeckLoad, bySwipe: Boolean = false) {
         if (phase != Phase.MAIN || profilePaused) return
@@ -1222,19 +1277,26 @@ class AppModel(
             discovery.raw = emptyMap()
             openLocalCache()?.let { cache -> write { cache.remove(LocalCache.Kind.DECK) } }
         }
-        // A refresh behind "no one new" (back at the front, the channel rejoined) keeps that screen:
-        // flashing the spinner would replay its entrance for nothing.
-        if (queue.isEmpty() && (mode == DeckLoad.RESTART || deckState != DeckState.Loaded)) deckState = DeckState.Loading
+        // A refresh behind "no one new" keeps that screen: flashing the spinner would replay its
+        // entrance for nothing. A quiet read keeps any screen (a failure too) until it lands: the
+        // spinner only shows when there's nothing yet.
+        if (queue.isEmpty() &&
+            (mode == DeckLoad.RESTART || deckState == DeckState.Idle || (mode == DeckLoad.REFRESH && deckState != DeckState.Loaded))
+        ) {
+            deckState = DeckState.Loading
+        }
         val filters = filters
         // The server sends its fresh order from the top, the cards still here included, and may send the
         // swipes not yet on the server (left out): ask for all of those plus a batch of new ones (50 at most).
         val limit = minOf(DECK_MAX_READ, queue.size + discovery.pendingSwipes + DECK_BATCH)
+        val read = startRead(DiscoveryFreshness.Part.DECK)
         discovery.load = scope.launch {
-            val started = System.nanoTime()
             val outcome = fetchDeck(filters, limit)
             // A newer read, or discovery cleared meanwhile (signed out): this one is stale.
             if (state !== discovery || generation != discovery.generation) return@launch
-            if (outcome is DeckOutcome.Cards) discovery.pace.read(took = (System.nanoTime() - started) / 1e9)
+            val ok = outcome is DeckOutcome.Cards
+            if (ok) discovery.pace.read(took = clock.seconds() - read.read.startedAt)
+            readLanded(read, ok)
             discovery.load = null
             apply(outcome, filters, limit)
         }
@@ -1336,7 +1398,7 @@ class AppModel(
             likesLeft?.let { likesLeft = maxOf(0, it - 1) }
         }
         saveDeck(filters)
-        discovery.pace.swiped(at = System.nanoTime() / 1e9)
+        discovery.pace.swiped(at = clock.seconds())
         if (queue.size <= discovery.pace.lowWater && !discovery.exhausted) loadDeck(DeckLoad.REFRESH, bySwipe = true)
         // The last card went while the next batch is on its way: that's loading, not "no one new".
         if (queue.isEmpty() && discovery.load != null) deckState = DeckState.Loading
@@ -1458,14 +1520,18 @@ class AppModel(
 
     // Likes left
 
-    /** Likes left today, from the server (`likes_left`). Unchanged if it can't be read. */
+    /** Likes left today, from the server (`likes_left`). Unchanged if it can't be read, or if a newer read already landed. */
     suspend fun loadLikesLeft() {
         if (phase != Phase.MAIN) return
-        val data = attempt { backend.rpc("likes_left") } ?: return
-        val row = attemptOrNull {
-            val o = data.parseJsonOrNull().asObject ?: return@attemptOrNull null
-            o.boolean("unlimited") to o.int("left")
-        } ?: return
+        val read = startRead(DiscoveryFreshness.Part.LIKES_LEFT)
+        val data = attempt { backend.rpc("likes_left") }
+        val row = data?.let {
+            attemptOrNull {
+                val o = it.parseJsonOrNull().asObject ?: return@attemptOrNull null
+                o.boolean("unlimited") to o.int("left")
+            }
+        }
+        if (!readLanded(read, ok = row != null) || row == null) return
         likesLeft = if (row.first) null else row.second
     }
 
@@ -1644,7 +1710,7 @@ class AppModel(
     private fun pauseChanged(from: Boolean) {
         // Resumed by the server (another device, a lifted hold): discovery reads the deck again. A
         // flip on this phone does it once saved (`syncPause`).
-        if (from && !profilePaused && pauseFromServer) refreshDiscovery()
+        if (from && !profilePaused && pauseFromServer) refreshDiscovery(DiscoveryFreshness.Moment.ENTERED)
         if (profilePaused == from || pauseFromServer) return
         val paused = profilePaused
         pauseEdits += 1
@@ -1688,7 +1754,7 @@ class AppModel(
             backend.updateMyProfile(jsonOf("paused" to paused))
             // Resumed: discovery reads the deck again (nothing was read while paused). Only once the
             // server has it: asked sooner, it answers "paused" and the pause came back on.
-            if (!paused && edit == pauseEdits) refreshDiscovery()
+            if (!paused && edit == pauseEdits) refreshDiscovery(DiscoveryFreshness.Moment.ENTERED)
             return null
         } catch (e: CancellationException) {
             throw e
