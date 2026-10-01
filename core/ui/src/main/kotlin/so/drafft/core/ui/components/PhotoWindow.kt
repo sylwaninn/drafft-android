@@ -23,8 +23,8 @@ import so.drafft.core.model.Profile
  * the rows about to scroll in). The cards on screen load their own photo, the one in play first
  * (`SwipeCard`'s priority); the window covers what comes after them:
  *
- * - on a good connection, the portraits of the next 6 cards, to disk, at the copy their card needs, then
- *   the other photos of the card in play (its profile, if opened);
+ * - on a good connection, the portraits of the cards on screen and of the next 6, to disk, at the copy
+ *   their card needs, then the other photos of the card in play (its profile, if opened);
  * - on a limited one ([NetworkQuality]), a small copy of the portraits on screen and of the next 8
  *   instead ([ImageStore.preview], about 20 kB each): a full copy can't keep up with fast swipes on a
  *   slow line, a small one can, so no card shows only its blurred preview. They come ahead of the card in
@@ -75,7 +75,9 @@ class PhotoWindow private constructor() {
         building = mainScope.launch {
             val limited = NetworkQuality.shared.isLimited
             val (ahead, small, more) = withContext(Dispatchers.IO) {
-                val ahead = if (limited) emptyList() else deck.drop(onScreen).take(6).map { it.portrait }
+                // The cards on screen too: their own request shares the download (`SharedFetches`), so a
+                // prefetch is never cancelled as its card arrives.
+                val ahead = if (limited) emptyList() else deck.take(onScreen + 6).map { it.portrait }
                 Triple(
                     ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) },
                     if (limited) {

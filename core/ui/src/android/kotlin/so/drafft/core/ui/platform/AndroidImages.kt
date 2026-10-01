@@ -13,6 +13,9 @@ import android.net.NetworkCapabilities
 import androidx.core.content.ContextCompat
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import coil3.Uri
+import coil3.fetch.Fetcher
+import coil3.request.Options
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.NetworkClient
@@ -46,6 +49,7 @@ import okio.buffer
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.media.PhotoDownloads
+import so.drafft.core.data.media.SharedFetches
 
 // Ports `Images.configure()` (Drafft/Services/Media/Images.swift), its `SignedLinkLoader` timing, and the
 // path half of Drafft/Services/Media/NetworkQuality.swift (NWPathMonitor there, ConnectivityManager here).
@@ -80,7 +84,7 @@ fun installImages(context: Context) {
                     .maxSizeBytes(Images.diskLimit)
                     .build()
             }
-            .components { add(NetworkFetcher.Factory(networkClient = { PhotoNetworkClient(client) })) }
+            .components { add(SharedFetcherFactory(NetworkFetcher.Factory(networkClient = { PhotoNetworkClient(client) }))) }
             .build()
     }
     // The disk cache reads its journal once, here rather than on the main thread at the first photo
@@ -118,6 +122,15 @@ private fun watchNetwork(context: Context) {
         ContextCompat.RECEIVER_NOT_EXPORTED,
     )
     update(connectivity.activeNetwork)
+}
+
+/** Coil's network fetcher, one download per copy ([SharedFetches]): the other requests for it read it from disk. */
+private class SharedFetcherFactory(private val network: Fetcher.Factory<Uri>) : Fetcher.Factory<Uri> {
+    override fun create(data: Uri, options: Options, imageLoader: ImageLoader): Fetcher? {
+        val fetcher = network.create(data, options, imageLoader) ?: return null
+        val key = options.diskCacheKey ?: data.toString()
+        return Fetcher { SharedFetches.shared.once(key) { fetcher.fetch() } }
+    }
 }
 
 /**
