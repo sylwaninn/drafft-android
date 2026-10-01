@@ -6,6 +6,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
+import so.drafft.core.data.media.MediaPreviews
 
 // Ports DrafftTests/ProfileCardTests.swift: the cards `discover`, `liked_me`, `my_matches` and
 // `get_cards` send, decoded as the server shapes them (`private.rebuild_card` and `private.sign_card`
@@ -63,6 +64,15 @@ class ProfileCardTest {
         )
         // Without a base (no signed link, no media URL): only the signed ones.
         assertEquals(listOf("https://media.example/u/x/photos/1.jpg?exp=1&sig=a"), c.photoLinks(base = null))
+    }
+
+    @Test
+    fun photoSizeGivesItsProportions() {
+        val c = assertNotNull(ProfileCard.list(bytes("[${card()}]")).firstOrNull())
+        assertEquals(1080, c.media.first().width)
+        assertEquals(1440, c.media.first().height)
+        c.profile(mediaBase = null)
+        assertEquals(0.75, MediaPreviews.aspect("https://media.example/u/x/photos/1.jpg?exp=2&sig=b"))
     }
 
     @Test
