@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import so.drafft.app.feature.discover.FirstThatFits
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -299,10 +300,17 @@ private fun Actions(
         session.status == SessionProposal.Status.PENDING && !mine -> Column(verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
             DrafftButton(onClick = { selected?.let(onPick) }, enabled = selected != null && !busy) {
                 AnimatedContent(
-                    targetState = selected?.let(::confirmTitle) ?: L("Pick a time above"),
+                    targetState = selected?.let { confirmTitle(it) to confirmTimeTitle(it) }
+                        ?: (L("Pick a time above") to L("Pick a time above")),
                     transitionSpec = { fadeIn(Motion.gentle()).togetherWith(fadeOut(Motion.gentle())) },
                     label = "confirmTitle",
-                ) { Text(it, maxLines = 2, textAlign = TextAlign.Center) }
+                ) { title ->
+                    // One line in every language: when the day doesn't fit, the time alone.
+                    FirstThatFits {
+                        Text(title.first, maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
+                        Text(title.second, maxLines = 2, textAlign = TextAlign.Center)
+                    }
+                }
             }
             DrafftButton(
                 onClick = onCounter,
@@ -311,7 +319,7 @@ private fun Actions(
                 enabled = !busy,
             ) {
                 DrafftIcon("calendar", size = 20.dp, tint = LocalContentColor.current)
-                Text(L("Suggest other times"), maxLines = 2, textAlign = TextAlign.Center)
+                Text(L("Other times"), maxLines = 2, textAlign = TextAlign.Center)
             }
             QuietLink(L("Not this time"), enabled = !busy, onClick = onDecline)
         }
@@ -368,3 +376,6 @@ private fun QuietLink(text: String, enabled: Boolean, onClick: () -> Unit) {
 
 /** "Confirm Sat 12, 9:00" for the time picked. */
 private fun confirmTitle(d: Instant): String = L("Confirm %s, %s", DateText.weekdayShortDay(d), DateText.time(d))
+
+/** "Confirm 9:00": the short form, when the day doesn't fit on the button's line. */
+private fun confirmTimeTitle(d: Instant): String = L("Confirm %s", DateText.time(d))

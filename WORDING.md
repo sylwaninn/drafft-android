@@ -64,7 +64,7 @@ states, errors, push, email, SMS, paywall, App Store / Play Store, website, scre
 | A training date | session | séance | The login session is "login" / « connexion » |
 | Send one | propose (a session) | proposer (une séance) | The only verb. Not suggest, offer, invite, pitch |
 | The sent card | session invite | proposition de séance | |
-| Time options | times | créneaux | "Pick a time", "Propose other times" / « Proposer d'autres créneaux » |
+| Time options | times | créneaux | "Pick a time", "Other times" (button), "Propose other times" (title) / « Autres créneaux », « Proposer d'autres créneaux » |
 | The short note on an invite | note | petit mot | Not "pitch" |
 | Mutual like | match; screen title "It's mutual." | match ; titre « C'est réciproque. » | Never "It's a match." |
 | First date | first date | premier rendez-vous | FR avoids « un date » (bpm's word) |
@@ -173,6 +173,7 @@ repository's copy of this file: keep the format.
 \bplan(s|ned|ning|ner|ners)?\b | "plan" is banned (5.1)
 \bplanifi\w* | "plan" is banned (5.1)
 \bplane(ar|ado|ada|amos)\b | "plan" is banned (5.1)
+\bplanos?\b | "plan" is banned (5.1)
 \b(ge)?plan(t|en|nen|nt|de)\b | "plan" is banned (5.1)
 \bgepland\b | "plan" is banned (5.1)
 \bpianific\w* | "plan" is banned (5.1)
@@ -205,6 +206,13 @@ repository's copy of this file: keep the format.
 - **CTAs:** a verb first, 1–3 words, 20 characters max in EN. Say what happens ("Propose a session",
   "Pick this time"), not "OK", "Continue" or "Submit" when a precise verb exists. Keep names out of
   one-line buttons ("Say hi", not "Say hi to Maximilien").
+- **Buttons stay on one line, in every language.** Check the longest translation (FR, DE, NL run
+  30–40 % longer than EN), not the EN. Rough budget per line (17 pt semibold, 375 pt iPhone):
+  full-width button ≈ 28 characters (≈ 25 with an icon); button inside a card, such as the session
+  card in a chat, ≈ 18; two buttons side by side ≈ 12. Over budget, adapt the wording in that language
+  (drop "above", a possessive, a second verb) and keep the meaning; a short noun phrase is fine when
+  the icon and context carry the verb ("Other times" / « Autres créneaux »). When a label holds a
+  value (a day, a count), the code drops that detail to stay on one line (`ViewThatFits`), never "…".
 - **Titles and headlines:** short statements ending with a full stop ("You've seen everyone nearby.").
 - **Body:** one idea per sentence, 2 sentences max on a screen block, contractions in EN.
 - **Punctuation:**
@@ -326,7 +334,7 @@ Run on every text before you validate it.
 - [ ] No category cliché or competitor line (5.3). No fake urgency, guilt, body judgement (5.5).
 - [ ] Brand terms exact: drafft, drafft tempo, session/séance, propose/proposer, times/créneaux.
 - [ ] Informal "you"; FR non-breaking spaces; gender-neutral; sentence case.
-- [ ] CTA starts with a verb, 1–3 words, says what happens.
+- [ ] CTA starts with a verb, 1–3 words, says what happens, fits one line in every language (6).
 - [ ] Headline ends with a full stop; no "!" or emoji in UI, push, email.
 - [ ] Error: what happened + one way out, no blame.
 - [ ] All 7 languages updated, adapted (not literal), same placeholders, no longer than needed.
@@ -372,7 +380,15 @@ Run on every text before you validate it.
 - 2026-09-30: The delete page no longer opens on "Your call." / « À toi de voir. »: it read as curt, even
   resentful. It states the fact instead: "Here's what deleting removes." / « Voici ce que la
   suppression efface. »
+- 2026-10-01: "plan" stays banned with no exception, subscriptions included: also out of the
+  catalog's English keys (the lint checks keys) and of "plano" in ES/PT, even as "flat" or
+  "segundo plano" (background).
 - 2026-10-01: Desire and attraction words banned when they point at a person (5.2), like « plan »:
   « ce qui t'a donné envie », « faire craquer », "win me over", DE "rumkriegen". The like comment
   field becomes "Add a note" / « Ajoute un petit mot »; the prompt "The way to win me over" reads
   "To convince me, propose" / « Pour me convaincre, propose-moi ».
+- 2026-10-01: Buttons stay on one line in every language, with a character budget per layout (6).
+  The session card's "Propose other times" wrapped in French and German: it became "Other times" /
+  « Autres créneaux » (calendar icon); the sheet it opens keeps the full title. Other labels over
+  budget were shortened in the languages concerned (calendar, data, undo, comment buttons), and the
+  confirm and send buttons drop the day or the count rather than wrap.
