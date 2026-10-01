@@ -91,8 +91,12 @@ fun ReportSheet(
             throw e
         } catch (e: Exception) {
             Haptics.warning()
-            // A refusal (daily limit, account on hold...) says why; otherwise it's the connection.
-            error = ServerMessage.text(e) ?: L("Your report couldn't be sent. Check your connection and try again.")
+            // A refusal (daily limit, account on hold...) says why; the connection only when it's the cause.
+            error = ServerMessage.text(e) ?: if (e is java.io.IOException) {
+                L("Your report couldn't be sent. Check your connection and try again.")
+            } else {
+                ServerMessage.generic
+            }
         } finally {
             sending = false
         }
