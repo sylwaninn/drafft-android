@@ -454,7 +454,8 @@ private fun FieldError(error: String?) {
  * (starting with "/") for photos the user picked, or a link for photos on the server. Give [side]
  * (the frame's shorter side) for small displays: a downsampled copy is drawn instead of the full
  * photo. [blur] (with [side]) draws a copy with the blur baked in, instead of a live blur.
- * [priority]: download order among photos waiting (the deck: the card in play first).
+ * [priority]: download order among photos waiting (the deck: the card in play first). [detail]: an
+ * open profile's photo, looked at closely, which may take a copy wider than the everyday 1 080 px.
  */
 @Composable
 fun Photo(
@@ -463,12 +464,13 @@ fun Photo(
     side: Dp? = null,
     blur: Dp = 0.dp,
     priority: Images.Priority = Images.Priority.NORMAL,
+    detail: Boolean = false,
 ) {
     val fraction = if (blur > 0.dp) blur / max(side ?: 200.dp, 1.dp) else 0f
     Box(modifier.clipToBounds().clearAndSetSemantics { }) {
         if (name.startsWith("http") || name.startsWith("/")) {
             // Blurred at decode time, never a live blur (locked likes).
-            LoadedPhoto(name, fraction, priority)
+            LoadedPhoto(name, fraction, priority, detail)
         } else {
             BundledPhoto(name, side, fraction)
         }

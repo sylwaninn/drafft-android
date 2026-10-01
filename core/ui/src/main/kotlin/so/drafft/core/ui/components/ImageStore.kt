@@ -119,9 +119,10 @@ object ImageStore {
         blur: Float = 0f,
         variant: String? = null,
         fill: Boolean = true,
-    ): ImageRequest = cachedRequest(context, name, width, height, priority, blur, variant, fill) ?: withContext(Dispatchers.IO) {
+        detail: Boolean = false,
+    ): ImageRequest = cachedRequest(context, name, width, height, priority, blur, variant, fill, detail) ?: withContext(Dispatchers.IO) {
         val pixels = PixelSize(width, height)
-        make(context, closest(context, name, fullWidth(name, pixels), variant), Renditions.decodeSize(pixels), priority, blur, variant, fill)
+        make(context, closest(context, name, fullWidth(name, pixels, detail), variant), Renditions.decodeSize(pixels), priority, blur, variant, fill)
     }
 
     /**
@@ -138,12 +139,13 @@ object ImageStore {
         blur: Float = 0f,
         variant: String? = null,
         fill: Boolean = true,
+        detail: Boolean = false,
     ): ImageRequest? {
         val pixels = PixelSize(width, height)
         val decode = Renditions.decodeSize(pixels)
         if (name.startsWith("/")) return make(context, name, decode, priority, blur, variant, fill)
         val memory = SingletonImageLoader.get(context).memoryCache ?: return null
-        for (candidate in Renditions.candidates(fullWidth(name, pixels))) {
+        for (candidate in Renditions.candidates(fullWidth(name, pixels, detail))) {
             val url = Images.sized(name, candidate) ?: continue
             val request = make(context, url, decode, priority, blur, variant, fill)
             if (isInMemory(memory, request)) return request
@@ -170,11 +172,13 @@ object ImageStore {
     }
 
     /**
-     * The width a full copy is chosen for: what the frame needs, a step lighter on a slow line (a copy
-     * already here still wins, [closest]): sooner beats sharper there.
+     * The width a full copy is chosen for: what the frame needs, at most the everyday width unless it's an
+     * open profile's photo ([detail], [Renditions.asked]), then a step lighter on a slow line (a copy
+     * already here still wins, [closest]): sooner beats sharper there. The decode size stays the frame's:
+     * a smaller copy simply isn't scaled up.
      */
-    private fun fullWidth(name: String, pixels: PixelSize): Double {
-        val needed = Renditions.neededWidth(pixels, MediaPreviews.aspect(name))
+    private fun fullWidth(name: String, pixels: PixelSize, detail: Boolean): Double {
+        val needed = Renditions.asked(Renditions.neededWidth(pixels, MediaPreviews.aspect(name)), detail)
         return if (NetworkQuality.shared.isSlow) needed * Renditions.limitedShare else needed
     }
 
@@ -196,9 +200,16 @@ object ImageStore {
      * the card finds it there. Decoded tiny and never kept in memory: it's decoded at its display size once
      * it's drawn. Null when that copy is already on this phone. Looks on disk: off the main thread.
      */
-    fun prefetchRequest(context: PlatformContext, name: String, width: Int, height: Int, priority: Images.Priority): ImageRequest? {
+    fun prefetchRequest(
+        context: PlatformContext,
+        name: String,
+        width: Int,
+        height: Int,
+        priority: Images.Priority,
+        detail: Boolean = false,
+    ): ImageRequest? {
         if (!name.startsWith("http")) return null
-        val url = closest(context, name, fullWidth(name, PixelSize(width, height)), null)
+        val url = closest(context, name, fullWidth(name, PixelSize(width, height), detail), null)
         if (isOnDisk(context, cacheID(url, null))) return null
         return ImageRequest.Builder(context)
             .data(url)
