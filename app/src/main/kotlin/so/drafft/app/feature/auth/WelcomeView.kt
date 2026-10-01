@@ -105,12 +105,12 @@ val WelcomeFraming: Map<String, PhotoFraming> = mapOf(
     "hero_2" to PhotoFraming(zoom = 1.05f, focus = Offset(0.5f, 0.45f), at = Offset(0.5f, 0.42f)),
     // Marathon: a close portrait, off-centre, her waving hand cut by the left edge.
     "hero_3" to PhotoFraming(zoom = 1.45f, focus = Offset(0.62f, 0.46f), at = Offset(0.62f, 0.36f)),
-    // Trail: wide action, the runner in the left third, the stride running into the panel.
-    "hero_4" to PhotoFraming(zoom = 1.15f, focus = Offset(0.5f, 0.3f), at = Offset(0.4f, 0.3f)),
-    // Bouldering: the reach, hands and holds high, her profile half past the left edge.
-    "hero_5" to PhotoFraming(zoom = 1.25f, focus = Offset(0.42f, 0.52f), at = Offset(0.36f, 0.44f)),
-    // Gravel: the rider small and off-centre in the forest, the road leading down into the panel.
-    "hero_6" to PhotoFraming(zoom = 1.3f, focus = Offset(0.53f, 0.68f), at = Offset(0.62f, 0.56f)),
+    // Selfie: a close portrait, goggles and beanie in the band, the thumb cut by the left edge.
+    "hero_4" to PhotoFraming(zoom = 1.05f, focus = Offset(0.5f, 0.45f), at = Offset(0.5f, 0.38f)),
+    // Climbing: the whole climber on the rock, her reach and her feet in the band.
+    "hero_5" to PhotoFraming(zoom = 1.05f, focus = Offset(0.5f, 0.45f), at = Offset(0.5f, 0.42f)),
+    // Kayak: the paddler small on a calm lake, the mountains at the horizon, the bow in the panel.
+    "hero_6" to PhotoFraming(zoom = 1.3f, focus = Offset(0.45f, 0.62f), at = Offset(0.5f, 0.52f)),
 )
 
 @Composable

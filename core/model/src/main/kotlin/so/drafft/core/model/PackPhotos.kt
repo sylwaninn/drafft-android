@@ -17,7 +17,7 @@ object PackPhotos {
     enum class Pose { RESTING, MOVING, CLOSE_UP }
 
     /** Where and how they train: a pile never shows the same kind of sport twice when it can. */
-    enum class Setting { GYM, CLIMBING, MOUNTAIN, STREET, CYCLING }
+    enum class Setting { GYM, CLIMBING, CYCLING, SKIING, RUNNING }
 
     data class Shot(
         /** A drawable name in core:ui. */
@@ -32,17 +32,17 @@ object PackPhotos {
         val light: Boolean = false,
         /** Only used when the pool has nothing better: a look-alike of a preferred shot. */
         val spare: Boolean = false,
+        /** In the pile for non-binary and everyone: a woman skiing, a man lifting, a woman running. */
+        val mixed: Boolean = false,
     )
 
     val shots: List<Shot> = listOf(
-        Shot("pack_man_1", isWoman = false, look = 1, facing = Facing.FRONT, pose = Pose.RESTING, setting = Setting.GYM),
-        Shot("pack_man_2", isWoman = false, look = 2, facing = Facing.LEFT, pose = Pose.MOVING, setting = Setting.GYM, light = true),
-        Shot("pack_man_3", isWoman = false, look = 6, facing = Facing.LEFT, pose = Pose.MOVING, setting = Setting.MOUNTAIN),
-        Shot("pack_man_4", isWoman = false, look = 1, facing = Facing.FRONT, pose = Pose.MOVING, setting = Setting.CYCLING),
+        Shot("pack_man_1", isWoman = false, look = 2, facing = Facing.LEFT, pose = Pose.MOVING, setting = Setting.GYM, light = true, mixed = true),
+        Shot("pack_man_2", isWoman = false, look = 6, facing = Facing.LEFT, pose = Pose.RESTING, setting = Setting.CYCLING),
+        Shot("pack_man_3", isWoman = false, look = 7, facing = Facing.FRONT, pose = Pose.MOVING, setting = Setting.RUNNING, light = true),
         Shot("pack_woman_1", isWoman = true, look = 3, facing = Facing.LEFT, pose = Pose.MOVING, setting = Setting.CLIMBING, light = true),
-        Shot("pack_woman_2", isWoman = true, look = 3, facing = Facing.FRONT, pose = Pose.RESTING, setting = Setting.GYM, spare = true),
-        Shot("pack_woman_3", isWoman = true, look = 1, facing = Facing.FRONT, pose = Pose.CLOSE_UP, setting = Setting.STREET),
-        Shot("pack_woman_4", isWoman = true, look = 4, facing = Facing.RIGHT, pose = Pose.MOVING, setting = Setting.GYM),
+        Shot("pack_woman_2", isWoman = true, look = 5, facing = Facing.FRONT, pose = Pose.CLOSE_UP, setting = Setting.SKIING, light = true, mixed = true),
+        Shot("pack_woman_3", isWoman = true, look = 4, facing = Facing.FRONT, pose = Pose.MOVING, setting = Setting.RUNNING, mixed = true),
     )
 
     /**
@@ -55,7 +55,7 @@ object PackPhotos {
             when (audience) {
                 Audience.WOMEN -> s.isWoman
                 Audience.MEN -> !s.isWoman
-                Audience.NON_BINARY, Audience.EVERYONE -> true
+                Audience.NON_BINARY, Audience.EVERYONE -> s.mixed
             }
         }
         val mixes = audience == Audience.NON_BINARY || audience == Audience.EVERYONE
