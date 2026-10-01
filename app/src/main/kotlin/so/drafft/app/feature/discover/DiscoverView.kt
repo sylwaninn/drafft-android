@@ -101,7 +101,7 @@ import so.drafft.core.ui.components.LocalTabsOnScreen
 import so.drafft.core.ui.components.PhotoWindow
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
-import so.drafft.core.ui.components.SparkPlus
+import so.drafft.core.ui.components.StillTempoSticker
 import so.drafft.core.ui.components.SuperLikeCountMark
 import so.drafft.core.ui.components.Wordmark
 import so.drafft.core.ui.components.glass
@@ -736,17 +736,16 @@ private fun TopBar(onFilters: () -> Unit, onWallet: () -> Unit, onLikes: () -> U
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Wordmark(size = 30f, color = p.ink)
-            // drafft tempo members get the spark next to the wordmark, as on the paywall.
+            // drafft tempo members get the spark next to the wordmark, as a round sticker (the one on the
+            // Get drafft tempo card, smaller).
             AnimatedVisibility(
                 app.isPremium,
                 enter = scaleIn(Motion.bouncy()) + fadeIn(Motion.bouncy()),
                 exit = scaleOut(Motion.bouncy()) + fadeOut(Motion.bouncy()),
             ) {
-                Box(
-                    Modifier
-                        .size(30.dp, 21.dp)
-                        .background(p.lime, SparkPlus())
-                        .semantics { contentDescription = L("Plus") },
+                StillTempoSticker(
+                    Modifier.semantics { contentDescription = L("Plus") },
+                    size = 30f,
                 )
             }
         }

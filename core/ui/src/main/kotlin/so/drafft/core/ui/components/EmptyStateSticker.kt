@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -149,6 +150,22 @@ fun StillSticker(art: EmptyStateArt, modifier: Modifier = Modifier, size: Float 
     val density = LocalDensity.current
     val glyph = rememberVectorPainter(Symbols.vector("${art.symbol}-bold"))
     val sheet = remember(art.symbol, density) { StickerSheet.make(glyph, StickerSide.value, density) }
+    StillSheet(sheet, modifier, size)
+}
+
+/**
+ * drafft tempo's round sticker, still: its spark filled on a night disc inside a white edge. Follows
+ * `StillSticker(tempoSize:)` in EmptyStateSticker.swift.
+ */
+@Composable
+fun StillTempoSticker(modifier: Modifier = Modifier, size: Float = 56f) {
+    val density = LocalDensity.current
+    val sheet = remember(density) { StickerSheet.tempoDisc(StickerSide.value, density) }
+    StillSheet(sheet, modifier, size)
+}
+
+@Composable
+private fun StillSheet(sheet: StickerSheet, modifier: Modifier, size: Float) {
     Box(modifier.size(size.dp).clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
         Canvas(
             Modifier
@@ -295,6 +312,34 @@ private class StickerSheet(val front: ImageBitmap, val back: ImageBitmap, val re
                 sign(Palette.Light.stickerInk, origin)
             }
             val back = render { outline(Palette.Light.stickerBack) }
+            return StickerSheet(front, back, reach(back, side))
+        }
+
+        /**
+         * drafft tempo's round sticker: a night disc with the spark in the accent, inside the same white
+         * edge, over a grey back. The spark is a shape, not an icon, so it is drawn here.
+         */
+        fun tempoDisc(side: Float, density: Density): StickerSheet {
+            val px = (side * density.density).roundToInt()
+            val size = Size(px.toFloat(), px.toFloat())
+            val margin = 3 * density.density
+            val rim = Size(px - 2 * margin, px - 2 * margin)
+            val face = Size(rim.width - 2 * EDGE * density.density, rim.height - 2 * EDGE * density.density)
+            val spark = Size(face.width * 0.5f, face.width * 0.5f * 13f / 18f)
+            val sparkAt = Offset((px - spark.width) / 2, (px - spark.height) / 2)
+            fun render(block: DrawScope.() -> Unit): ImageBitmap {
+                val image = ImageBitmap(px, px)
+                CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(image), size, block)
+                return image
+            }
+            val front = render {
+                drawCircle(Palette.Light.stickerPaper, radius = rim.width / 2)
+                drawCircle(Palette.Light.night, radius = face.width / 2)
+                translate(sparkAt.x, sparkAt.y) {
+                    drawOutline(SparkPlus().createOutline(spark, layoutDirection, this), Palette.Light.accentOnNight)
+                }
+            }
+            val back = render { drawCircle(Palette.Light.stickerBack, radius = rim.width / 2) }
             return StickerSheet(front, back, reach(back, side))
         }
 

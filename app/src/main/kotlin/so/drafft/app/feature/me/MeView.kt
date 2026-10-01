@@ -91,6 +91,7 @@ import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetDetent
 import so.drafft.core.ui.components.SparkPlus
+import so.drafft.core.ui.components.StillTempoSticker
 import so.drafft.core.ui.components.TopBar
 import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
@@ -469,17 +470,9 @@ private fun PlusCard(onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // On an accent surface everything takes the on-accent colour: the glyph too, on a wash
-            // of it (never a night disc with an accent glyph dropped in).
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .background(p.onLimeWash, CircleShape)
-                    .clearAndSetSemantics { },
-                contentAlignment = Alignment.Center,
-            ) {
-                Spark(p.onLime, Modifier.size(22.dp, 16.dp))
-            }
+            // The sign as a round sticker (the empty tabs' sticker, still): a night disc with the
+            // filled spark, a white edge, its top-right corner slightly lifted.
+            StillTempoSticker(Modifier.size(44.dp), size = 50f)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     branded(L("Get drafft tempo"), brandWeight = FontWeight.ExtraBold, tierColor = p.tierOnAccent),
