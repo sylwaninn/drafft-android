@@ -68,6 +68,7 @@ import java.time.LocalDate
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import so.drafft.app.feature.discover.FirstThatFits
 import so.drafft.app.feature.me.SafetyTipRows
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
@@ -731,7 +732,12 @@ private fun Footer(
                 Text(L("Sent"))
             } else {
                 DrafftIcon("plain", size = symbol(17f), tint = p.onLime)
-                Text(if (options.size > 1) L("%s (%d times)", sendTitle, options.size) else sendTitle, maxLines = 2)
+                // One line in every language: the count goes when it doesn't fit (the recap above
+                // already says how many times).
+                FirstThatFits {
+                    Text(if (options.size > 1) L("%s (%d times)", sendTitle, options.size) else sendTitle, maxLines = 1, softWrap = false)
+                    Text(sendTitle, maxLines = 2)
+                }
             }
         }
 

@@ -258,6 +258,7 @@ Come a little closer.
 Come try my usual %s spot?
 Coming up
 Community Guidelines
+Confirm %s
 Confirm %s, %s
 Confirm new password
 Confirm with your password.
@@ -721,6 +722,7 @@ Optional
 Optional. It helps us make drafft better.
 Options couldn't load. Check your connection and try again.
 Or steal one of these
+Other times
 Other times suggested
 Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
 Our team can unlock it for you.
