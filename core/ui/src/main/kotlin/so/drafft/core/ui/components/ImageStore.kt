@@ -12,6 +12,7 @@ import coil3.SingletonImageLoader
 import coil3.memory.MemoryCache
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
@@ -130,12 +131,44 @@ object ImageStore {
      * of its pixels: shown first on a slow connection, under the right copy while it arrives.
      */
     fun preview(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
-        if (!name.startsWith("http")) return null
-        val pixels = PixelSize(width, height)
-        val needed = Renditions.neededWidth(pixels, MediaPreviews.aspect(name))
-        val url = Images.sized(name, Renditions.previewWidth(needed)) ?: return null
-        val decode = Renditions.decodeSize(PixelSize(pixels.width / 3, pixels.height / 3))
+        val url = previewURL(name, width, height) ?: return null
+        val decode = Renditions.decodeSize(PixelSize(width / 3.0, height / 3.0))
         return make(context, url, decode, Images.Priority.HIGH, blur = 0f, variant = null, fill = true)
+    }
+
+    private fun previewURL(name: String, width: Int, height: Int): String? {
+        if (!name.startsWith("http")) return null
+        val needed = Renditions.neededWidth(PixelSize(width, height), MediaPreviews.aspect(name))
+        return Images.sized(name, Renditions.previewWidth(needed))
+    }
+
+    /**
+     * A server photo about to show, fetched to disk (`PhotoWindow`): the copy [remoteRequest] picks for
+     * the same frame, or its small copy ([previewOnly], as [preview]). Decoded tiny and never kept in
+     * memory: it's decoded at its display size once it's drawn.
+     */
+    fun prefetchRequest(
+        context: PlatformContext,
+        name: String,
+        width: Int,
+        height: Int,
+        priority: Images.Priority,
+        previewOnly: Boolean = false,
+    ): ImageRequest? {
+        if (!name.startsWith("http")) return null
+        val url = if (previewOnly) {
+            previewURL(name, width, height) ?: return null
+        } else {
+            closest(context, name, Renditions.neededWidth(PixelSize(width, height), MediaPreviews.aspect(name)), null)
+        }
+        return ImageRequest.Builder(context)
+            .data(url)
+            .diskCacheKey(cacheID(url, null))
+            .httpHeaders(NetworkHeaders.Builder().set(Images.PRIORITY_HEADER, priority.ordinal.toString()).build())
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .size(Size(64, 64))
+            .precision(Precision.INEXACT)
+            .build()
     }
 
     private fun make(

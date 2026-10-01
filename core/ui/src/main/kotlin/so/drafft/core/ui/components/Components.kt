@@ -513,7 +513,8 @@ private fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
         val width = boundedWidth.takeIf { it > 0 } ?: fallback
         val height = boundedHeight.takeIf { it > 0 } ?: fallback
         val context = LocalPlatformContext.current
-        val request = remember(name, width, height, blur, priority) {
+        // Not keyed by the priority: a card moving up the deck keeps its download running.
+        val request = remember(name, width, height, blur) {
             ImageStore.remoteRequest(context, name, width, height, priority, blur)
         }
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)

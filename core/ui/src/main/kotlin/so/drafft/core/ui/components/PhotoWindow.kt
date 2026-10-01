@@ -1,0 +1,110 @@
+package so.drafft.core.ui.components
+
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.request.ErrorResult
+import coil3.request.ImageRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import so.drafft.core.data.media.Images
+import so.drafft.core.data.media.NetworkQuality
+import so.drafft.core.model.Profile
+
+// Ports Drafft/Services/Media/PhotoWindow.swift.
+
+/**
+ * The deck's photos fetched ahead, as a window that moves with every swipe (the way a list prefetches
+ * the rows about to scroll in). The cards on screen load their own photo, the one in play first
+ * (`SwipeCard`'s priority); the window covers what comes after them:
+ *
+ * - the portraits of the next cards, to disk, at the copy their card needs: 6 ahead, 4 on a limited
+ *   connection ([NetworkQuality]);
+ * - on a limited connection, a small copy of each of those portraits first ([ImageStore.preview]), so a
+ *   card never shows only its blurred preview;
+ * - the other photos of the card in play (its profile, if opened), last, and only on a good connection.
+ *
+ * Whatever leaves the window is cancelled: a fast run of swipes never leaves downloads running for cards
+ * already gone, which would take the line from the card in play. Its requests start after the cards on
+ * screen have asked for theirs (an effect runs after the frame they're composed in), and wait behind
+ * them in the download queue (`PhotoDownloads`, by priority).
+ */
+class PhotoWindow private constructor() {
+    /**
+     * Two at a time each, under the six (three when limited) downloads the pipeline allows: the cards on
+     * screen always have room.
+     */
+    private val portraits = Prefetcher(maxConcurrent = 2)
+    private val previews = Prefetcher(maxConcurrent = 2)
+    private val extras = Prefetcher(maxConcurrent = 1)
+
+    /**
+     * Aims the window after the [onScreen] cards of [deck] (portraits, then each profile's other photos),
+     * drawn in a frame of [width] × [height] pixels.
+     */
+    fun aim(context: PlatformContext, deck: List<Profile>, onScreen: Int, width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+        val limited = NetworkQuality.shared.isLimited
+        val ahead = deck.drop(onScreen).take(if (limited) 4 else 6).map { it.portrait }
+        portraits.set(ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) })
+        previews.set(
+            if (limited) {
+                deck.take(onScreen + 4).map { it.portrait }.mapNotNull {
+                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.NORMAL, previewOnly = true)
+                }
+            } else {
+                emptyList()
+            },
+        )
+        extras.set(
+            if (limited) {
+                emptyList()
+            } else {
+                deck.firstOrNull()?.photos.orEmpty().mapNotNull {
+                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW)
+                }
+            },
+        )
+    }
+
+    /** Everything stops (the deck is gone, another screen). */
+    fun clear() {
+        for (prefetcher in listOf(portraits, previews, extras)) prefetcher.set(emptyList())
+    }
+
+    companion object {
+        val deck = PhotoWindow()
+    }
+}
+
+/**
+ * Nuke's `ImagePrefetcher`: fetches its requests in order, [maxConcurrent] at a time. [set] replaces
+ * them: one no longer asked for is cancelled, one still asked for keeps running (or stays done).
+ */
+private class Prefetcher(maxConcurrent: Int) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val slots = Semaphore(maxConcurrent)
+    private val jobs = LinkedHashMap<String, Job>()
+
+    fun set(requests: List<ImageRequest>) {
+        val wanted = LinkedHashMap<String, ImageRequest>()
+        for (request in requests) wanted.putIfAbsent(key(request), request)
+        val gone = jobs.keys.filter { it !in wanted }
+        for (key in gone) jobs.remove(key)?.cancel()
+        for ((key, request) in wanted) {
+            if (key in jobs) continue
+            // In order: the semaphore lets them through first come, first served.
+            jobs[key] = scope.launch {
+                val result = slots.withPermit { SingletonImageLoader.get(request.context).execute(request) }
+                // Failed (offline): tried again the next time the window is aimed.
+                if (result is ErrorResult && jobs[key] === coroutineContext[Job]) jobs.remove(key)
+            }
+        }
+    }
+
+    private fun key(request: ImageRequest): String = request.diskCacheKey ?: request.data.toString()
+}

@@ -67,6 +67,9 @@ fun installImages(context: Context) {
             .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
             .build()
     }
+    // The disk cache reads its journal once, here rather than on the main thread at the first photo
+    // (`ImageStore` asks it which copies are already on this phone).
+    Thread({ SingletonImageLoader.get(app).diskCache?.size }, "image-cache-warmup").start()
     NetworkQuality.shared.onChange { limited ->
         // Six downloads share a fast line; on a slow one, three, so the photo on screen isn't split six ways.
         PhotoDownloads.shared.limit = if (limited) Images.limitedDownloads else Images.downloads

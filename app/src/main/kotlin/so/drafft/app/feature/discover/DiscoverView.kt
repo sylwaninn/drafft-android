@@ -37,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -73,7 +74,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import coil3.SingletonImageLoader
 import coil3.compose.LocalPlatformContext
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
@@ -84,6 +84,7 @@ import so.drafft.app.feature.me.PaywallView
 import so.drafft.app.feature.profile.ProfileDetailMode
 import so.drafft.app.feature.profile.ProfileDetailView
 import so.drafft.core.data.AppModel
+import so.drafft.core.data.media.Images
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
@@ -93,8 +94,10 @@ import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateView
-import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.LocalTabBarInset
+import so.drafft.core.ui.components.LocalTabIsCurrent
+import so.drafft.core.ui.components.LocalTabsOnScreen
+import so.drafft.core.ui.components.PhotoWindow
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.SparkPlus
@@ -413,16 +416,20 @@ private fun Deck(
                 )
             }
         }
-        // Every photo of the card in play and the next three, fetched ahead at the card's size:
-        // swiping or opening a profile never waits on the network.
+        // The next cards' photos, fetched ahead and re-aimed on every swipe (`PhotoWindow`): what
+        // leaves the window is cancelled, so the card in play keeps the line. Another tab: it stops.
         val cardWidth = with(LocalDensity.current) { width.roundToPx() }
         val cardHeight = with(LocalDensity.current) { (height - 28.dp).roundToPx() }
-        LaunchedEffect(shown.map { it.id }, cardWidth, cardHeight) {
-            val loader = SingletonImageLoader.get(context)
-            shown.flatMap { it.allPhotos }.filter { it.startsWith("http") || it.startsWith("/") }.forEach {
-                loader.enqueue(ImageStore.remoteRequest(context, it, cardWidth, cardHeight))
+        val onScreen = LocalTabIsCurrent.current && LocalTabsOnScreen.current
+        val ahead = app.deck.take(12)
+        LaunchedEffect(onScreen, ahead.map { it.id }, cardWidth, cardHeight) {
+            if (onScreen) {
+                PhotoWindow.deck.aim(context, ahead, onScreen = 4, width = cardWidth, height = cardHeight)
+            } else {
+                PhotoWindow.deck.clear()
             }
         }
+        DisposableEffect(Unit) { onDispose { PhotoWindow.deck.clear() } }
     }
 }
 
@@ -559,6 +566,11 @@ private fun DeckCard(
                     me = me,
                     progress = if (isTop) progress else ZeroProgress,
                     isTop = isTop,
+                    photoPriority = when (index) {
+                        0 -> Images.Priority.VERY_HIGH
+                        1 -> Images.Priority.HIGH
+                        else -> Images.Priority.NORMAL
+                    },
                     onOpen = { onOpen(profile) },
                     modifier = Modifier.fillMaxSize(),
                 )

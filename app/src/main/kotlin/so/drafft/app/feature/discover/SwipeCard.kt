@@ -56,6 +56,7 @@ import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
+import so.drafft.core.data.media.Images
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
@@ -92,6 +93,8 @@ fun SwipeCard(
     me: Profile,
     progress: () -> Float,
     isTop: Boolean,
+    /** Download order of its photo: the card in play first, then the ones behind it. */
+    photoPriority: Images.Priority = Images.Priority.NORMAL,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,7 +103,7 @@ fun SwipeCard(
     val label = L("%s, %d. %s", profile.name, profile.age, profile.sports.joinToString(", ") { it.sport.displayName })
     NightSurface {
         Box(modifier.clip(shape).semantics { contentDescription = label }) {
-            Photo(profile.portrait, Modifier.fillMaxSize())
+            Photo(profile.portrait, Modifier.fillMaxSize(), priority = photoPriority)
 
             // Scrims so the identity (top) and sports (bottom) stay readable on any photo.
             val night = p.night
