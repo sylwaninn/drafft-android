@@ -33,6 +33,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -185,7 +186,7 @@ fun PaywallView(
                 throw e
             } catch (e: Exception) {
                 Haptics.warning()
-                say(L("Couldn't reach the App Store. Try again."))
+                say(Store.PurchaseProblem.restoreFailure(e))
             } finally {
                 restoring = false
             }
@@ -224,7 +225,7 @@ fun PaywallView(
                 throw e
             } catch (e: Exception) {
                 Haptics.warning()
-                say(L("The purchase didn't go through. You haven't been charged."))
+                say(Store.PurchaseProblem.from(e).message(restorable = true))
             } finally {
                 purchasing = false
             }
@@ -706,7 +707,14 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     var managing by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
-    var restoreResult by remember { mutableStateOf<String?>(null) }
+    // What Restore found, and whether it's good news (a failure or nothing active is a warning).
+    var restoreResult by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    // Restore found no active subscription: the page stays to say so, and the drafft tempo row goes
+    // once it's closed.
+    var endedOnClose by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        onDispose { if (endedOnClose) app.subscription = null }
+    }
     val scroll = rememberScrollState()
 
     // What the store reports. Expired closes the page, since the drafft tempo row only shows while
@@ -720,6 +728,8 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                 app.subscription = null
             }
         } else {
+            // Active again (a later Restore, back from Google Play): closing keeps the row.
+            endedOnClose = false
             app.subscription = sub
         }
     }
@@ -742,15 +752,21 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
         scope.launch {
             try {
                 val info = store.restore()
-                apply(info)
                 app.loadWallet()
+                if (store.subscription(info) == null) {
+                    Haptics.warning()
+                    endedOnClose = true
+                    restoreResult = L("No drafft tempo purchase on this Apple ID.") to false
+                    return@launch
+                }
+                apply(info)
                 Haptics.success()
-                restoreResult = L("Your subscription is up to date.")
+                restoreResult = L("Your subscription is up to date.") to true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Haptics.warning()
-                restoreResult = L("Couldn't reach the App Store. Try again.")
+                restoreResult = Store.PurchaseProblem.restoreFailure(e) to false
             } finally {
                 restoring = false
             }
@@ -884,7 +900,7 @@ private fun Included() {
 @Composable
 private fun Billing(
     restoring: Boolean,
-    restoreResult: String?,
+    restoreResult: Pair<String, Boolean>?,
     onOpenStore: () -> Unit,
     onRestore: () -> Unit,
     onLegal: (LegalDoc) -> Unit,
@@ -910,11 +926,13 @@ private fun Billing(
             )
         }
         AnimatedVisibility(restoreResult != null, enter = fadeIn(Motion.snappy()), exit = fadeOut(Motion.snappy())) {
-            val last = remember { arrayOfNulls<String>(1) }
+            val last = remember { arrayOfNulls<Pair<String, Boolean>>(1) }
             if (restoreResult != null) last[0] = restoreResult
+            val (text, ok) = last[0] ?: ("" to true)
+            val tint = if (ok) p.positiveDeep else p.negative
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                DrafftIcon("check-circle", size = 16.dp, tint = p.positiveDeep)
-                Text(last[0].orEmpty(), style = TextStyles.footnote.semibold, color = p.positiveDeep)
+                DrafftIcon(if (ok) "check-circle" else "info-circle", size = 16.dp, tint = tint)
+                Text(text, style = TextStyles.footnote.semibold, color = tint)
             }
         }
     }

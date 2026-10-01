@@ -808,6 +808,7 @@ Prompts
 Propose a session
 Punchline, hidden until they tap
 Purchase
+Purchases are turned off on this iPhone. You can allow them in Screen Time settings.
 Push day then smoothies?
 Put a clear photo of your face first.
 Question: %s. Change it
@@ -1069,6 +1070,7 @@ This email is already linked to another drafft account. Use another one.
 This file is too large.
 This file type isn't supported.
 This invite has already been answered.
+This is already on your Apple ID. Tap Restore purchases to get it back.
 This is taking longer than usual.
 This number can't get codes. Use a mobile number.
 This number is already used by another drafft account.
@@ -1177,11 +1179,13 @@ Voice message (%s)
 Volleyball
 WOD together, no mercy?
 Waiting
+Waiting for approval. It'll be added to your account once the payment goes through.
 Walking
 Warm-up first
 Watch for red flags
 We can't see a face on your first photo. Put a clear photo of you first.
 We couldn't check this number right now. Try again in a moment.
+We couldn't confirm the purchase. If you were charged, it'll be added to your account automatically.
 We couldn't delete your account. Check your connection and try again.
 We couldn't find your area. Try again.
 We couldn't see your face clearly. Try again.
@@ -1330,6 +1334,8 @@ Your position is rounded to about 1 km. Your exact spot is never sent or stored.
 Your post-workout food ritual
 Your profile
 Your profile and chats are no longer visible.
+Your profile couldn't be paused. Check your connection and try again.
+Your profile couldn't be resumed. Check your connection and try again.
 Your profile couldn't load
 Your profile hasn't loaded, so nothing was saved. Close and try again.
 Your profile is hidden until then.

@@ -243,6 +243,9 @@ class AppModel(
     private var pauseEdits = 0
     private var pauseSaves = 0
 
+    /** The latest flip's save: null once saved, else why it wasn't (the switch went back). */
+    private var pauseSave: Deferred<String?>? = null
+
     var notifyMatches by mutableStateOf(true)
     var notifyMessages by mutableStateOf(true)
     var notifySessions by mutableStateOf(true)
@@ -1518,7 +1521,13 @@ class AppModel(
         val paused = profilePaused
         pauseEdits += 1
         val edit = pauseEdits
-        scope.launch { syncPause(paused, edit) }
+        pauseSave = scope.async { syncPause(paused, edit) }
+    }
+
+    /** Pauses and waits for the server: null once it has it, else what to say (the switch is back). */
+    suspend fun pauseNow(): String? {
+        profilePaused = true
+        return pauseSave?.await()
     }
 
     /**
@@ -1543,22 +1552,31 @@ class AppModel(
 
     /**
      * Sends the switch to the server; if it can't be saved (signed out included), the switch goes
-     * back to the server's state.
+     * back to the server's state and a notice says so. Null once saved, else that notice's text.
      */
-    suspend fun syncPause(paused: Boolean, edit: Int) {
+    suspend fun syncPause(paused: Boolean, edit: Int): String? {
         pauseSaves += 1
         try {
             backend.updateMyProfile(jsonOf("paused" to paused))
             // Resumed: discovery reads the deck again (nothing was read while paused). Only once the
             // server has it: asked sooner, it answers "paused" and the pause came back on.
             if (!paused && edit == pauseEdits) refreshDiscovery()
+            return null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // A later flip is on its way: it decides.
-            if (edit != pauseEdits) return
+            if (edit != pauseEdits) return null
             Haptics.warning()
             applyServerPause(!paused)
+            val offline = generateSequence<Throwable>(e) { it.cause }.any { it is java.io.IOException }
+            val text = when {
+                !offline -> ServerMessage.text(e) ?: ServerMessage.generic
+                paused -> L("Your profile couldn't be paused. Check your connection and try again.")
+                else -> L("Your profile couldn't be resumed. Check your connection and try again.")
+            }
+            notice = Notice(text = text)
+            return text
         } finally {
             pauseSaves -= 1
         }
