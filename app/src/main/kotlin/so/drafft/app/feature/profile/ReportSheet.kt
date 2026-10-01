@@ -36,6 +36,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import io.github.jan.supabase.exceptions.HttpRequestException
+import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -92,7 +94,9 @@ fun ReportSheet(
         } catch (e: Exception) {
             Haptics.warning()
             // A refusal (daily limit, account on hold...) says why; the connection only when it's the cause.
-            error = ServerMessage.text(e) ?: if (e is java.io.IOException) {
+            // The iPhone's URLError: no connection or a timeout, also from a token refresh (Supabase wraps it).
+            val offline = e is HttpRequestException || generateSequence<Throwable>(e) { it.cause }.any { it is IOException }
+            error = ServerMessage.text(e) ?: if (offline) {
                 L("Your report couldn't be sent. Check your connection and try again.")
             } else {
                 ServerMessage.generic
