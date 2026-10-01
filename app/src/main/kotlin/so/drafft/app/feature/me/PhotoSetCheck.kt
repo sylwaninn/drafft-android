@@ -35,18 +35,6 @@ import so.drafft.core.ui.theme.medium
  * or waiting for a person never opens or keeps a profile. Refused or waiting photos after the first may
  * stay (a second look can be asked from their tile): the server never shows them.
  */
-/**
- * A failed sign-up or save, in words (the Swift `ProfileSync.failure`). The first photo still with the team
- * answers `portrait_required`: said as that, not as a photo to change.
- */
-fun profileSaveFailure(error: Throwable, photos: PhotoSetCheck): String {
-    if (error is ProfileSync.SyncError.Refused && error.code == "portrait_required" && photos == PhotoSetCheck.FIRST_IN_REVIEW) {
-        photos.reason?.let { return it }
-    }
-    if (error is ProfileSync.SyncError) return error.message
-    return ServerMessage.failure(error)
-}
-
 enum class PhotoSetCheck {
     EMPTY, CHECKING, READY, FIRST_REFUSED, FIRST_IN_REVIEW, NO_FACE, TOO_SMALL, FAILED;
 
@@ -96,6 +84,18 @@ enum class PhotoSetCheck {
             return FaceCheck.check(path)
         }
     }
+}
+
+/**
+ * A failed sign-up or save, in words (the Swift `ProfileSync.failure`). The first photo still with the team
+ * answers `portrait_required`: said as that, not as a photo to change.
+ */
+fun profileSaveFailure(error: Throwable, photos: PhotoSetCheck): String {
+    if (error is ProfileSync.SyncError.Refused && error.code == "portrait_required" && photos == PhotoSetCheck.FIRST_IN_REVIEW) {
+        photos.reason?.let { return it }
+    }
+    if (error is ProfileSync.SyncError) return error.message
+    return ServerMessage.failure(error)
 }
 
 /** Under the photo grid: what the first photo still needs, or that the photos are being checked. */
