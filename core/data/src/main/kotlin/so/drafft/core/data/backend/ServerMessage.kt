@@ -1,9 +1,12 @@
 package so.drafft.core.data.backend
 
+import io.github.jan.supabase.exceptions.HttpRequestException
+import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.model.L
 
-// Ports Drafft/Services/Backend/ServerMessage.swift.
+// Ports Drafft/Services/Backend/ServerMessage.swift and ServerMessage+Error.swift.
 
 /**
  * What people read when the server turns something down. Database functions put a stable code in
@@ -24,11 +27,35 @@ object ServerMessage {
     fun text(of: Throwable): String? = code(of)?.let(::text)
 
     /**
+     * The request never reached the server (no connection, a timeout): the only time "check your
+     * connection" is the right advice. A server that answered with an error is not a connection problem.
+     */
+    fun isOffline(error: Throwable): Boolean =
+        error !is CancellationException &&
+            generateSequence(error) { it.cause }.any { it is IOException || it is HttpRequestException }
+
+    /**
+     * What to say when a call fails: the refusal's own words when the app knows its code, the logged-out
+     * line when the session is gone, `offline` when the request never got through, else `fallback`.
+     */
+    fun text(of: Throwable, offline: String, fallback: String = generic): String {
+        // A profile save's own reasons (a photo that didn't go, a profile that wasn't read).
+        if (of is ProfileSync.SyncError) return of.message
+        text(of)?.let { return it }
+        if (of is Backend.BackendError.SignedOut) return of.message
+        return if (isOffline(of)) offline else fallback
+    }
+
+    /** The session is gone: no token on the device, or an edge function's 401 `unauthenticated`. */
+    fun isSignedOut(error: Throwable): Boolean =
+        error is Backend.BackendError.SignedOut || code(error) == "unauthenticated"
+
+    /**
      * An action that failed, in words: the known refusal's, the connection's only when the request
      * never got through, else the generic line. Never the server's reply.
      */
     fun failure(of: Throwable): String = when {
-        generateSequence(of) { it.cause }.any { it is java.io.IOException } -> L("Couldn't connect. Check your connection and try again.")
+        isOffline(of) -> L("Couldn't connect. Check your connection and try again.")
         of is Backend.BackendError -> of.message
         else -> text(of) ?: generic
     }
@@ -61,8 +88,10 @@ object ServerMessage {
         "moderated" -> L("Your account is on hold.")
         "paused" -> L("Your profile is paused")
         "onboarding_required" -> L("Finish your profile first.")
+        // An edge function without a valid session (it expired, or was ended on another device).
+        "unauthenticated" -> L("You've been logged out. Log in again to continue.")
         // Discover and safety
-        "not_eligible" -> L("This profile isn't available.")
+        "not_eligible", "invalid_target" -> L("This profile isn't available.")
         "location_required" -> L("Share your location to see people nearby.")
         "daily_like_limit" -> L("You're out of likes for today.")
         "no_super_likes" -> L("You're out of super likes.")

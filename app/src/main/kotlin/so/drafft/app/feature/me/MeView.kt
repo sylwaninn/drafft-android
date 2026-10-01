@@ -349,7 +349,7 @@ private fun ProfileLoadCard() {
                         color = Color.White,
                     )
                     if (failed) {
-                        Text(L("Check your connection and try again."), style = TextStyles.footnote, color = Color.White.copy(alpha = 0.8f))
+                        Text(app.profileLoadFailure ?: L("Check your connection and try again."), style = TextStyles.footnote, color = Color.White.copy(alpha = 0.8f))
                     }
                 }
             }

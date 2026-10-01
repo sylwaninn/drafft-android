@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +77,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import java.time.Instant
+import java.time.LocalDate
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlinx.coroutines.launch
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.Conversation
@@ -89,6 +97,7 @@ import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateView
 import so.drafft.core.ui.components.HidesTabBar
+import so.drafft.core.ui.components.ListLoadFailureView
 import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.TabHeader
@@ -107,13 +116,6 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 import so.drafft.core.ui.theme.weight
-import java.time.Instant
-import java.time.LocalDate
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlinx.coroutines.launch
 
 // Port of Drafft/Features/Chat/ConversationsView.swift.
 
@@ -156,6 +158,7 @@ private fun ConversationList() {
     val list = rememberLazyListState()
     val offset by list.trackingScrollOffset()
     var query by rememberSaveable { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     val newMatches = app.conversations.filter { it.messages.isEmpty() }
     val threads = app.conversations
@@ -242,12 +245,25 @@ private fun ConversationList() {
         // the keyboard), on the page itself.
         if (app.conversations.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyStateView(
-                    art = EmptyStateArt.chats,
-                    title = L("No chats yet"),
-                    message = L("Match with someone on Discover to start chatting."),
-                ) {
-                    DrafftButton(L("Back to Discover"), onClick = { app.tab = AppModel.Tab.DISCOVER }, fullWidth = false)
+                // Nobody yet only once the matches were read: before, a spinner; a failed first read, a retry.
+                when (val load = app.matchesLoad) {
+                    AppModel.ListLoad.Loaded -> EmptyStateView(
+                        art = EmptyStateArt.chats,
+                        title = L("No chats yet"),
+                        message = L("Match with someone on Discover to start chatting."),
+                    ) {
+                        DrafftButton(L("Back to Discover"), onClick = { app.tab = AppModel.Tab.DISCOVER }, fullWidth = false)
+                    }
+                    is AppModel.ListLoad.Failed -> ListLoadFailureView(
+                        art = EmptyStateArt.chats,
+                        title = L("Your chats couldn't load"),
+                        offline = load.offline,
+                        retry = {
+                            app.matchesLoad = AppModel.ListLoad.Loading
+                            scope.launch { app.loadMatches() }
+                        },
+                    )
+                    AppModel.ListLoad.Loading -> CircularProgressIndicator(color = DS.palette.ink)
                 }
             }
         } else {

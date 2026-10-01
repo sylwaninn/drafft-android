@@ -94,16 +94,9 @@ fun ResetPasswordView(email: String, modifier: Modifier = Modifier) {
                 saved = true
                 Haptics.success()
                 app.email = flow.sentTo
-                // Someone who stopped mid sign-up goes back to it.
-                val onboarded = try {
-                    backend.isOnboarded()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    true
-                }
                 focusManager.clearFocus()
-                app.signIn(onboard = !onboarded)
+                // Someone who stopped mid sign-up goes back to it.
+                app.enterAfterLogIn()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

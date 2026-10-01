@@ -17,12 +17,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import so.drafft.app.feature.me.PaywallView
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.BlurredLike
@@ -51,6 +54,7 @@ import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateView
+import so.drafft.core.ui.components.ListLoadFailureView
 import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.PressScaleButton
@@ -79,6 +83,7 @@ fun LikesTabView(modifier: Modifier = Modifier) {
     val offset by scroll.trackingScrollOffset()
     var open by remember { mutableStateOf<Profile?>(null) }
     var showPaywall by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Live afterwards through the `wallet` event and each reconnection (`UserChannel`).
     LaunchedEffect(Unit) { app.loadLikes() }
@@ -99,15 +104,28 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                     .padding(bottom = DS.Space.xl + LocalTabBarInset.current),
                 verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             ) {
+                // Nobody yet only once the list was read: before, a spinner; after a failed first read, a retry.
                 val empty: @Composable () -> Unit = {
                     // The middle of the visible page, under the header.
                     Box(Modifier.fillMaxWidth().height(pageHeight * 0.8f), contentAlignment = Alignment.Center) {
-                        EmptyStateView(
-                            art = EmptyStateArt.likes,
-                            title = L("No likes yet."),
-                            message = L("A sport photo and a voice intro help. New likes land here."),
-                        ) {
-                            DrafftButton(L("Back to Discover"), onClick = { app.tab = AppModel.Tab.DISCOVER }, fullWidth = false)
+                        when (val load = app.likesLoad) {
+                            AppModel.ListLoad.Loaded -> EmptyStateView(
+                                art = EmptyStateArt.likes,
+                                title = L("No likes yet."),
+                                message = L("A sport photo and a voice intro help. New likes land here."),
+                            ) {
+                                DrafftButton(L("Back to Discover"), onClick = { app.tab = AppModel.Tab.DISCOVER }, fullWidth = false)
+                            }
+                            is AppModel.ListLoad.Failed -> ListLoadFailureView(
+                                art = EmptyStateArt.likes,
+                                title = L("Your likes couldn't load"),
+                                offline = load.offline,
+                                retry = {
+                                    app.likesLoad = AppModel.ListLoad.Loading
+                                    scope.launch { app.loadLikes() }
+                                },
+                            )
+                            AppModel.ListLoad.Loading -> CircularProgressIndicator(color = DS.palette.ink)
                         }
                     }
                 }

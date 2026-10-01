@@ -45,16 +45,18 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.koin.compose.koinInject
 import so.drafft.app.feature.me.AccountSheet
 import so.drafft.app.feature.me.ChoiceChip
 import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.backend.asObject
 import so.drafft.core.data.backend.asString
-import so.drafft.core.data.backend.toJsonElement
-import kotlinx.serialization.json.JsonObject
 import so.drafft.core.data.backend.parseJsonOrNull
+import so.drafft.core.data.backend.toJsonElement
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
@@ -66,6 +68,7 @@ import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.SheetBlock
 import so.drafft.core.ui.components.SheetDetent
 import so.drafft.core.ui.components.TextLinkButton
+import so.drafft.core.ui.components.limited
 import so.drafft.core.ui.components.revealsOnFocus
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
@@ -74,7 +77,6 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
-import kotlin.coroutines.cancellation.CancellationException
 
 // Ports Drafft/Features/Verification/SupportSheet.swift.
 
@@ -114,6 +116,8 @@ fun SupportSheet(
     var sending by remember { mutableStateOf(false) }
     var reference by rememberSaveable { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    // The server turned the reply address down: said on the field.
+    var emailError by remember { mutableStateOf<String?>(null) }
     val captcha = rememberTurnstileChallenge()
 
     // Newlines count as empty too: the field is multi-line.
@@ -155,15 +159,19 @@ fun SupportSheet(
             throw e
         } catch (e: Backend.BackendError.Http) {
             Haptics.warning()
-            error = when {
-                e.serverMessage.contains("captcha_not_configured") -> L("Support can't take messages this way right now. Try again later.")
-                e.serverMessage.contains("captcha_") -> L("The security check didn't go through. Try again.")
-                e.status == 429 -> L("You've sent several messages already. Try again in an hour.")
-                else -> L("Your message couldn't be sent. Check your connection and try again.")
+            when {
+                e.serverMessage.contains("captcha_not_configured") ->
+                    error = L("Support can't take messages this way right now. Try again later.")
+                e.serverMessage.contains("captcha_") -> error = L("The security check didn't go through. Try again.")
+                // Signed out, the limit also runs per day: no promise of an hour.
+                e.status == 429 -> error = L("You've sent several messages already. Try again later.")
+                e.serverMessage == "invalid_email" -> emailError = L("That doesn't look like an email address. Check for typos.")
+                e.serverMessage == "invalid_message" -> error = L("Your message is too long. Shorten it, then send it again.")
+                else -> error = ServerMessage.text(e, offline = L("Your message couldn't be sent. Check your connection and try again."))
             }
         } catch (e: Exception) {
             Haptics.warning()
-            error = L("Your message couldn't be sent. Check your connection and try again.")
+            error = ServerMessage.text(e, offline = L("Your message couldn't be sent. Check your connection and try again."))
         } finally {
             // Single use: whatever the answer, the next send needs a fresh token.
             if (!signedIn) captcha.renew()
@@ -217,9 +225,14 @@ fun SupportSheet(
                     session = session,
                     accountEmail = app.email,
                     replyEmail = replyEmail,
-                    onReplyEmailChange = { replyEmail = it },
+                    onReplyEmailChange = {
+                        replyEmail = it
+                        emailError = null
+                    },
+                    emailError = emailError,
                     message = message,
-                    onMessageChange = { message = it },
+                    // The support function's limit: typing stops there.
+                    onMessageChange = { message = it.limited(MESSAGE_LIMIT) },
                 )
             }
         }
@@ -281,6 +294,7 @@ private fun SupportForm(
     accountEmail: String,
     replyEmail: String,
     onReplyEmailChange: (String) -> Unit,
+    emailError: String?,
     message: String,
     onMessageChange: (String) -> Unit,
 ) {
@@ -310,6 +324,7 @@ private fun SupportForm(
                     text = replyEmail,
                     onTextChange = onReplyEmailChange,
                     prompt = L("you@example.com"),
+                    error = emailError,
                     keyboard = KeyboardType.Email,
                 )
             }
@@ -426,3 +441,6 @@ object HelpTopics {
 
 /** A support topic, for a sheet shown while one is set (`.sheet(item:)`). */
 data class HelpTopic(val id: String)
+
+/** The support function's message limit. */
+private const val MESSAGE_LIMIT = 4000

@@ -548,7 +548,12 @@ private class OnboardingState(
         )
         app.language = language
         app.phoneNumber = phone.displayNumber
-        val birthday = birthday ?: return
+        // Lost from a restored draft: back to its step, where Continue waits for it.
+        val birthday = birthday ?: run {
+            Haptics.warning()
+            go(OnboardingStep.BIRTHDAY.rawValue)
+            return
+        }
         val signUp = ProfileSync.SignUp(
             name = p.name, birthday = birthday, gender = identity, interestedIn = interestedIn,
             neighborhood = area?.name ?: "", location = locator.blurred, bio = p.bio,
