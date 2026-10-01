@@ -67,6 +67,7 @@ import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.ui.components.LocalTabBarVisibility
 import so.drafft.core.ui.components.TabBarVisibility
 import so.drafft.core.ui.components.LocalTabIsCurrent
+import so.drafft.core.ui.components.LocalTabsOnScreen
 import so.drafft.core.ui.navigation.LocalNavBackEnabled
 import so.drafft.core.ui.platform.LocalPlatformUi
 import androidx.compose.animation.AnimatedVisibility
@@ -154,6 +155,7 @@ fun MainTabs(
                         LocalTabBarVisibility provides visibilities.getValue(item.tab),
                         LocalNavBackEnabled provides (current && isVisible),
                         LocalTabIsCurrent provides (current && isVisible),
+                        LocalTabsOnScreen provides (isActive && !mayPrebuild),
                     ) {
                     saveable.SaveableStateProvider(item.tab.name) {
                         when (item.tab) {
