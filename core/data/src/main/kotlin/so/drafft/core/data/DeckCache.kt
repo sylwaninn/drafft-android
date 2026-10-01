@@ -42,6 +42,9 @@ class DiscoveryState {
     /** Swipes sent but not answered yet. */
     var pendingSwipes = 0
 
+    /** How fresh each part is, and which read of it is the newest. */
+    val freshness = DiscoveryFreshness()
+
     /** The last read brought fewer cards than asked: swipes don't ask again until another refresh. */
     var exhausted = false
 }
