@@ -17,6 +17,8 @@ import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import coil3.size.Size
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.MediaPreviews
 import so.drafft.core.data.media.MediaURL
@@ -106,9 +108,9 @@ object ImageStore {
      * once when it's decoded. Cached by the object and width ([PhotoUrls.canonical]), never by its
      * signed link. [variant]: a rendition kept apart in the caches (the server's blurred copy of a
      * like), so it can never be served for another rendition of the same object, or the other way
-     * round.
+     * round. Looks on disk, off the main thread; [cachedRequest] answers at once when it's in memory.
      */
-    fun remoteRequest(
+    suspend fun remoteRequest(
         context: PlatformContext,
         name: String,
         width: Int,
@@ -117,11 +119,44 @@ object ImageStore {
         blur: Float = 0f,
         variant: String? = null,
         fill: Boolean = true,
-    ): ImageRequest {
+    ): ImageRequest = cachedRequest(context, name, width, height, priority, blur, variant, fill) ?: withContext(Dispatchers.IO) {
         val pixels = PixelSize(width, height)
-        val url = if (name.startsWith("/")) name else closest(context, name, fullWidth(name, pixels), variant)
-        return make(context, url, Renditions.decodeSize(pixels), priority, blur, variant, fill)
+        make(context, closest(context, name, fullWidth(name, pixels), variant), Renditions.decodeSize(pixels), priority, blur, variant, fill)
     }
+
+    /**
+     * [remoteRequest] without looking on disk: a copy already decoded in memory for this frame (the
+     * first that is among [Renditions.candidates]), or a file on this phone; null otherwise. Cheap enough
+     * for composition, so a photo in memory shows on the first frame.
+     */
+    fun cachedRequest(
+        context: PlatformContext,
+        name: String,
+        width: Int,
+        height: Int,
+        priority: Images.Priority = Images.Priority.NORMAL,
+        blur: Float = 0f,
+        variant: String? = null,
+        fill: Boolean = true,
+    ): ImageRequest? {
+        val pixels = PixelSize(width, height)
+        val decode = Renditions.decodeSize(pixels)
+        if (name.startsWith("/")) return make(context, name, decode, priority, blur, variant, fill)
+        val memory = SingletonImageLoader.get(context).memoryCache ?: return null
+        for (candidate in Renditions.candidates(fullWidth(name, pixels))) {
+            val url = Images.sized(name, candidate) ?: continue
+            val request = make(context, url, decode, priority, blur, variant, fill)
+            if (isInMemory(memory, request)) return request
+        }
+        return null
+    }
+
+    /** Whether [request]'s decoded copy is in memory. */
+    fun isInMemory(context: PlatformContext, request: ImageRequest): Boolean =
+        SingletonImageLoader.get(context).memoryCache?.let { isInMemory(it, request) } == true
+
+    private fun isInMemory(memory: MemoryCache, request: ImageRequest): Boolean =
+        request.memoryCacheKey?.let { memory[MemoryCache.Key(it)] } != null
 
     /**
      * A small copy of a server photo for the same frame ([Renditions.previewWidth]), decoded at a third
@@ -157,12 +192,14 @@ object ImageStore {
 
     /**
      * A server photo about to show, fetched to disk (`PhotoWindow`): the copy [remoteRequest] picks for
-     * the same frame. Decoded tiny and never kept in memory: it's decoded at its display size once it's
-     * drawn.
+     * the same frame, under the same disk key (only the decode differs, which no disk key depends on), so
+     * the card finds it there. Decoded tiny and never kept in memory: it's decoded at its display size once
+     * it's drawn. Null when that copy is already on this phone. Looks on disk: off the main thread.
      */
     fun prefetchRequest(context: PlatformContext, name: String, width: Int, height: Int, priority: Images.Priority): ImageRequest? {
         if (!name.startsWith("http")) return null
         val url = closest(context, name, fullWidth(name, PixelSize(width, height)), null)
+        if (isOnDisk(context, cacheID(url, null))) return null
         return ImageRequest.Builder(context)
             .data(url)
             .diskCacheKey(cacheID(url, null))
@@ -212,19 +249,20 @@ object ImageStore {
 
     /**
      * The copy to show for [needed] pixels of width: the first of [Renditions.candidates] already on
-     * this phone (a larger copy beats a download), otherwise the one covering it.
+     * this phone (a larger copy beats a download), otherwise the one covering it. Looks on disk (under the
+     * disk cache's lock): never on the main thread.
      */
     private fun closest(context: PlatformContext, name: String, needed: Double, variant: String?): String {
         val candidates = Renditions.candidates(needed)
-        val disk = SingletonImageLoader.get(context).diskCache
-        if (disk != null) {
-            for (width in candidates) {
-                val url = Images.sized(name, width) ?: continue
-                if (disk.openSnapshot(cacheID(url, variant))?.use { true } == true) return url
-            }
+        for (width in candidates) {
+            val url = Images.sized(name, width) ?: continue
+            if (isOnDisk(context, cacheID(url, variant))) return url
         }
         return Images.sized(name, candidates.first()) ?: name
     }
+
+    private fun isOnDisk(context: PlatformContext, key: String): Boolean =
+        SingletonImageLoader.get(context).diskCache?.openSnapshot(key)?.use { true } == true
 }
 
 /** Hooks the data layer sets for photos on the server. */

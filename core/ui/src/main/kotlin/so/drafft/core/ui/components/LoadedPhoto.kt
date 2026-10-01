@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,11 +28,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import coil3.PlatformContext
-import coil3.SingletonImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
-import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
 import kotlinx.coroutines.delay
 import so.drafft.core.data.media.Images
@@ -59,15 +58,11 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
         val height = boundedHeight.takeIf { it > 0 } ?: fallback
         val large = blur == 0f && min(maxWidth, maxHeight) >= 200.dp
         val context = LocalPlatformContext.current
-        // Not keyed by the priority: a card moving up the deck keeps its download running, raised.
-        val request = remember(name, width, height, blur) {
-            ImageStore.remoteRequest(context, name, width, height, priority, blur)
-        }
-        val photo = request.diskCacheKey
+        val request = rememberPhotoRequest(name, width, height, priority, blur)
+        val photo = request?.diskCacheKey
         LaunchedEffect(photo, priority) { if (photo != null) PhotoDownloads.shared.prioritize(photo, priority.ordinal) }
-        val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
-        val state by painter.state.collectAsState()
-        val sharp = state is AsyncImagePainter.State.Success
+        val painter = if (request != null) rememberAsyncImagePainter(request, contentScale = ContentScale.Crop) else null
+        val sharp = painter != null && painter.state.collectAsState().value is AsyncImagePainter.State.Success
         val preview = remember(name) { PhotoUrls.preview(name) }
         val small = if (large) remember(name, width, height) { ImageStore.preview(context, name, width, height) } else null
 
@@ -83,8 +78,34 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
         } else if (large && !sharp) {
             PhotoLoader(Modifier.align(Alignment.Center))
         }
-        FadingImage(painter, sharp)
+        if (painter != null && request != null) FadingImage(painter, request, sharp)
     }
+}
+
+/**
+ * The request for a photo drawn in a frame of [width] × [height] pixels ([ImageStore.remoteRequest]): at
+ * once when its copy is in memory (or it's a file on this phone), otherwise once the disk was asked, off
+ * the main thread (null until then). Not keyed by [priority]: a card moving up the deck keeps its download
+ * running, raised.
+ */
+@Composable
+fun rememberPhotoRequest(
+    name: String,
+    width: Int,
+    height: Int,
+    priority: Images.Priority = Images.Priority.NORMAL,
+    blur: Float = 0f,
+    variant: String? = null,
+    fill: Boolean = true,
+): ImageRequest? {
+    val context = LocalPlatformContext.current
+    val request = remember(name, width, height, blur, variant, fill) {
+        mutableStateOf(ImageStore.cachedRequest(context, name, width, height, priority, blur, variant, fill))
+    }
+    LaunchedEffect(request) {
+        if (request.value == null) request.value = ImageStore.remoteRequest(context, name, width, height, priority, blur, variant, fill)
+    }
+    return request.value
 }
 
 /**
@@ -92,11 +113,8 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
  * memory (fetched ahead by the deck's window, or shown before the sharp one arrived, which then fades in
  * over it).
  */
-private fun smallCopyApplies(context: PlatformContext, small: ImageRequest, sharp: Boolean): Boolean {
-    val key = small.memoryCacheKey
-    if (key != null && SingletonImageLoader.get(context).memoryCache?.get(MemoryCache.Key(key)) != null) return true
-    return !sharp && NetworkQuality.shared.isLimited
-}
+private fun smallCopyApplies(context: PlatformContext, small: ImageRequest, sharp: Boolean): Boolean =
+    ImageStore.isInMemory(context, small) || (!sharp && NetworkQuality.shared.isLimited)
 
 /** The small copy's layer, with the loader while it's on its way (and the sharp one too). */
 @Composable
@@ -105,15 +123,18 @@ private fun SmallCopy(request: ImageRequest, sharpMissing: Boolean) {
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
         val state by painter.state.collectAsState()
         val ready = state is AsyncImagePainter.State.Success
-        FadingImage(painter, ready)
+        FadingImage(painter, request, ready)
         if (!ready && sharpMissing) PhotoLoader(Modifier.align(Alignment.Center))
     }
 }
 
-/** A layer that fills the frame and fades in (0.2 s ease-out) once [ready]; already ready: no fade. */
+/**
+ * A layer that fills the frame and fades in (0.2 s ease-out) once [ready]; ready when [request] is first
+ * drawn (in memory): no fade.
+ */
 @Composable
-private fun FadingImage(painter: AsyncImagePainter, ready: Boolean) {
-    val readyAtFirstFrame = remember(painter) { ready }
+private fun FadingImage(painter: AsyncImagePainter, request: ImageRequest, ready: Boolean) {
+    val readyAtFirstFrame = remember(request) { ready }
     val alpha by animateFloatAsState(
         if (ready) 1f else 0f,
         if (readyAtFirstFrame) tween(0) else tween(200, easing = Motion.EaseOut),

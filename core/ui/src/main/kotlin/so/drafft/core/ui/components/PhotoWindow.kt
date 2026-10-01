@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.model.Profile
@@ -53,6 +54,9 @@ class PhotoWindow private constructor() {
      */
     private var last: Aim? = null
 
+    /** The requests being built for the last aim (off the main thread: they look on disk). */
+    private var building: Job? = null
+
     init {
         NetworkQuality.shared.onChange {
             mainScope.launch { last?.let { aim(it.context, it.deck, it.onScreen, it.width, it.height) } }
@@ -61,35 +65,46 @@ class PhotoWindow private constructor() {
 
     /**
      * Aims the window after the [onScreen] cards of [deck] (portraits, then each profile's other photos),
-     * drawn in a frame of [width] × [height] pixels.
+     * drawn in a frame of [width] × [height] pixels. Main thread; the requests are built off it (what's
+     * already on this phone is left out), then the window moves.
      */
     fun aim(context: PlatformContext, deck: List<Profile>, onScreen: Int, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
         last = Aim(context, deck, onScreen, width, height)
-        val limited = NetworkQuality.shared.isLimited
-        val ahead = if (limited) emptyList() else deck.drop(onScreen).take(6).map { it.portrait }
-        portraits.set(ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) })
-        previews.set(
-            if (limited) {
-                deck.take(onScreen + 8).map { it.portrait }.mapNotNull { ImageStore.preview(context, it, width, height) }
-            } else {
-                emptyList()
-            },
-        )
-        extras.set(
-            if (limited) {
-                emptyList()
-            } else {
-                deck.firstOrNull()?.photos.orEmpty().mapNotNull {
-                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW)
-                }
-            },
-        )
+        building?.cancel()
+        building = mainScope.launch {
+            val limited = NetworkQuality.shared.isLimited
+            val (ahead, small, more) = withContext(Dispatchers.IO) {
+                val ahead = if (limited) emptyList() else deck.drop(onScreen).take(6).map { it.portrait }
+                Triple(
+                    ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) },
+                    if (limited) {
+                        deck.take(onScreen + 8).map { it.portrait }
+                            .mapNotNull { ImageStore.preview(context, it, width, height) }
+                            .filterNot { ImageStore.isInMemory(context, it) }
+                    } else {
+                        emptyList()
+                    },
+                    if (limited) {
+                        emptyList()
+                    } else {
+                        deck.firstOrNull()?.photos.orEmpty().mapNotNull {
+                            ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW)
+                        }
+                    },
+                )
+            }
+            portraits.set(ahead)
+            previews.set(small)
+            extras.set(more)
+        }
     }
 
     /** Everything stops (the deck is gone, another screen). */
     fun clear() {
         last = null
+        building?.cancel()
+        building = null
         for (prefetcher in listOf(portraits, previews, extras)) prefetcher.set(emptyList())
     }
 
