@@ -8,10 +8,11 @@ import org.junit.Test
 // NetworkQuality (Drafft/Services/Media/NetworkQuality.swift): slow by Data Saver or by slow photos,
 // limited when slow or not measured yet on this network.
 class NetworkQualityTest {
-    /** A download of [bytes] in [seconds], read to its end. */
+    /** A download of [bytes], its first kilobyte at 0, the rest [seconds] later, read to its end. */
     private fun NetworkQuality.finished(bytes: Long, seconds: Double) {
-        val download = download(now = 0.0)
-        download.received(bytes, now = seconds)
+        val download = download()
+        download.received(1_000, now = 0.0)
+        download.received(bytes - 1_000, now = seconds)
         download.ended(failed = false, now = seconds)
     }
 
@@ -57,7 +58,7 @@ class NetworkQualityTest {
         quality.onChange { changes += it }
         quality.finished(bytes = 100_000, seconds = 1.0)
         assertTrue(quality.isSlow)
-        // 300 kB/s brings the average to 180 kB/s: still slow.
+        // About 300 kB/s brings the average to about 180 kB/s: still slow.
         quality.finished(bytes = 300_000, seconds = 1.0)
         assertTrue(quality.isSlow)
         quality.finished(bytes = 1_000_000, seconds = 0.5)
@@ -76,27 +77,56 @@ class NetworkQualityTest {
     }
 
     @Test
-    fun aSecondInIsEnoughToTell() {
+    fun aSecondAfterTheFirstByteIsEnoughToTell() {
         val quality = NetworkQuality()
-        val download = quality.download(now = 0.0)
-        download.received(30_000, now = 0.5)
+        val download = quality.download()
+        download.received(10_000, now = 0.0)
+        download.received(20_000, now = 0.5)
         assertFalse(quality.isSlow)
         download.received(20_000, now = 1.2)
         assertTrue(quality.isSlow)
     }
 
     @Test
-    fun aDownloadTooSlowToFinishStillCounts() {
+    fun theClockStartsAtTheFirstByte() {
         val quality = NetworkQuality()
-        quality.download(now = 0.0).ended(failed = true, now = 3.0)
-        assertTrue(quality.isSlow)
+        val download = quality.download()
+        // Five seconds of latency (a link renewed, a slow server) aren't the line's speed.
+        download.received(100_000, now = 5.0)
+        download.received(900_000, now = 5.5)
+        download.ended(failed = false, now = 5.5)
+        assertFalse(quality.isSlow)
+        assertFalse(quality.isLimited)
+    }
+
+    @Test
+    fun tooFewBytesAreNoSample() {
+        val quality = NetworkQuality()
+        val download = quality.download()
+        download.received(1_000, now = 0.0)
+        download.received(20_000, now = 2.0)
+        download.ended(failed = false, now = 2.0)
+        assertFalse(quality.isSlow)
+        assertTrue(quality.isLimited)
+    }
+
+    @Test
+    fun aFailedDownloadSaysNothing() {
+        val quality = NetworkQuality()
+        val download = quality.download()
+        download.received(1_000, now = 0.0)
+        download.received(20_000, now = 0.8)
+        download.ended(failed = true, now = 3.0)
+        assertFalse(quality.isSlow)
+        assertTrue(quality.isLimited)
     }
 
     @Test
     fun aDownloadCountsOnce() {
         val quality = NetworkQuality()
-        val download = quality.download(now = 0.0)
-        download.received(50_000, now = 1.0)
+        val download = quality.download()
+        download.received(10_000, now = 0.0)
+        download.received(40_000, now = 1.0)
         assertTrue(quality.isSlow)
         // Fast afterwards, but it was recorded already.
         download.received(10_000_000, now = 1.1)
