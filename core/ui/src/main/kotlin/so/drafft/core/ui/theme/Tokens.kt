@@ -71,6 +71,9 @@ class Palette private constructor(val isDark: Boolean) {
     /** "tempo" set on an accent fill: a light grey with graphite. */
     val tierOnAccent = c(0xB8BCC2, 0x55595E)
 
+    /** "tempo" set on a night block: a light grey next to the white "drafft" (7.3:1 on night, 1.9:1 from the word). */
+    val tierOnNight = hex(0xB8BCC2)
+
     /** Glyph discs sitting on an accent fill (the tier card, a picked sport tile). */
     val onLimeWash = onLime.copy(alpha = 0.22f)
 
