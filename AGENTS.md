@@ -242,6 +242,19 @@ is:
 | kept on the iPhone (`UserDefaults`) | `KeyValueStore` |
 | App Store screenshots, subtitle (iOS) | Play Store screenshots, short description |
 
+## Telemetry (Sentry and PostHog)
+
+[docs/telemetry.md](docs/telemetry.md) is the plan; the code is `so.drafft.core.data.telemetry`.
+- A new feature comes with its events: a class in `AnalyticsEvent` (`object_action`, past tense,
+  typed properties), `Telemetry.track(...)` where it happened (in the model when it can tell whether it
+  worked), a row in the doc's table. Never rename an event or a property.
+- A new screen, sheet or cover gets `TrackScreen(Screen.X)` at the top.
+- A `catch` that swallows an error calls `Telemetry.unexpected(e, area, action)`: it only alerts on
+  what needs a fix (not offline, not a refusal the screen explains).
+- Never put what people typed, their sensitive answers (gender, who they want to meet, lifestyle),
+  their location or another person's id in an event, a tag or a log line. `PrivacyGuard` drops it
+  anyway, and unit tests fail on it.
+
 ## State and data
 
 - `AppModel` (core:data) is the app's single observable state, like the iPhone's. Screens read it
