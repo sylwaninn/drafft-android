@@ -147,6 +147,9 @@ class AppModel(
     val publicMe: Profile get() = photoModeration.showingApprovedPhotos(me)
     var profileLoad by mutableStateOf(ProfileLoad.LOADING)
 
+    /** Why the last read failed, in words (`FAILED`): the connection only when it never got through. */
+    var profileLoadFailure by mutableStateOf<String?>(null)
+
     /** The signed-in account's last known state on this phone (see `LocalCache`, `refreshAccount`). */
     private var localCache: LocalCache? = null
 
@@ -847,7 +850,10 @@ class AppModel(
                 throw e
             } catch (e: Exception) {
                 if (session != sessionID) return@async null
-                if (profileLoad != ProfileLoad.LOADED) profileLoad = ProfileLoad.FAILED
+                if (profileLoad != ProfileLoad.LOADED) {
+                    profileLoadFailure = ServerMessage.text(e, offline = L("Check your connection and try again."))
+                    profileLoad = ProfileLoad.FAILED
+                }
                 retryWhileConsentUnknown()
                 null
             }
