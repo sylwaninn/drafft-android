@@ -1,6 +1,7 @@
 package so.drafft.core.data.backend
 
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -28,5 +29,8 @@ class ServerMessageTest {
         )
         assertTrue(ServerMessage.isSignedOut(Backend.BackendError.Http(401, "unauthenticated")))
         assertFalse(ServerMessage.isOffline(Backend.BackendError.Http(503, "unavailable")))
+        // Wrapped by the client: still never reached the server. A cancelled call is not offline.
+        assertTrue(ServerMessage.isOffline(IllegalStateException("wrapped", IOException("no route"))))
+        assertFalse(ServerMessage.isOffline(CancellationException("left the screen")))
     }
 }
