@@ -54,8 +54,12 @@ class RenditionsTest {
     }
 
     @Test
-    fun decodeSizeIsTheFrameRoundedUp() {
-        assertEquals(PixelSize(1_088, 1_728), Renditions.decodeSize(card))
+    fun decodeSizeKeepsTheFramesProportions() {
+        val sharp = Renditions.decodeSize(card)
+        assertEquals(PixelSize(1_088, 1_688), sharp)
+        // The small copy, a third of the pixels: the same proportions, so it's cropped like the sharp one.
+        val small = Renditions.decodeSize(PixelSize(card.width / 3, card.height / 3))
+        assertEquals(sharp.width / sharp.height, small.width / small.height, 0.002)
         assertEquals(PixelSize(64, 64), Renditions.decodeSize(PixelSize(10, 0)))
     }
 }

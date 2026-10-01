@@ -57,11 +57,13 @@ object Renditions {
     fun previewWidth(covering: Double): Int = width(maxOf(160.0, covering / 4)) ?: ladder.last()
 
     /**
-     * The decoded size: the frame in pixels, rounded up to 64 px so frames a few points apart (and a
-     * card in flight, the same card in the deck) share one copy in memory.
+     * The decoded size: the frame in pixels, its width rounded up to 64 px so frames a few points apart
+     * share one copy in memory, its height following the frame's exact proportions. Every copy of a photo
+     * in one frame (small, sharp) is cropped alike, so a sharper one lands exactly over the last.
      */
     fun decodeSize(pixels: PixelSize): PixelSize {
-        fun up(value: Double) = maxOf(64.0, ceil(value / 64) * 64)
-        return PixelSize(up(pixels.width), up(pixels.height))
+        val width = maxOf(64.0, ceil(pixels.width / 64) * 64)
+        if (pixels.width <= 0 || pixels.height <= 0) return PixelSize(width, width)
+        return PixelSize(width, Math.round(width * pixels.height / pixels.width).toDouble())
     }
 }
