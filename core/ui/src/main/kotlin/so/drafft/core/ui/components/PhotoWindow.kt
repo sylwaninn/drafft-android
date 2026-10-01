@@ -75,9 +75,10 @@ class PhotoWindow private constructor() {
         building = mainScope.launch {
             val limited = NetworkQuality.shared.isLimited
             val (ahead, small, more) = withContext(Dispatchers.IO) {
-                // The cards on screen too: their own request shares the download (`SharedFetches`), so a
-                // prefetch is never cancelled as its card arrives.
-                val ahead = if (limited) emptyList() else deck.take(onScreen + 6).map { it.portrait }
+                // The cards ahead first, then the ones on screen (their own request shares the download,
+                // `SharedFetches`, so a prefetch is never cancelled as its card arrives): the permits go to
+                // the real look-ahead, not to waiting behind downloads already running.
+                val ahead = if (limited) emptyList() else (deck.drop(onScreen).take(6) + deck.take(onScreen)).map { it.portrait }
                 Triple(
                     ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) },
                     if (limited) {
