@@ -35,6 +35,15 @@ class DiscoveryState {
 
     /** Whether the matches were read once (the first read never shows banners). */
     var matchesRead = false
+
+    /** How long reads take and how fast the person swipes: when to read the next batch. */
+    val pace = DeckPace()
+
+    /** Swipes sent but not answered yet. */
+    var pendingSwipes = 0
+
+    /** The last read brought fewer cards than asked: swipes don't ask again until another refresh. */
+    var exhausted = false
 }
 
 /** The deck as kept on this phone: the filters it was read with and the cards' own JSON. */
