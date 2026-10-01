@@ -67,13 +67,13 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.FrequencyStepper
 import so.drafft.app.feature.profile.IcebreakerEditor
 import so.drafft.app.feature.profile.LifestylePicker
 import so.drafft.app.feature.profile.VoiceIntroRecorder
 import so.drafft.core.data.audio.VoiceRecorder
-import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
@@ -346,13 +346,11 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
                 // Saved on the server first; nothing changes in the app if it fails (signed out included).
                 try {
                     profileSync.save(result, previous, recorded?.let { ProfileSync.Voice(it.url, it.duration, it.levels) })
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Haptics.warning()
-                    state.saveError = when (e) {
-                        is Backend.BackendError -> e.message
-                        is ProfileSync.SyncError -> e.message
-                        else -> null
-                    } ?: L("Couldn't connect. Check your connection and try again.")
+                    state.saveError = profileSaveFailure(e, state.photosCheck)
                     return@launch
                 }
                 Haptics.success()
@@ -374,7 +372,13 @@ fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
 
     val pickPhoto = LocalPlatformUi.current.rememberPhotoPicker { data ->
         scope.launch {
-            val path = PhotoCompressor.savePicked(data) ?: return@launch
+            // A photo that can't be read (a cloud copy offline), or a format that won't decode: said, never a
+            // pick that does nothing. Shown with the save line, cleared by the next change.
+            val path = data?.let { PhotoCompressor.savePicked(it) } ?: run {
+                Haptics.warning()
+                state.saveError = L("This photo couldn't be opened. Pick another one, or check your connection.")
+                return@launch
+            }
             state.picked = state.picked + path
             state.setPhotos(state.allPhotos + path)
             Haptics.success()
