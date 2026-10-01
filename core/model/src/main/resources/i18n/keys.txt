@@ -775,7 +775,7 @@ Pick a prompt
 Pick a stronger password.
 Pick a time above
 Pick an option to continue.
-Pick as many as you like.
+Pick as many as you like. This never shows on your profile.
 Pick at least one sport.
 Pick at least one time to send.
 Pick at least one.
@@ -1056,7 +1056,6 @@ The security check didn't go through. Try again.
 The snack that fuels my entire personality
 The sport I'm secretly bad at
 The two new passwords don't match.
-To convince me, propose
 The worst run of my life happened when
 There's already an account with this email. Log in instead.
 They agree or disagree
@@ -1079,6 +1078,7 @@ This file type isn't supported.
 This invite has already been answered.
 This is already on your Apple ID. Tap Restore purchases to get it back.
 This is taking longer than usual.
+This never shows on your profile.
 This number can't get codes. Use a mobile number.
 This number is already used by another drafft account.
 This one is true
@@ -1098,6 +1098,7 @@ Tick the box above to continue.
 Time
 Time %d, %s
 To confirm it's you
+To convince me, propose
 Today
 Today %s
 Together we could finally

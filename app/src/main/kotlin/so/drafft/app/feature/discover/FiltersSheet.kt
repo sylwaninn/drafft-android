@@ -157,6 +157,7 @@ fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
                     isOn = { it == draft.audience.title },
                     toggle = { label -> draft = draft.copy(audience = Audience.entries.firstOrNull { it.title == label } ?: Audience.EVERYONE) },
                 )
+                Text(L("This never shows on your profile."), style = TextStyles.footnote, color = p.body)
             }
 
             FilterBlock(
