@@ -34,6 +34,12 @@ val LocalTabBarVisibility = compositionLocalOf<TabBarVisibility?> { null }
 val LocalTabIsCurrent = compositionLocalOf { true }
 
 /**
+ * The tabs are on screen: false while they're built ahead, hidden under the splash, the welcome
+ * screen or sign-up. Arrival motion waits for it.
+ */
+val LocalTabsOnScreen = compositionLocalOf { true }
+
+/**
  * Hides the tab bar while the calling screen is shown (iOS `.toolbarVisibility(.hidden, for: .tabBar)`):
  * a chat pushed from Sessions or Chats.
  */

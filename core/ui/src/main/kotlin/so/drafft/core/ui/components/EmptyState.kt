@@ -25,9 +25,9 @@ import so.drafft.core.ui.theme.display
 // Port of Drafft/DesignSystem/EmptyState.swift.
 
 /**
- * An empty tab: a quiet illustration on the page, a title, one line of text, and an action if
- * there is one to take. Sits in the middle of the space it is given. [title] and [message] are
- * already localized (through the catalog).
+ * An empty tab: its sign as a sticker on the page ([EmptyStateSticker]), a title, one line of
+ * text, and an action if there is one to take. Sits in the middle of the space it is given.
+ * [title] and [message] are already localized (through the catalog).
  */
 @Composable
 fun EmptyStateView(
@@ -43,7 +43,7 @@ fun EmptyStateView(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(DS.Space.md), horizontalAlignment = Alignment.CenterHorizontally) {
-            EmptyStateIllustration(art)
+            EmptyStateSticker(art)
             Column(verticalArrangement = Arrangement.spacedBy(DS.Space.sm), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     title,
@@ -62,7 +62,7 @@ fun EmptyStateView(
 /** What each empty tab draws: its tab-bar icon. */
 @Immutable
 data class EmptyStateArt(
-    /** The sign's outline, drawn in the accent. */
+    /** The sign: its outline for [EmptyStateIllustration], its bold twin ("<name>-bold") on the sticker. */
     val symbol: String,
 ) {
     companion object {
