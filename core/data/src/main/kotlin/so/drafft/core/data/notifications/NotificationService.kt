@@ -163,7 +163,17 @@ class NotificationService(
         if (!registration.needsSending(token, account, environment)) return
         // Not remembered when it fails: the next return to the app sends it again.
         attempt {
-            backend.rpc("register_push_token", JsonObject(mapOf("p_token" to JsonPrimitive(token), "p_environment" to JsonPrimitive(environment))))
+            backend.rpc(
+                "register_push_token",
+                JsonObject(
+                    mapOf(
+                        "p_token" to JsonPrimitive(token),
+                        "p_environment" to JsonPrimitive(environment),
+                        // The server sends FCM tokens through FCM, APNs ones through APNs.
+                        "p_platform" to JsonPrimitive("android"),
+                    ),
+                ),
+            )
             registration.markSent(token, account, environment)
         }
     }
