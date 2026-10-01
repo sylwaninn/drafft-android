@@ -1239,7 +1239,7 @@ private fun VoiceStep(state: OnboardingState) {
 private fun LifestyleStep(state: OnboardingState) {
     StepTitle(L("Your routine"), L("Shown on your profile. Answer what you like, leave the rest."))
     Box(Modifier.block(DS.palette.canvas).padding(DS.Space.xl)) {
-        LifestylePicker(vitals = state.lifestyle, onVitalsChange = { state.lifestyle = it })
+        LifestylePicker(vitals = state.lifestyle, onVitalsChange = { state.lifestyle = it }, gender = Audience.fromAnswer(state.identity))
     }
 }
 

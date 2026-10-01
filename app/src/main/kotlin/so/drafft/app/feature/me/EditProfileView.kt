@@ -279,15 +279,7 @@ private class EditProfileState(profile: Profile, val moderation: PhotoModeration
 
     private val lifestyleSummary: String
         get() {
-            val drinks = when (vitals.drinks) {
-                "" -> ""
-                "Never" -> L("No alcohol")
-                "Rarely" -> L("Drinks rarely")
-                "Socially" -> L("Drinks socially")
-                "Post-race only" -> L("Drinks post-race only")
-                else -> vitals.drinks
-            }
-            val parts = listOf(Vitals.label(vitals.chronotype), Vitals.label(vitals.diet), drinks).filter { it.isNotEmpty() }
+            val parts = listOf(Vitals.label(vitals.chronotype), Vitals.label(vitals.diet, draft.gender), vitals.drinksSummary).filter { it.isNotEmpty() }
             return if (parts.isEmpty()) L("Not filled in") else parts.joinToString(", ")
         }
 
@@ -598,7 +590,7 @@ private fun SubPage(
                     EditProfilePage.IDENTITY -> Block(L("Name & age"), page.icon) { IdentitySection(state) }
                     EditProfilePage.LIFESTYLE ->
                         Block(L("Lifestyle"), page.icon, note = L("Shown on your profile")) {
-                            LifestylePicker(vitals = state.vitals, onVitalsChange = { state.vitals = it })
+                            LifestylePicker(vitals = state.vitals, onVitalsChange = { state.vitals = it }, gender = state.draft.gender)
                         }
                     EditProfilePage.SPORTS -> Block(L("Your sports"), page.icon, note = L("Up to 5")) { SportsSection(state) }
                     EditProfilePage.VOICE ->
