@@ -43,6 +43,14 @@ class RenditionsTest {
     }
 
     @Test
+    fun everydayPhotosStopAt1080AndAnOpenProfileGoesFurther() {
+        assertEquals(1_080.0, Renditions.asked(1_344.0, detail = false))
+        assertEquals(1_344.0, Renditions.asked(1_344.0, detail = true))
+        assertEquals(600.0, Renditions.asked(600.0, detail = false))
+        assertEquals(1_080, Renditions.width(covering = Renditions.asked(1_344.0, detail = false)))
+    }
+
+    @Test
     fun aLimitedLineAsksAStepLighter() {
         assertEquals(1_080, Renditions.width(covering = 1_344.0 * Renditions.limitedShare))
     }
