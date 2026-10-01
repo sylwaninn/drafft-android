@@ -101,11 +101,13 @@ object ImageStore {
      * `/…` is a file on this phone, `http…` a photo on the server (sized by [PhotoUrls.sizer]).
      * Square box, aspect fill: the copy covers the frame whatever its proportions. [blur]: a radius
      * as a share of the photo's shorter side, applied once when it's decoded. Cached by the object
-     * ([PhotoUrls.canonical]), never by its signed link.
+     * ([PhotoUrls.canonical]), never by its signed link. [variant]: a rendition kept apart in the
+     * caches (the server's blurred copy of a like), so it can never be served for another rendition
+     * of the same object, or the other way round.
      */
-    fun remoteRequest(context: PlatformContext, name: String, pixels: Int, blur: Float = 0f): ImageRequest {
+    fun remoteRequest(context: PlatformContext, name: String, pixels: Int, blur: Float = 0f, variant: String? = null): ImageRequest {
         val local = name.startsWith("/")
-        val canonical = if (local) name else PhotoUrls.canonical(name)
+        val canonical = (if (local) name else PhotoUrls.canonical(name)).let { key -> variant?.let { "$key#$it" } ?: key }
         val radius = if (blur > 0f) maxOf(1, (blur * pixels).toInt()) else 0
         val builder = ImageRequest.Builder(context)
             .data(if (local) File(name) else PhotoUrls.sizer(name, pixels))
