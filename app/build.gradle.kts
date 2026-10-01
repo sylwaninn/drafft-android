@@ -58,7 +58,6 @@ fun com.android.build.api.dsl.VariantDimension.flavorFields(flavor: String) {
     buildConfigField("String", "REVENUECAT_API_KEY", v["REVENUECAT_API_KEY"].orEmpty().quoted())
     buildConfigField("String", "TURNSTILE_SITE_KEY", v["TURNSTILE_SITE_KEY"].orEmpty().quoted())
     buildConfigField("int", "SMS_CODE_LIFETIME", (v["SMS_CODE_LIFETIME"]?.toIntOrNull() ?: 600).toString())
-    buildConfigField("boolean", "MEDIA_IMAGE_RESIZING", (v["MEDIA_IMAGE_RESIZING"] == "true").toString())
     buildConfigField("String", "ENVIRONMENT", (if (flavor == "production") "" else flavor).quoted())
 }
 

@@ -17,8 +17,6 @@ data class BackendConfig(
     val smsCodeLifetime: Double = 600.0,
     /** Cloudflare Turnstile public site key, for the support form sent signed out (`TURNSTILE_SITE_KEY`). */
     val turnstileSiteKey: String = "",
-    /** Photos sized by the media domain (Cloudflare Image Resizing) once it's enabled there. */
-    val mediaImageResizing: Boolean = false,
     /** "" for production, "staging", "local". */
     val environment: String = "",
 ) {

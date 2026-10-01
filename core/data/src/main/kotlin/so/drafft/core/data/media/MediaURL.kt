@@ -83,12 +83,34 @@ object MediaURL {
         return path.substring(start + 1)
     }
 
-    /** The same object whatever its signature: what caches are keyed by. */
+    /** The same object (and width, `w`) whatever its signature: what caches are keyed by. */
     fun canonical(url: String): String {
         val query = url.indexOf('?')
         if (query < 0) return url
         val fragment = url.indexOf('#', query)
-        return url.substring(0, query) + (if (fragment >= 0) url.substring(fragment) else "")
+        val end = if (fragment >= 0) fragment else url.length
+        val width = url.substring(query + 1, end).split('&').filter { it.substringBefore('=') == "w" }
+        return url.substring(0, query) + (if (width.isEmpty()) "" else "?" + width.joinToString("&")) +
+            (if (fragment >= 0) url.substring(fragment) else "")
+    }
+
+    /** [url] with its `w` query parameter set to [width], or removed when [width] is null. */
+    fun withWidth(url: String, width: Int?): String {
+        val fragment = url.indexOf('#').let { if (it < 0) url.length else it }
+        val query = url.indexOf('?').let { if (it < 0 || it > fragment) fragment else it }
+        val kept = if (query < fragment) {
+            url.substring(query + 1, fragment).split('&').filter { it.isNotEmpty() && it.substringBefore('=') != "w" }
+        } else {
+            emptyList()
+        }
+        val params = kept + listOfNotNull(width?.let { "w=$it" })
+        return url.substring(0, query) + (if (params.isEmpty()) "" else "?" + params.joinToString("&")) + url.substring(fragment)
+    }
+
+    /** The width asked of the media Worker (`w`), if any. */
+    fun width(of: String): Int? {
+        val query = runCatching { URI(of).rawQuery }.getOrNull() ?: return null
+        return query.split('&').firstOrNull { it.substringBefore('=') == "w" }?.substringAfter('=', "")?.toIntOrNull()
     }
 
     /** When a signed link stops working; null for an unsigned one. */
@@ -100,12 +122,15 @@ object MediaURL {
 
     /**
      * The link while it has more than a minute left; otherwise a new one from the backend (own and chat
-     * media: cards come with fresh links each time they're read again), or the same link.
+     * media: cards come with fresh links each time they're read again), or the same link. The width
+     * asked of the media Worker (`w`) is kept.
      */
     suspend fun fresh(url: String): String {
         val expiry = expiry(url) ?: return url
         if (expiry.epochSecond - Instant.now().epochSecond >= 60) return url
         val key = key(url) ?: return url
-        return signed(listOf(key))[key] ?: url
+        val renewed = signed(listOf(key))[key] ?: return url
+        // The width asked of the media Worker is kept.
+        return width(url)?.let { withWidth(renewed, it) } ?: renewed
     }
 }

@@ -36,7 +36,6 @@ val androidServicesModule = module {
     single(createdAtStart = true) {
         PhotoCompressor.engine = AndroidPhotoCompressor(androidContext())
         VideoCompressor.engine = AndroidVideoCompressor(androidContext())
-        Images.resizesOnServer = get<BackendConfig>().mediaImageResizing
         AndroidFaceCheck(androidContext()).also { FaceCheck.engine = it }
     }
 }

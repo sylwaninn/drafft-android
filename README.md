@@ -30,7 +30,6 @@ Like the iPhone's `Config/*.xcconfig`, each flavor has one file of public values
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile public site key |
 | `SMS_CODE_LIFETIME` | Auth's SMS OTP expiry, in seconds |
 | `APP_DISPLAY_NAME` | Launcher name |
-| `MEDIA_IMAGE_RESIZING` | `true` once Cloudflare Image Resizing is on for the media domain |
 
 Only public keys: the build refuses anything that looks like a secret, and a production or staging
 URL that isn't https. A release build lacking a Supabase or RevenueCat value fails. The local flavor
