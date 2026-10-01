@@ -1,28 +1,37 @@
 package so.drafft.core.data.media
 
-// Ports Drafft/Services/Media/NetworkQuality.swift. The path (metered, Data Saver) comes from the
+// Ports Drafft/Services/Media/NetworkQuality.swift. The path (which network, Data Saver) comes from the
 // Android side (`installImages` in core:ui), the speed from the photo downloads themselves.
 
 /**
- * Whether the connection is limited, for how much the app fetches ahead and how big (`ImageStore`,
- * `PhotoWindow`). Limited: a metered network (cellular), Data Saver, or photos measured arriving slowly
- * (under about 1.6 Mbit/s each, back to normal above 3.2: a gap so one slow photo doesn't flip it back
- * and forth). The speed is an average that follows the last few downloads ([download]).
+ * How the connection is doing, for what the app fetches first and how big (`ImageStore`, `PhotoWindow`).
+ *
+ * - [isSlow]: Data Saver, or photos measured arriving slowly (under about 1.6 Mbit/s each, back to
+ *   normal above 3.2: a gap so one slow photo doesn't flip it back and forth). Full copies are asked a
+ *   step lighter.
+ * - [isLimited]: slow, or not measured yet on this network (at launch, after a switch from Wi-Fi to
+ *   cellular): small copies first and few downloads at once, so nothing starts with a dozen full photos
+ *   sharing a line nobody knows. On a fast line the first photo clears it in a fraction of a second.
+ *
+ * The speed is an average that follows the last few downloads ([download]). A metered network alone
+ * says nothing of it.
  */
 class NetworkQuality {
     private val lock = Any()
-    private var expensive = false
+    private var network: String? = null
     private var constrained = false
 
     /** Bytes per second, averaged over recent photo downloads. */
     private var speed: Double? = null
     private var slow = false
-    private var limitedNow = false
+    private var limitedNow = true
     private val observers = mutableListOf<(Boolean) -> Unit>()
 
     val isLimited: Boolean get() = synchronized(lock) { limitedNow }
 
-    /** Called now with the current state, then on every change (any thread). */
+    val isSlow: Boolean get() = synchronized(lock) { constrained || slow }
+
+    /** Called now with [isLimited], then on every change of it (any thread). */
     fun onChange(observer: (Boolean) -> Unit) {
         val now = synchronized(lock) {
             observers += observer
@@ -31,10 +40,15 @@ class NetworkQuality {
         observer(now)
     }
 
-    /** The network in use: [expensive] (metered, cellular), [constrained] (Data Saver). */
-    fun path(expensive: Boolean, constrained: Boolean) {
+    /** The network in use ([network]: an identity, null without one) and [constrained] (Data Saver). */
+    fun path(network: String?, constrained: Boolean) {
         synchronized(lock) {
-            this.expensive = expensive
+            // Another network: what was measured on the last one says nothing of this one.
+            if (network != this.network) {
+                this.network = network
+                speed = null
+                slow = false
+            }
             this.constrained = constrained
         }
         changed()
@@ -85,7 +99,7 @@ class NetworkQuality {
 
     private fun changed() {
         val (limited, notify) = synchronized(lock) {
-            val limited = expensive || constrained || slow
+            val limited = constrained || slow || speed == null
             val notify = if (limited != limitedNow) observers.toList() else emptyList()
             limitedNow = limited
             limited to notify

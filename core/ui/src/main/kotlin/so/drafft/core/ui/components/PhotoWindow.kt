@@ -45,12 +45,27 @@ class PhotoWindow private constructor() {
     private val previews = Prefetcher(maxConcurrent = 2)
     private val extras = Prefetcher(maxConcurrent = 1)
 
+    private class Aim(val context: PlatformContext, val deck: List<Profile>, val onScreen: Int, val width: Int, val height: Int)
+
+    /**
+     * The last aim, taken again when the connection changes ([NetworkQuality]): the full copies a limited
+     * line can't afford stop at once, not at the next swipe.
+     */
+    private var last: Aim? = null
+
+    init {
+        NetworkQuality.shared.onChange {
+            mainScope.launch { last?.let { aim(it.context, it.deck, it.onScreen, it.width, it.height) } }
+        }
+    }
+
     /**
      * Aims the window after the [onScreen] cards of [deck] (portraits, then each profile's other photos),
      * drawn in a frame of [width] × [height] pixels.
      */
     fun aim(context: PlatformContext, deck: List<Profile>, onScreen: Int, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
+        last = Aim(context, deck, onScreen, width, height)
         val limited = NetworkQuality.shared.isLimited
         val ahead = if (limited) emptyList() else deck.drop(onScreen).take(6).map { it.portrait }
         portraits.set(ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) })
@@ -74,10 +89,13 @@ class PhotoWindow private constructor() {
 
     /** Everything stops (the deck is gone, another screen). */
     fun clear() {
+        last = null
         for (prefetcher in listOf(portraits, previews, extras)) prefetcher.set(emptyList())
     }
 
     companion object {
+        private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
         val deck = PhotoWindow()
     }
 }

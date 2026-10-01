@@ -8,7 +8,6 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.Build
 import androidx.core.content.ContextCompat
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -77,20 +76,17 @@ fun installImages(context: Context) {
     watchNetwork(app)
 }
 
-/** Metered (cellular) and Data Saver, as they change. */
+/** Which network is in use (another one: its speed is measured again) and Data Saver, as they change. */
 private fun watchNetwork(context: Context) {
     val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return
-    fun update(capabilities: NetworkCapabilities?) {
-        val metered = capabilities != null &&
-            !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) &&
-            !(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_TEMPORARILY_NOT_METERED))
+    fun update(network: Network?) {
         val saver = connectivity.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
-        NetworkQuality.shared.path(expensive = metered, constrained = saver)
+        NetworkQuality.shared.path(network = network?.networkHandle?.toString(), constrained = saver)
     }
     runCatching {
         connectivity.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) = update(capabilities)
+            override fun onAvailable(network: Network) = update(network)
+            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) = update(network)
             override fun onLost(network: Network) = update(null)
         })
     }
@@ -98,13 +94,13 @@ private fun watchNetwork(context: Context) {
         context,
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                update(connectivity.getNetworkCapabilities(connectivity.activeNetwork))
+                update(connectivity.activeNetwork)
             }
         },
         IntentFilter(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED),
         ContextCompat.RECEIVER_NOT_EXPORTED,
     )
-    update(connectivity.getNetworkCapabilities(connectivity.activeNetwork))
+    update(connectivity.activeNetwork)
 }
 
 /**

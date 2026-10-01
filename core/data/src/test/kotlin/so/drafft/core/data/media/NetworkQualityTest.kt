@@ -5,7 +5,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 
-// NetworkQuality (Drafft/Services/Media/NetworkQuality.swift): limited by the path or by slow photos.
+// NetworkQuality (Drafft/Services/Media/NetworkQuality.swift): slow by Data Saver or by slow photos,
+// limited when slow or not measured yet on this network.
 class NetworkQualityTest {
     /** A download of [bytes] in [seconds], read to its end. */
     private fun NetworkQuality.finished(bytes: Long, seconds: Double) {
@@ -15,15 +16,38 @@ class NetworkQualityTest {
     }
 
     @Test
-    fun meteredOrDataSaverIsLimited() {
+    fun unmeasuredIsLimitedButNotSlow() {
         val quality = NetworkQuality()
-        assertFalse(quality.isLimited)
-        quality.path(expensive = true, constrained = false)
         assertTrue(quality.isLimited)
-        quality.path(expensive = false, constrained = true)
-        assertTrue(quality.isLimited)
-        quality.path(expensive = false, constrained = false)
+        assertFalse(quality.isSlow)
+        quality.finished(bytes = 1_000_000, seconds = 0.2)
         assertFalse(quality.isLimited)
+    }
+
+    @Test
+    fun dataSaverIsSlow() {
+        val quality = NetworkQuality()
+        quality.path(network = "wifi", constrained = false)
+        quality.finished(bytes = 1_000_000, seconds = 0.2)
+        quality.path(network = "wifi", constrained = true)
+        assertTrue(quality.isSlow)
+        assertTrue(quality.isLimited)
+        quality.path(network = "wifi", constrained = false)
+        assertFalse(quality.isLimited)
+    }
+
+    @Test
+    fun anotherNetworkIsMeasuredAgain() {
+        val quality = NetworkQuality()
+        quality.path(network = "wifi", constrained = false)
+        quality.finished(bytes = 100_000, seconds = 1.0)
+        assertTrue(quality.isSlow)
+        // The same network again (its capabilities changed): what was measured stays.
+        quality.path(network = "wifi", constrained = false)
+        assertTrue(quality.isSlow)
+        quality.path(network = "cellular", constrained = false)
+        assertFalse(quality.isSlow)
+        assertTrue(quality.isLimited)
     }
 
     @Test
@@ -32,20 +56,23 @@ class NetworkQualityTest {
         val changes = mutableListOf<Boolean>()
         quality.onChange { changes += it }
         quality.finished(bytes = 100_000, seconds = 1.0)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
         // 300 kB/s brings the average to 180 kB/s: still slow.
         quality.finished(bytes = 300_000, seconds = 1.0)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
         quality.finished(bytes = 1_000_000, seconds = 0.5)
+        assertFalse(quality.isSlow)
         assertFalse(quality.isLimited)
-        assertEquals(listOf(false, true, false), changes)
+        // Limited from the start (unmeasured), then measured slow (no change), then fast.
+        assertEquals(listOf(true, false), changes)
     }
 
     @Test
     fun smallQuickDownloadsSayNothing() {
         val quality = NetworkQuality()
         quality.finished(bytes = 20_000, seconds = 0.9)
-        assertFalse(quality.isLimited)
+        assertFalse(quality.isSlow)
+        assertTrue(quality.isLimited)
     }
 
     @Test
@@ -53,16 +80,16 @@ class NetworkQualityTest {
         val quality = NetworkQuality()
         val download = quality.download(now = 0.0)
         download.received(30_000, now = 0.5)
-        assertFalse(quality.isLimited)
+        assertFalse(quality.isSlow)
         download.received(20_000, now = 1.2)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
     }
 
     @Test
     fun aDownloadTooSlowToFinishStillCounts() {
         val quality = NetworkQuality()
         quality.download(now = 0.0).ended(failed = true, now = 3.0)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
     }
 
     @Test
@@ -70,10 +97,10 @@ class NetworkQualityTest {
         val quality = NetworkQuality()
         val download = quality.download(now = 0.0)
         download.received(50_000, now = 1.0)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
         // Fast afterwards, but it was recorded already.
         download.received(10_000_000, now = 1.1)
         download.ended(failed = false, now = 1.1)
-        assertTrue(quality.isLimited)
+        assertTrue(quality.isSlow)
     }
 }

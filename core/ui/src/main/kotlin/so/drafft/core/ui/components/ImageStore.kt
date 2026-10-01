@@ -140,7 +140,7 @@ object ImageStore {
      */
     private fun fullWidth(name: String, pixels: PixelSize): Double {
         val needed = Renditions.neededWidth(pixels, MediaPreviews.aspect(name))
-        return if (NetworkQuality.shared.isLimited) needed * Renditions.limitedShare else needed
+        return if (NetworkQuality.shared.isSlow) needed * Renditions.limitedShare else needed
     }
 
     private fun priorityHeaders(priority: Images.Priority, photo: String) =
