@@ -47,8 +47,8 @@ internal fun rememberChatMediaPicker(maxSelection: Int, onPicked: (List<PickedMe
     ) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
         scope.launch {
-            val items = withContext(Dispatchers.IO) { uris.take(maxSelection).mapNotNull { readPicked(context, it) } }
-            if (items.isNotEmpty()) deliver.value(items)
+            val items = withContext(Dispatchers.IO) { uris.take(maxSelection).map { readPicked(context, it) ?: PickedMedia.Unreadable } }
+            deliver.value(items)
         }
     }
     return remember(launcher) {

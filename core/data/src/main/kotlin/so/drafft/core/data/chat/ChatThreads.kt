@@ -58,7 +58,10 @@ class ChatThreads(
     /** Session rows already asked for by a card. */
     val requestedSessions = mutableSetOf<UUID>()
 
-    /** Media being prepared and uploaded, not yet a Stream message (by match). */
+    /**
+     * Media being prepared and uploaded, and text written before the chat was connected: not yet a Stream
+     * message (by match).
+     */
     val uploads = mutableMapOf<String, MutableList<Upload>>()
 
     /** What this device sent (its own picture, video file, recording): shown instead of the downloaded copy. */
@@ -73,6 +76,9 @@ class ChatThreads(
 
     data class Upload(val message: Message, val matchID: String, val source: Source) {
         sealed interface Source {
+            /** A text: sent by the chat service once connected (never dropped meanwhile). */
+            data class Text(val text: String) : Source
+
             data class Photo(val data: ByteArray) : Source {
                 override fun equals(other: Any?) = other is Photo && other.data.contentEquals(data)
                 override fun hashCode() = data.contentHashCode()
@@ -294,6 +300,7 @@ class ChatThreads(
         scope.launch {
             try {
                 val media = when (val source = current.source) {
+                    is Upload.Source.Text -> error("a text goes through the chat service")
                     is Upload.Source.Photo -> {
                         val sent = MediaUploads.photo(source.data, purpose = MediaPurpose.CHAT_PHOTO, tickets = tickets)
                         ChatPayload.Media(
@@ -345,6 +352,29 @@ class ChatThreads(
             }
         }
     }
+
+    /** A text's bubble, sending, until Stream's own copy (same id) shows or [textSent] says how it went. */
+    fun queueText(upload: Upload) {
+        val list = uploads.getOrPut(upload.matchID) { mutableListOf() }
+        list.removeAll { it.message.id == upload.message.id }
+        list += upload.copy(message = upload.message.copy(state = DeliveryState.SENDING))
+        publish()
+    }
+
+    /** Stream has the text: its copy shows from now on. Not [sent]: Stream's failed copy, or this bubble, offers the retry. */
+    fun textSent(upload: Upload, sent: Boolean) {
+        val pending = uploads[upload.matchID] ?: return
+        if (sent) {
+            pending.removeAll { it.message.id == upload.message.id }
+        } else {
+            val i = pending.indexOfFirst { it.message.id == upload.message.id }
+            if (i >= 0) pending[i] = pending[i].copy(message = pending[i].message.copy(state = DeliveryState.FAILED))
+        }
+        publish()
+    }
+
+    /** The texts written while the chat wasn't connected, in the order they were written. */
+    fun waitingTexts(): List<Upload> = uploads.values.flatten().filter { it.source is Upload.Source.Text }
 
     /** Unsend an upload not sent yet: it just stops showing. True when [messageID] was one. */
     fun dropUpload(messageID: String, matchID: String): Boolean {

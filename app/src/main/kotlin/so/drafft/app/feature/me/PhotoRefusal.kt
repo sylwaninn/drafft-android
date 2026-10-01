@@ -116,7 +116,12 @@ private fun RefusalContent(refusal: PhotoModeration.Refusal, dismiss: () -> Unit
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                error = ServerMessage.text(e) ?: L("Couldn't send it. Check your connection and try again.")
+                error = when {
+                    // The photo is no longer on the server (removed meanwhile, or never registered).
+                    ServerMessage.code(e) == "not_found" -> L("This photo is no longer there. Remove it, then add it again.")
+                    e is java.io.IOException -> L("Couldn't send it. Check your connection and try again.")
+                    else -> ServerMessage.failure(e)
+                }
             }
             sending = false
         }
