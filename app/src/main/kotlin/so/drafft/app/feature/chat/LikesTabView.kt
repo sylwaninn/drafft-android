@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import so.drafft.app.feature.me.PaywallView
@@ -42,23 +41,23 @@ import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateView
 import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.PressScaleButton
-import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.TabHeader
 import so.drafft.core.ui.components.TabTitle
 import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.trackingScrollOffset
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
-import so.drafft.core.ui.theme.branded
 
 // Port of Drafft/Features/Chat/LikesTabView.swift.
 
 /**
- * Likes tab: everyone who already liked you, as a staggered mosaic of portraits (`LikesMosaic`).
+ * Likes tab: a banner with how many people like you, then everyone who already liked you as a grid of
+ * equal portraits (`LikesGrid`).
  *
- * - Without drafft tempo the server sends no identity, only a ThumbHash per like
- *   (`AppModel.blurredLikes`): the tiles are those blurred previews, the lead block counts them, and
- *   the one action, pinned at the bottom, opens the paywall (so does any tile).
+ * - Without drafft tempo the server sends no identity, only blurred previews per like
+ *   (`AppModel.blurredLikes`: a ThumbHash, and a blurred copy of the photo when the backend has one):
+ *   the tiles are those previews, the banner counts them, and the one action, pinned at the bottom,
+ *   opens the paywall (so does any tile).
  * - With drafft tempo the tiles are their photos: open a profile, or like back right from the tile.
  */
 @Composable
@@ -118,15 +117,14 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                     app.isPremium -> if (app.likedMe.isEmpty()) {
                         empty()
                     } else {
-                        LikesMosaic(
+                        LikesGrid(
                             items = app.likedMe,
                             itemKey = { it.id },
                             visitKey = "likes-tab",
-                            lead = { TempoLikesLead() },
-                        ) { p, height ->
+                            banner = { TempoLikesBanner(app.likedMe.size) },
+                        ) { p ->
                             LikeTile(
                                 profile = p,
-                                height = height,
                                 onOpen = {
                                     Haptics.tap()
                                     open = p
@@ -136,12 +134,12 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                         }
                     }
                     app.blurredLikes.isEmpty() -> empty()
-                    else -> LikesMosaic(
+                    else -> LikesGrid(
                         items = app.blurredLikes,
                         itemKey = { it.id },
                         visitKey = "likes-tab",
-                        lead = { CountLead(app.blurredLikes.size) },
-                    ) { like, height ->
+                        banner = { LockedLikesBanner(app.blurredLikes.size) },
+                    ) { like ->
                         PressScaleButton(
                             onClick = {
                                 Haptics.tap()
@@ -153,7 +151,7 @@ fun LikesTabView(modifier: Modifier = Modifier) {
                             } else {
                                 L("Someone who likes you. Unlock with drafft tempo")
                             },
-                        ) { LockedLikeTile(like, height) }
+                        ) { LockedLikeTile(like) }
                     }
                 }
             }
@@ -169,24 +167,6 @@ fun LikesTabView(modifier: Modifier = Modifier) {
             unlockedTitle = L("See who likes you"),
         )
     }
-}
-
-/**
- * Free plan: how many people like you (the server's own count of blurred likes, nothing made up)
- * and what drafft tempo does about it.
- */
-@Composable
-private fun CountLead(count: Int) {
-    LikesLeadBlock(
-        headline = {
-            RollingText(
-                if (count == 1) L("1 person likes you.") else L("%d people like you.", count),
-                style = leadHeadlineStyle(),
-                color = DS.palette.accentOnNight,
-            )
-        },
-        message = branded(L("See who, and match in one tap with drafft tempo."), FontWeight.SemiBold, tierColor = DS.palette.tierOnNight),
-    )
 }
 
 @Composable

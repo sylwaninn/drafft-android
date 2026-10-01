@@ -31,8 +31,8 @@ import so.drafft.core.ui.theme.TextStyles
 // Port of Drafft/Features/Chat/LikesYouView.swift.
 
 /**
- * drafft tempo: everyone who already liked you, as the Likes mosaic (`LikesMosaic`). Like back and
- * it's mutual right away. Shown in a sheet (`DrafftSheet`); Close is its own (`LocalSheetDismiss`).
+ * drafft tempo: everyone who already liked you, as the Likes grid (`LikesGrid`) under its banner.
+ * Like back and it's mutual right away. Shown in a sheet (`DrafftSheet`); Close is its own (`LocalSheetDismiss`).
  */
 @Composable
 fun LikesYouView(modifier: Modifier = Modifier) {
@@ -55,7 +55,6 @@ fun LikesYouView(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(DS.Space.md),
         ) {
             if (app.likedMe.isEmpty()) {
-                TempoLikesLead()
                 Text(
                     L("No new likes right now. Keep swiping, they'll show up here."),
                     Modifier
@@ -66,15 +65,14 @@ fun LikesYouView(modifier: Modifier = Modifier) {
                     color = DS.palette.body,
                 )
             } else {
-                LikesMosaic(
+                LikesGrid(
                     items = app.likedMe,
                     itemKey = { it.id },
                     visitKey = "likes-sheet",
-                    lead = { TempoLikesLead() },
-                ) { p, height ->
+                    banner = { TempoLikesBanner(app.likedMe.size) },
+                ) { p ->
                     LikeTile(
                         profile = p,
-                        height = height,
                         onOpen = {
                             Haptics.tap()
                             open = p

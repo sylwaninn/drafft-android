@@ -1,18 +1,20 @@
 package so.drafft.app.feature.chat
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -21,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,8 +47,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
+import coil3.compose.LocalPlatformContext
+import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import so.drafft.app.feature.discover.ProfileIdentity
 import so.drafft.core.data.BlurredLike
@@ -53,11 +59,13 @@ import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ThumbHash
+import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.LocalTabsOnScreen
 import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
+import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.StickerVisits
 import so.drafft.core.ui.components.SuperLikeMark
 import so.drafft.core.ui.theme.DS
@@ -65,41 +73,36 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
+import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.display
 
-// Port of Drafft/Features/Chat/LikesMosaic.swift.
-
-/** Tile heights shared by the mosaic and its lead block. */
-object LikesTileHeight {
-    val tall = 252.dp
-    val short = 200.dp
-}
-
-/** What the lead block counts for when the columns are balanced (at least a tall tile). */
-private val LeadWeight = LikesTileHeight.tall + 20.dp
+// Port of Drafft/Features/Chat/LikesGrid.swift.
 
 /** Tiles past this one arrive together with it: a long list doesn't make you wait. */
 private const val STAGGER_CAP = 9
 
-private class Slot<T>(val item: T, val height: Dp, val order: Int)
+/** The one tile shape: 3:4 portrait, so every row of the grid is the same height. */
+private const val TILE_ASPECT = 3f / 4f
 
 /**
- * The Likes mosaic: two staggered columns of portrait tiles, tall and short in turn like a contact
- * sheet, with a lead block (the count, or what to do) as the first tile of the left column. Used by
- * the Likes tab and the drafft tempo likes sheet, blurred or sharp.
+ * The Likes grid: a banner (how many like you, and what to do) above a regular grid of portrait
+ * tiles, two columns, every tile the same 3:4 shape so all rows line up. Only people go in the grid;
+ * the words live in the banner. Used by the Likes tab and the drafft tempo likes sheet, blurred or
+ * sharp.
  *
  * Arriving on it after a while (`StickerVisits`, the same 30 s rule as the empty-tab sticker) files
- * the tiles in from the left, one after the other, like riders tucking into a draft. A quick round
- * of tabs or the walk under the splash doesn't replay it. Reduce Motion: already in place.
+ * the banner and the tiles in from the left, one after the other, like riders tucking into a draft.
+ * A quick round of tabs or the walk under the splash doesn't replay it. Reduce Motion: already in
+ * place.
  */
 @Composable
-fun <T> LikesMosaic(
+fun <T> LikesGrid(
     items: List<T>,
     itemKey: (T) -> Any,
     visitKey: String,
     modifier: Modifier = Modifier,
-    lead: @Composable () -> Unit,
-    tile: @Composable (T, Dp) -> Unit,
+    banner: @Composable () -> Unit,
+    tile: @Composable (T) -> Unit,
 ) {
     // Every tab stays composed: on screen is the current tab, with the tabs themselves showing.
     val onScreen = LocalTabIsCurrent.current && LocalTabsOnScreen.current
@@ -121,44 +124,27 @@ fun <T> LikesMosaic(
         onDispose { if (onScreen) StickerVisits.leave(visitKey) }
     }
 
-    // Each tile goes to the shorter column; heights run tall, short, short, tall so the two columns
-    // never line up.
-    val left = mutableListOf<Slot<T>>()
-    val right = mutableListOf<Slot<T>>()
-    var leftHeight = LeadWeight
-    var rightHeight = 0.dp
-    items.forEachIndexed { i, item ->
-        val height = if (i % 4 == 0 || i % 4 == 3) LikesTileHeight.tall else LikesTileHeight.short
-        val slot = Slot(item, height, minOf(i + 1, STAGGER_CAP))
-        if (rightHeight <= leftHeight) {
-            right += slot
-            rightHeight += height + DS.Space.sm
-        } else {
-            left += slot
-            leftHeight += height + DS.Space.sm
-        }
-    }
-
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-            Box(Modifier.draftIn(0, tucked, arrival)) { lead() }
-            left.forEach { slot ->
-                key(itemKey(slot.item)) {
-                    Box(Modifier.draftIn(slot.order, tucked, arrival)) { tile(slot.item, slot.height) }
-                }
-            }
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-            right.forEach { slot ->
-                key(itemKey(slot.item)) {
-                    Box(Modifier.draftIn(slot.order, tucked, arrival)) { tile(slot.item, slot.height) }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(DS.Space.md)) {
+        Box(Modifier.draftIn(0, tucked, arrival)) { banner() }
+        // Inside the page's scroll: rows of two, each tile the same shape (a lazy grid can't nest here).
+        Column(verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
+            items.chunked(2).forEachIndexed { row, pair ->
+                Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
+                    pair.forEachIndexed { column, item ->
+                        val order = minOf(row * 2 + column + 1, STAGGER_CAP)
+                        key(itemKey(item)) {
+                            Box(Modifier.weight(1f).draftIn(order, tucked, arrival)) { tile(item) }
+                        }
+                    }
+                    // A lone last tile keeps its column's width.
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
     }
 }
 
-/** One tile filing in: from a little to the left and slightly smaller, faded, to its place. */
+/** One element filing in: from a little to the left and slightly smaller, faded, to its place. */
 @Composable
 private fun Modifier.draftIn(order: Int, tucked: Boolean, arrival: Int): Modifier {
     val progress = remember { Animatable(1f) }
@@ -185,30 +171,40 @@ private fun Modifier.draftIn(order: Int, tucked: Boolean, arrival: Int): Modifie
 // Tiles
 
 /**
- * A like without drafft tempo: the server's ThumbHash of their first photo (`BlurredLike`, already a
- * blur, nothing sharper ever reaches the phone), a lock, and the red heart of a super like.
+ * The one tile frame: 3:4 portrait, whatever the screen width, so every row of the grid is the same
+ * height. Content fills it; nothing in it sizes it.
  */
 @Composable
-fun LockedLikeTile(like: BlurredLike, height: Dp, modifier: Modifier = Modifier) {
+private fun PortraitFrame(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(modifier.fillMaxWidth().aspectRatio(TILE_ASPECT).clip(RoundedCornerShape(DS.Radius.xl))) { content() }
+}
+
+/**
+ * A like without drafft tempo. The server's blurred copy of their first photo ([BlurredLike.blurUrl],
+ * a signed link) once it's loaded; until then, or if there is none or it fails, the ThumbHash. Both
+ * are blurs made on the server: nothing sharper ever reaches the phone. A lock, and the red heart of
+ * a super like.
+ */
+@Composable
+fun LockedLikeTile(like: BlurredLike, modifier: Modifier = Modifier) {
     val preview = remember(like.id) { like.preview?.let(::previewBitmap) }
     val shape = RoundedCornerShape(DS.Radius.xl)
-    Box(
-        modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(shape)
-            .background(DS.palette.night)
-            .border(1.dp, DS.palette.blockEdge, shape),
-    ) {
-        if (preview != null) {
-            Image(
-                preview,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                // The hash is low-frequency: drawn smooth at tile size, it reads as frosted glass.
-                filterQuality = FilterQuality.High,
-            )
+    Box(modifier.fillMaxWidth().border(1.dp, DS.palette.blockEdge, shape)) {
+        PortraitFrame {
+            Box(Modifier.fillMaxSize().background(DS.palette.night))
+            if (preview != null) {
+                Image(
+                    preview,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    // The hash is low-frequency: drawn smooth at tile size, it reads as frosted glass.
+                    filterQuality = FilterQuality.High,
+                )
+            }
+            like.blurUrl?.let { ServerBlurredPhoto(it) }
+            // One even veil so every tile reads alike and the lock stands out on a pale photo.
+            Box(Modifier.fillMaxSize().background(DS.palette.night.copy(alpha = 0.16f)))
         }
         Box(
             Modifier
@@ -225,12 +221,42 @@ fun LockedLikeTile(like: BlurredLike, height: Dp, modifier: Modifier = Modifier)
 }
 
 /**
+ * The server's blurred rendition, through the app's image pipeline (Coil: decoded at tile size in the
+ * background, memory and disk caches keyed by the object, never by the signature). Softened a little
+ * more at decode so it matches the ThumbHash it replaces. Transparent until it's there, so the
+ * ThumbHash under it stays as the placeholder and the fallback.
+ */
+@Composable
+private fun ServerBlurredPhoto(url: String) {
+    BoxWithConstraints(Modifier.fillMaxSize().clearAndSetSemantics { }) {
+        val longest = maxOf(constraints.maxWidth, constraints.maxHeight).takeIf { it in 1..<Int.MAX_VALUE } ?: 720
+        val pixels = ImageStore.remoteBucket(longest)
+        val context = LocalPlatformContext.current
+        val request = remember(url, pixels) { ImageStore.remoteRequest(context, url, pixels, blur = 0.03f, variant = "blurred") }
+        val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
+        val state by painter.state.collectAsState()
+        val ready = state is AsyncImagePainter.State.Success
+        val readyAtFirstFrame = remember(request) { ready }
+        val alpha by animateFloatAsState(
+            if (ready) 1f else 0f,
+            if (readyAtFirstFrame) tween(0) else tween(250, easing = Motion.EaseOut),
+            label = "blurFade",
+        )
+        Image(
+            painter,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha },
+            contentScale = ContentScale.Crop,
+        )
+    }
+}
+
+/**
  * A like with drafft tempo: their photo, name and age. The tile opens the profile; the green heart
  * likes them back at once (it's mutual from there).
  */
 @Composable
-fun LikeTile(profile: Profile, height: Dp, onOpen: () -> Unit, onLike: () -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(DS.Radius.xl)
+fun LikeTile(profile: Profile, onOpen: () -> Unit, onLike: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth()) {
         PressScaleButton(
             onClick = onOpen,
@@ -238,23 +264,25 @@ fun LikeTile(profile: Profile, height: Dp, onOpen: () -> Unit, onLike: () -> Uni
             scale = 0.97f,
             contentDescription = L("%s, %d. Open profile", profile.name, profile.age),
         ) {
-            Box(Modifier.fillMaxWidth().height(height).clip(shape)) {
-                Photo(profile.portrait, Modifier.fillMaxSize(), side = 180.dp)
+            PortraitFrame {
+                Photo(profile.portrait, Modifier.fillMaxSize(), side = 240.dp)
                 Box(
                     Modifier
                         .fillMaxSize()
                         // design-lint: allow gradient - photo scrim under the name
                         .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to DS.palette.night.copy(alpha = 0.85f))),
                 )
-                ProfileIdentity(
-                    profile = profile,
-                    nameSize = 20f,
-                    showsLocation = false,
-                    showsSuperLike = true,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = DS.Space.md, end = 56.dp, bottom = DS.Space.md),
-                )
+                Box(Modifier.fillMaxSize()) {
+                    ProfileIdentity(
+                        profile = profile,
+                        nameSize = 20f,
+                        showsLocation = false,
+                        showsSuperLike = true,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = DS.Space.md, end = 56.dp, bottom = DS.Space.md),
+                    )
+                }
             }
         }
         // Likes stay green whatever the brand accent.
@@ -291,39 +319,54 @@ private fun SuperLikeDisc(modifier: Modifier = Modifier) {
     }
 }
 
-// Lead blocks
+// Banner
 
-/** The mosaic's first tile: a night block with the likes sign, a display line and one sentence. */
+/**
+ * The top of Likes: a night banner with the likes sign, how many people like you (counted from the
+ * list the server sent, never a made-up figure) and one sentence on what to do. It holds no button:
+ * the screen's one action is pinned at the bottom (or on each tile with drafft tempo).
+ */
 @Composable
-fun LikesLeadBlock(headline: @Composable () -> Unit, message: AnnotatedString, modifier: Modifier = Modifier) {
-    NightBlock(modifier.fillMaxWidth().heightIn(min = LikesTileHeight.tall)) {
-        Column(Modifier.padding(DS.Space.lg).heightIn(min = LikesTileHeight.tall - DS.Space.lg * 2)) {
+fun LikesBanner(count: Int, message: AnnotatedString, modifier: Modifier = Modifier) {
+    NightBlock(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.padding(DS.Space.lg).semantics(mergeDescendants = true) { },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
+        ) {
             Box(
-                Modifier.size(44.dp).background(DS.palette.accentOnNight, CircleShape).clearAndSetSemantics { },
+                Modifier.size(48.dp).background(DS.palette.accentOnNight, CircleShape).clearAndSetSemantics { },
                 contentAlignment = Alignment.Center,
             ) {
                 DrafftIcon("user-heart", size = 22.dp, tint = DS.palette.onAccentOnNight)
             }
-            Spacer(Modifier.weight(1f).heightIn(min = DS.Space.md))
-            Box(Modifier.semantics { heading() }) { headline() }
-            Spacer(Modifier.height(DS.Space.md))
-            Text(message, style = TextStyles.subheadline, color = Color.White.copy(alpha = 0.72f))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
+                RollingText(
+                    if (count == 1) L("1 person likes you.") else L("%d people like you.", count),
+                    modifier = Modifier.semantics { heading() },
+                    style = display(22f),
+                    color = DS.palette.accentOnNight,
+                )
+                Text(message, style = TextStyles.subheadline, color = Color.White.copy(alpha = 0.72f))
+            }
         }
     }
 }
 
-/** The lead block's display line style. */
+/** Without drafft tempo: what drafft tempo does about it. The pinned button opens it. */
 @Composable
-internal fun leadHeadlineStyle() = display(26f)
+fun LockedLikesBanner(count: Int, modifier: Modifier = Modifier) {
+    LikesBanner(
+        count = count,
+        message = branded(L("See who, and match in one tap with drafft tempo."), FontWeight.SemiBold, tierColor = DS.palette.tierOnNight),
+        modifier = modifier,
+    )
+}
 
 /** With drafft tempo: who they are is right there, like back to match. */
 @Composable
-fun TempoLikesLead(modifier: Modifier = Modifier) {
-    LikesLeadBlock(
-        headline = { Text(L("They like you."), style = leadHeadlineStyle(), color = DS.palette.accentOnNight) },
-        message = AnnotatedString(L("Like back and it's a match straight away.")),
-        modifier = modifier,
-    )
+fun TempoLikesBanner(count: Int, modifier: Modifier = Modifier) {
+    LikesBanner(count = count, message = AnnotatedString(L("Like back and it's a match straight away.")), modifier = modifier)
 }
 
 /** A ThumbHash's RGBA pixels (about 32 × 32) as a bitmap, made once per like. */
