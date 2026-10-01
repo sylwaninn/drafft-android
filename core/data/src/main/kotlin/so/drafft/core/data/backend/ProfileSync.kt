@@ -286,7 +286,7 @@ class ProfileSync(
             "name", "birthdate", "pronouns", "gender", "neighborhood", "bio", "goal", "favorite_spot",
             "drinks", "smokes", "diet", "chronotype", "icebreaker", "voice_intro_key", "voice_duration",
             "paused", "moderation", "onboarded_at", NotificationSettings.columns,
-            "profile_sports(sport_id,per_week)", "profile_prompts(question,answer)", "profile_media(id,key,kind,status,thumbhash,face)",
+            "profile_sports(sport_id,per_week)", "profile_prompts(question,answer)", "profile_media(id,key,kind,status,thumbhash,face,width,height)",
         ) + if (withConsent) consentColumns else emptyList()).joinToString(",")
 
         private class MediaRow(
@@ -295,6 +295,8 @@ class ProfileSync(
             val kind: String,
             val status: String,
             val thumbhash: String?,
+            val width: Int?,
+            val height: Int?,
             // Three states in the column: a face, none, never checked (null).
             val face: Boolean?,
         )
@@ -328,7 +330,10 @@ class ProfileSync(
             val prompts = o.optList("profile_prompts") { e -> e.requireObject().let { ProfilePrompt(it.string("question"), it.string("answer")) } }
             val media = o.optList("profile_media") { e ->
                 e.requireObject().let { 
-                    MediaRow(it.string("id"), it.string("key"), it.string("kind"), it.string("status"), it.optString("thumbhash"), it.optBoolean("face"))
+                    MediaRow(
+                        it.string("id"), it.string("key"), it.string("kind"), it.string("status"), it.optString("thumbhash"),
+                        it["width"].asInt, it["height"].asInt, it.optBoolean("face"),
+                    )
                 }
             }
         }
@@ -354,7 +359,7 @@ class ProfileSync(
             val (row, obj) = row(data) ?: return null
             fun link(key: String): String? = signed[key] ?: mediaBase?.let { appendingPath(it, key) }
             // Each photo's blurred preview, shown while it loads.
-            for (m in row.media ?: emptyList()) MediaPreviews.register(m.thumbhash, key = m.key)
+            for (m in row.media ?: emptyList()) MediaPreviews.register(m.thumbhash, key = m.key, width = m.width, height = m.height)
             val own = (row.media ?: emptyList()).filter { it.kind == "photo" }.mapNotNull { m ->
                 link(m.key)?.let { OwnPhoto(link = it, id = m.id, status = m.status, faceless = m.face == false) }
             }

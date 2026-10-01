@@ -22,6 +22,7 @@ import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 import so.drafft.core.ui.platform.installDrafftUi
+import so.drafft.core.ui.platform.installImages
 import so.drafft.core.ui.theme.LanguageObservation
 
 /** The iPhone's `DrafftApp.init`: diagnostics, images, the store, dates, haptics, the language. */
@@ -45,6 +46,7 @@ class DrafftApplication : Application() {
         IcuDates.install()
         Haptics.engine = AndroidHaptics(this)
         installDrafftUi()
+        installImages(this)
         koin.get<Diagnostics>().start()
         // Starts the foreground refresh and the push token fetch.
         koin.get<so.drafft.core.data.notifications.NotificationService>()

@@ -65,9 +65,9 @@ import so.drafft.core.data.media.MediaURL
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
-import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.MessageImage
 import so.drafft.core.ui.components.pressScale
+import so.drafft.core.ui.components.rememberPhotoRequest
 import so.drafft.core.ui.image.BundledImages
 import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.platform.ShareItem
@@ -252,8 +252,10 @@ private fun MediaPage(
                     bundled != null -> Image(painterResource(bundled), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                     asset != null -> {
                         // A photo sent in a chat, from the media bucket (through the shared image pipeline and its caches).
-                        val request = remember(asset) { ImageStore.remoteRequest(context, asset, ImageStore.remoteBucket(2048)) }
-                        AsyncImage(request, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                        val request = rememberPhotoRequest(asset, 2048, 2048, fill = false)
+                        if (request != null) {
+                            AsyncImage(request, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                        }
                     }
                 }
             }

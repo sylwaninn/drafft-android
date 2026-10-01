@@ -39,7 +39,6 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,9 +79,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberAsyncImagePainter
+import so.drafft.core.data.media.Images
 import so.drafft.core.model.L
 import so.drafft.core.model.Sport
 import so.drafft.core.ui.image.BundledImages
@@ -456,6 +454,7 @@ private fun FieldError(error: String?) {
  * (starting with "/") for photos the user picked, or a link for photos on the server. Give [side]
  * (the frame's shorter side) for small displays: a downsampled copy is drawn instead of the full
  * photo. [blur] (with [side]) draws a copy with the blur baked in, instead of a live blur.
+ * [priority]: download order among photos waiting (the deck: the card in play first).
  */
 @Composable
 fun Photo(
@@ -463,12 +462,13 @@ fun Photo(
     modifier: Modifier = Modifier,
     side: Dp? = null,
     blur: Dp = 0.dp,
+    priority: Images.Priority = Images.Priority.NORMAL,
 ) {
     val fraction = if (blur > 0.dp) blur / max(side ?: 200.dp, 1.dp) else 0f
     Box(modifier.clipToBounds().clearAndSetSemantics { }) {
         if (name.startsWith("http") || name.startsWith("/")) {
             // Blurred at decode time, never a live blur (locked likes).
-            LoadedPhoto(name, fraction)
+            LoadedPhoto(name, fraction, priority)
         } else {
             BundledPhoto(name, side, fraction)
         }
@@ -489,45 +489,6 @@ private fun BundledPhoto(name: String, side: Dp?, fraction: Float) {
         AsyncImage(request, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
     } else {
         Image(painterResource(res), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-    }
-}
-
-/**
- * A photo on the server (`http…`) or picked on this phone (`/…`): decoded in the background at the
- * frame's size, shared downloads, capped caches. A copy already in memory shows on the first frame;
- * otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile, stands in until it's there.
- */
-@Composable
-private fun LoadedPhoto(name: String, blur: Float) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val longest = maxOf(
-            if (constraints.hasBoundedWidth) constraints.maxWidth else 0,
-            if (constraints.hasBoundedHeight) constraints.maxHeight else 0,
-        ).takeIf { it > 0 } ?: 1440
-        val pixels = ImageStore.remoteBucket(longest)
-        val context = LocalPlatformContext.current
-        val request = remember(name, pixels, blur) { ImageStore.remoteRequest(context, name, pixels, blur) }
-        val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
-        val state by painter.state.collectAsState()
-        val ready = state is AsyncImagePainter.State.Success
-        // Already in memory: no fade. Otherwise a 0.2 s ease-out once decoded.
-        val readyAtFirstFrame = remember(request) { ready }
-        val alpha by animateFloatAsState(
-            if (ready) 1f else 0f,
-            if (readyAtFirstFrame) tween(0) else tween(200, easing = Motion.EaseOut),
-            label = "photoFade",
-        )
-        val preview = remember(name) { PhotoUrls.preview(name) }
-        Box(Modifier.fillMaxSize().background(DS.palette.canvasSoft))
-        if (!ready && preview != null) {
-            Image(preview, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        }
-        Image(
-            painter,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = if (readyAtFirstFrame) 1f else alpha },
-            contentScale = ContentScale.Crop,
-        )
     }
 }
 

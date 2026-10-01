@@ -63,6 +63,9 @@ data class ProfileCard(
         val url: String?,
         /** Blurred preview shown while the photo loads (`MediaPreviews`). */
         val thumbhash: String?,
+        /** Size in pixels (null for older rows): picks the copy to download (`Renditions`). */
+        val width: Int? = null,
+        val height: Int? = null,
     )
 
     data class SportRow(val sport: String, val perWeek: Int)
@@ -108,7 +111,10 @@ data class ProfileCard(
             },
             media = o.optList("media") { e ->
                 val m = e.requireObject()
-                Media(m.string("id"), m.string("kind"), m.string("key"), m.optString("url"), m.optString("thumbhash"))
+                Media(
+                    m.string("id"), m.string("kind"), m.string("key"), m.optString("url"), m.optString("thumbhash"),
+                    width = m["width"].asInt, height = m["height"].asInt,
+                )
             } ?: emptyList(),
             sports = o.optList("sports") { e -> e.requireObject().let { SportRow(it.string("sport"), it.int("perWeek")) } } ?: emptyList(),
             prompts = o.optList("prompts") { e -> e.requireObject().let { Prompt(it.string("question"), it.string("answer")) } } ?: emptyList(),

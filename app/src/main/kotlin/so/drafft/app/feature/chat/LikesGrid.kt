@@ -50,7 +50,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
-import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.delay
 import so.drafft.app.feature.discover.ProfileIdentity
@@ -61,7 +60,6 @@ import so.drafft.core.model.LikeAge
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ThumbHash
 import so.drafft.core.ui.components.EmptyStateArt
-import so.drafft.core.ui.components.ImageStore
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.LocalTabsOnScreen
 import so.drafft.core.ui.components.NightBlock
@@ -71,6 +69,7 @@ import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.StickerVisits
 import so.drafft.core.ui.components.StillSticker
 import so.drafft.core.ui.components.SuperLikeMark
+import so.drafft.core.ui.components.rememberPhotoRequest
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
@@ -280,10 +279,9 @@ fun LockedLikeTile(like: BlurredLike, now: Instant, modifier: Modifier = Modifie
 @Composable
 private fun ServerBlurredPhoto(url: String) {
     BoxWithConstraints(Modifier.fillMaxSize().clearAndSetSemantics { }) {
-        val longest = maxOf(constraints.maxWidth, constraints.maxHeight).takeIf { it in 1..<Int.MAX_VALUE } ?: 720
-        val pixels = ImageStore.remoteBucket(longest)
-        val context = LocalPlatformContext.current
-        val request = remember(url, pixels) { ImageStore.remoteRequest(context, url, pixels, blur = 0.03f, variant = "blurred") }
+        val width = constraints.maxWidth.takeIf { it in 1..<Int.MAX_VALUE } ?: 540
+        val height = constraints.maxHeight.takeIf { it in 1..<Int.MAX_VALUE } ?: 720
+        val request = rememberPhotoRequest(url, width, height, blur = 0.03f, variant = "blurred") ?: return@BoxWithConstraints
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
         val state by painter.state.collectAsState()
         val ready = state is AsyncImagePainter.State.Success

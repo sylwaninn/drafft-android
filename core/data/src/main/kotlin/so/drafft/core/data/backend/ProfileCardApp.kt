@@ -21,7 +21,7 @@ import so.drafft.core.model.Vitals
 /** The profile the screens show. `base`: the media base for a backend from before signed links. */
 fun ProfileCard.profile(mediaBase: String?): Profile {
     // Each photo's blurred preview, shown while it loads.
-    for (m in media) MediaPreviews.register(m.thumbhash, key = m.key)
+    for (m in media) MediaPreviews.register(m.thumbhash, key = m.key, width = m.width, height = m.height)
     val photos = photoLinks(mediaBase)
     var lifestyle = Vitals(
         drinks = vitals?.drinks ?: "", smokes = vitals?.smokes ?: "",

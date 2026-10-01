@@ -1158,8 +1158,9 @@ class AppModel(
 
     // Discover on the server (docs/matching.md in drafft-backend):
     //
-    // - Batches from `discover`, 20 at a time, asked again when 5 cards are left. Each batch is the
-    //   server's fresh order: the cards on screen stay in place if the server still has them, and any
+    // - Batches from `discover`: the cards still to swipe and 20 new ones (the server ranks from the top,
+    //   so it sends both), asked again early enough to arrive before the end at the pace the person swipes
+    //   (`DeckPace`, at least 10 cards ahead). Each batch is the server's fresh order: the cards on screen stay in place if the server still has them, and any
     //   card it no longer returns (paused, blocked, swiped on another device, no longer eligible) goes.
     //   The deck is also read again at the front, when the account's channel (re)joins, when the
     //   filters or the person's own preferences change (from scratch then), and when a pause ends: no
@@ -1204,11 +1205,14 @@ class AppModel(
 
     /**
      * Reads a batch. `RESTART` drops the deck on screen first (new filters or preferences): a card
-     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it.
+     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it. [bySwipe]: the
+     * read a swipe asks for as the deck runs low; any other (the front, the channel, the filters) also
+     * tries again after the server ran out of new cards.
      */
-    fun loadDeck(mode: DeckLoad) {
+    fun loadDeck(mode: DeckLoad, bySwipe: Boolean = false) {
         if (phase != Phase.MAIN || profilePaused) return
         if (mode == DeckLoad.REFRESH && discovery.load != null) return
+        if (!bySwipe) discovery.exhausted = false
         discovery.load?.cancel()
         discovery.generation += 1
         val generation = discovery.generation
@@ -1222,12 +1226,17 @@ class AppModel(
         // flashing the spinner would replay its entrance for nothing.
         if (queue.isEmpty() && (mode == DeckLoad.RESTART || deckState != DeckState.Loaded)) deckState = DeckState.Loading
         val filters = filters
+        // The server sends its fresh order from the top, the cards still here included, and may send the
+        // swipes not yet on the server (left out): ask for all of those plus a batch of new ones (50 at most).
+        val limit = minOf(DECK_MAX_READ, queue.size + discovery.pendingSwipes + DECK_BATCH)
         discovery.load = scope.launch {
-            val outcome = fetchDeck(filters)
+            val started = System.nanoTime()
+            val outcome = fetchDeck(filters, limit)
             // A newer read, or discovery cleared meanwhile (signed out): this one is stale.
             if (state !== discovery || generation != discovery.generation) return@launch
+            if (outcome is DeckOutcome.Cards) discovery.pace.read(took = (System.nanoTime() - started) / 1e9)
             discovery.load = null
-            apply(outcome, filters)
+            apply(outcome, filters, limit)
         }
     }
 
@@ -1238,10 +1247,10 @@ class AppModel(
     }
 
     /** One `discover` call; with no location on file, the location is sent first and it's asked again once. */
-    private suspend fun fetchDeck(filters: DiscoverFilters): DeckOutcome {
+    private suspend fun fetchDeck(filters: DiscoverFilters, limit: Int): DeckOutcome {
         for (attempt in 0 until 2) {
             try {
-                return DeckOutcome.Cards(backend.rpc("discover", jsonOf("p_filters" to filters.serverFilters, "p_limit" to DECK_BATCH)))
+                return DeckOutcome.Cards(backend.rpc("discover", jsonOf("p_filters" to filters.serverFilters, "p_limit" to limit)))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -1253,10 +1262,14 @@ class AppModel(
         return DeckOutcome.Refused("location_required")
     }
 
-    private fun apply(outcome: DeckOutcome, filters: DiscoverFilters) {
+    private fun apply(outcome: DeckOutcome, filters: DiscoverFilters, limit: Int) {
         when (outcome) {
             is DeckOutcome.Cards -> {
-                val cards = (attemptOrNull { ProfileCard.list(outcome.data) } ?: emptyList()).filter { it.isShowable }
+                val sent = attemptOrNull { ProfileCard.list(outcome.data) } ?: emptyList()
+                // Less than asked: the server has no more for now. Swipes stop asking (each would read
+                // the same cards again) until another refresh. A full page may have more behind it.
+                discovery.exhausted = sent.size < limit
+                val cards = sent.filter { it.isShowable }
                 val hidden = hiddenIDs()
                 val fresh = cards.filter { it.id !in hidden }
                 val byID = LinkedHashMap<String, Profile>()
@@ -1323,11 +1336,14 @@ class AppModel(
             likesLeft?.let { likesLeft = maxOf(0, it - 1) }
         }
         saveDeck(filters)
-        if (queue.size <= DECK_LOW_WATER) loadDeck(DeckLoad.REFRESH)
+        discovery.pace.swiped(at = System.nanoTime() / 1e9)
+        if (queue.size <= discovery.pace.lowWater && !discovery.exhausted) loadDeck(DeckLoad.REFRESH, bySwipe = true)
         // The last card went while the next batch is on its way: that's loading, not "no one new".
         if (queue.isEmpty() && discovery.load != null) deckState = DeckState.Loading
 
         val target = profile.id
+        val state = discovery
+        state.pendingSwipes += 1
         enqueue {
             try {
                 val data = backend.rpc("swipe", swipeBody(target, liked, superLike, opener))
@@ -1338,6 +1354,8 @@ class AppModel(
                 throw e
             } catch (e: Exception) {
                 swipeFailed(Swiped(profile, liked, superLike, Instant.now()), deckIndex, likesIndex, e)
+            } finally {
+                state.pendingSwipes = maxOf(0, state.pendingSwipes - 1)
             }
             if (liked && !superLike) loadLikesLeft()
         }
@@ -1867,9 +1885,11 @@ class AppModel(
         /** Likes read at a time: the Likes tab shows them all. */
         private const val LIKES_PAGE = 100
 
-        /** Cards per batch, and how few left asks for the next one. */
-        const val DECK_BATCH = 20
-        const val DECK_LOW_WATER = 5
+        /** New cards per read. */
+        const val DECK_BATCH = DeckPace.BATCH
+
+        /** The most `discover` returns at once. */
+        private const val DECK_MAX_READ = 50
 
         /** Cards on screen (the stack shows 4) that a fresh batch doesn't reorder. */
         private const val DECK_KEEP = 4
