@@ -43,6 +43,11 @@ class RenditionsTest {
     }
 
     @Test
+    fun aLimitedLineAsksAStepLighter() {
+        assertEquals(1_080, Renditions.width(covering = 1_344.0 * Renditions.limitedShare))
+    }
+
+    @Test
     fun previewIsAQuarterOfTheWidth() {
         assertEquals(320, Renditions.previewWidth(covering = 1_344.0))
         assertEquals(160, Renditions.previewWidth(covering = 300.0))

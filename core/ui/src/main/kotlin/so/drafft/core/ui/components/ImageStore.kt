@@ -20,6 +20,7 @@ import coil3.size.Size
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.MediaPreviews
 import so.drafft.core.data.media.MediaURL
+import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.media.PixelSize
 import so.drafft.core.data.media.Renditions
 import so.drafft.core.model.ThumbHash
@@ -118,11 +119,7 @@ object ImageStore {
         fill: Boolean = true,
     ): ImageRequest {
         val pixels = PixelSize(width, height)
-        val url = if (name.startsWith("/")) {
-            name
-        } else {
-            closest(context, name, Renditions.neededWidth(pixels, MediaPreviews.aspect(name)), variant)
-        }
+        val url = if (name.startsWith("/")) name else closest(context, name, fullWidth(name, pixels), variant)
         return make(context, url, Renditions.decodeSize(pixels), priority, blur, variant, fill)
     }
 
@@ -133,8 +130,24 @@ object ImageStore {
     fun preview(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
         val url = previewURL(name, width, height) ?: return null
         val decode = Renditions.decodeSize(PixelSize(width / 3.0, height / 3.0))
-        return make(context, url, decode, Images.Priority.HIGH, blur = 0f, variant = null, fill = true)
+        // Ahead of every full copy but the card in play's: on a slow line, it's what keeps up with the swipes.
+        return make(context, url, decode, Images.Priority.VERY_HIGH, blur = 0f, variant = null, fill = true)
     }
+
+    /**
+     * The width a full copy is chosen for: what the frame needs, a step lighter on a slow line (a copy
+     * already here still wins, [closest]): sooner beats sharper there.
+     */
+    private fun fullWidth(name: String, pixels: PixelSize): Double {
+        val needed = Renditions.neededWidth(pixels, MediaPreviews.aspect(name))
+        return if (NetworkQuality.shared.isLimited) needed * Renditions.limitedShare else needed
+    }
+
+    private fun priorityHeaders(priority: Images.Priority, photo: String) =
+        NetworkHeaders.Builder()
+            .set(Images.PRIORITY_HEADER, priority.ordinal.toString())
+            .set(Images.PHOTO_HEADER, photo)
+            .build()
 
     private fun previewURL(name: String, width: Int, height: Int): String? {
         if (!name.startsWith("http")) return null
@@ -159,12 +172,12 @@ object ImageStore {
         val url = if (previewOnly) {
             previewURL(name, width, height) ?: return null
         } else {
-            closest(context, name, Renditions.neededWidth(PixelSize(width, height), MediaPreviews.aspect(name)), null)
+            closest(context, name, fullWidth(name, PixelSize(width, height)), null)
         }
         return ImageRequest.Builder(context)
             .data(url)
             .diskCacheKey(cacheID(url, null))
-            .httpHeaders(NetworkHeaders.Builder().set(Images.PRIORITY_HEADER, priority.ordinal.toString()).build())
+            .httpHeaders(priorityHeaders(priority, cacheID(url, null)))
             .memoryCachePolicy(CachePolicy.DISABLED)
             .size(Size(64, 64))
             .precision(Precision.INEXACT)
@@ -194,7 +207,7 @@ object ImageStore {
             .precision(Precision.INEXACT)
         if (!local) {
             builder.diskCacheKey(key)
-            builder.httpHeaders(NetworkHeaders.Builder().set(Images.PRIORITY_HEADER, priority.ordinal.toString()).build())
+            builder.httpHeaders(priorityHeaders(priority, key))
         }
         // Aspect fill: the copy covers the frame whatever its proportions; then cropped to it, so memory
         // never keeps the edges the frame hides.

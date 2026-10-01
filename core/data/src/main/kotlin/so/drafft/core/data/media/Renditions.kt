@@ -29,6 +29,9 @@ object Renditions {
     /** A step up the ladder is worth more than a 5 % upscale nobody sees. */
     const val tolerance = 0.95
 
+    /** On a limited connection, the width asked of a full copy: a step lighter (1 080 for a 1 344 card). */
+    const val limitedShare = 0.75
+
     /** Source pixels wide enough to fill [pixels] (aspect fill) with a photo [aspect] wide for 1 high. */
     fun neededWidth(pixels: PixelSize, aspect: Double?): Double {
         if (aspect == null || !aspect.isFinite() || aspect <= 0) return maxOf(pixels.width, pixels.height)

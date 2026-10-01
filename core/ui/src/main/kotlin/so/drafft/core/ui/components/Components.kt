@@ -39,6 +39,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
+import so.drafft.core.data.media.PhotoDownloads
 import so.drafft.core.model.L
 import so.drafft.core.model.Sport
 import so.drafft.core.ui.image.BundledImages
@@ -513,10 +515,12 @@ private fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
         val width = boundedWidth.takeIf { it > 0 } ?: fallback
         val height = boundedHeight.takeIf { it > 0 } ?: fallback
         val context = LocalPlatformContext.current
-        // Not keyed by the priority: a card moving up the deck keeps its download running.
+        // Not keyed by the priority: a card moving up the deck keeps its download running, raised.
         val request = remember(name, width, height, blur) {
             ImageStore.remoteRequest(context, name, width, height, priority, blur)
         }
+        val photo = request.diskCacheKey
+        LaunchedEffect(photo, priority) { if (photo != null) PhotoDownloads.shared.prioritize(photo, priority.ordinal) }
         val painter = rememberAsyncImagePainter(request, contentScale = ContentScale.Crop)
         val state by painter.state.collectAsState()
         val ready = state is AsyncImagePainter.State.Success

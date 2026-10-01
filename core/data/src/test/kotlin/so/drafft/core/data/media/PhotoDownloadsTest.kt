@@ -34,6 +34,29 @@ class PhotoDownloadsTest {
     }
 
     @Test
+    fun aPhotoMovingUpTheDeckIsRaisedWhileItWaits() {
+        val queue = PhotoDownloads(limit = 1)
+        val order = Collections.synchronizedList(mutableListOf<String>())
+        queue.acquire(Images.Priority.NORMAL.ordinal) { false }
+        fun start(name: String, priority: Images.Priority) = thread {
+            if (queue.acquire(priority.ordinal, photo = name) { false }) {
+                order += name
+                queue.release()
+            }
+        }
+        val window = start("window", Images.Priority.LOW)
+        waitFor { queue.waitingCount == 1 }
+        val behind = start("behind", Images.Priority.VERY_LOW)
+        waitFor { queue.waitingCount == 2 }
+        // The card behind is now in play.
+        queue.prioritize("behind", Images.Priority.HIGH.ordinal)
+        queue.release()
+        window.join(5_000)
+        behind.join(5_000)
+        assertEquals(listOf("behind", "window"), order)
+    }
+
+    @Test
     fun aCancelledDownloadLeavesTheQueue() {
         val queue = PhotoDownloads(limit = 1)
         queue.acquire(0) { false }

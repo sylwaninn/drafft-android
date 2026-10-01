@@ -116,9 +116,10 @@ private object PhotoDownloadInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val asked = chain.request()
         val rank = asked.header(Images.PRIORITY_HEADER)?.toIntOrNull() ?: Images.Priority.NORMAL.ordinal
-        val request = asked.newBuilder().removeHeader(Images.PRIORITY_HEADER).build()
+        val photo = asked.header(Images.PHOTO_HEADER)
+        val request = asked.newBuilder().removeHeader(Images.PRIORITY_HEADER).removeHeader(Images.PHOTO_HEADER).build()
         val call = chain.call()
-        if (!PhotoDownloads.shared.acquire(rank) { call.isCanceled() }) throw IOException("Canceled")
+        if (!PhotoDownloads.shared.acquire(rank, photo) { call.isCanceled() }) throw IOException("Canceled")
         val released = AtomicBoolean(false)
         val release = { if (released.compareAndSet(false, true)) PhotoDownloads.shared.release() }
         val start = System.nanoTime()

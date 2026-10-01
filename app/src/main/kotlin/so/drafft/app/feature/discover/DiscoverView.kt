@@ -85,6 +85,7 @@ import so.drafft.app.feature.profile.ProfileDetailMode
 import so.drafft.app.feature.profile.ProfileDetailView
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.media.Images
+import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
@@ -361,6 +362,17 @@ fun DiscoverView(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * The card in play's photo first. On a limited connection every small copy of the window comes before
+ * it (`PhotoWindow`), and the cards behind it get their full one last.
+ */
+private fun photoPriority(i: Int): Images.Priority {
+    val limited = NetworkQuality.shared.isLimited
+    if (i == 0) return if (limited) Images.Priority.HIGH else Images.Priority.VERY_HIGH
+    if (limited) return Images.Priority.VERY_LOW
+    return if (i == 1) Images.Priority.HIGH else Images.Priority.NORMAL
+}
+
 /** The last non-null value, so a sheet keeps its content while it slides away. */
 @Composable
 private fun <T : Any> rememberLast(value: T?): T? {
@@ -566,11 +578,7 @@ private fun DeckCard(
                     me = me,
                     progress = if (isTop) progress else ZeroProgress,
                     isTop = isTop,
-                    photoPriority = when (index) {
-                        0 -> Images.Priority.VERY_HIGH
-                        1 -> Images.Priority.HIGH
-                        else -> Images.Priority.NORMAL
-                    },
+                    photoPriority = photoPriority(index),
                     onOpen = { onOpen(profile) },
                     modifier = Modifier.fillMaxSize(),
                 )

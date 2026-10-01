@@ -41,6 +41,12 @@ object Images {
     /** The request header that carries a photo's [Priority] to the download queue (never sent). */
     const val PRIORITY_HEADER = "x-drafft-priority"
 
+    /**
+     * The request header that names the photo (its cache key) to the download queue (never sent): a
+     * card moving up the deck raises its download's priority (`PhotoDownloads.prioritize`).
+     */
+    const val PHOTO_HEADER = "x-drafft-photo"
+
     // MARK: Copies served by the media Worker
 
     /**

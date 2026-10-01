@@ -25,7 +25,8 @@ import so.drafft.core.model.Profile
  * - the portraits of the next cards, to disk, at the copy their card needs: 6 ahead, 4 on a limited
  *   connection ([NetworkQuality]);
  * - on a limited connection, a small copy of each of those portraits first ([ImageStore.preview]), so a
- *   card never shows only its blurred preview;
+ *   card never shows only its blurred preview: ahead of the card in play's full copy too
+ *   (`DiscoverView`'s photo priority), small enough to keep up with the swipes;
  * - the other photos of the card in play (its profile, if opened), last, and only on a good connection.
  *
  * Whatever leaves the window is cancelled: a fast run of swipes never leaves downloads running for cards
@@ -54,7 +55,7 @@ class PhotoWindow private constructor() {
         previews.set(
             if (limited) {
                 deck.take(onScreen + 4).map { it.portrait }.mapNotNull {
-                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.NORMAL, previewOnly = true)
+                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_HIGH, previewOnly = true)
                 }
             } else {
                 emptyList()
