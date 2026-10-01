@@ -120,6 +120,7 @@ fun AccountSheet(
     error: String? = null,
     /** With an error, a Get help link on this topic (where the person can't be left stuck). */
     helpTopic: String? = null,
+    finished: Boolean = false,
     hasChanges: Boolean = false,
     action: () -> Unit,
     modifier: Modifier = Modifier,
@@ -137,7 +138,9 @@ fun AccountSheet(
         title = title,
         scroll = scroll,
         modifier = modifier,
-        onClose = { if (hasChanges) confirmDiscard = true else dismiss() },
+        // Done: the pinned action only closes the sheet now ("Done"), so it is the one way out and
+        // the close button goes (never two controls that do the same thing).
+        onClose = if (finished) null else ({ if (hasChanges) confirmDiscard = true else dismiss() }),
         bottomBar = {
             Column(
                 Modifier.padding(start = DS.Space.xl, end = DS.Space.xl, top = DS.Space.md, bottom = DS.Space.sm),
@@ -377,6 +380,7 @@ fun ChangeEmailSheet(modifier: Modifier = Modifier) {
         enabled = enabled,
         loading = flow.busy,
         error = error,
+        finished = flow.stage == EmailCodeModel.Stage.DONE,
         hasChanges = flow.stage == EmailCodeModel.Stage.CODE ||
             (flow.stage == EmailCodeModel.Stage.FORM && !(newEmail.isEmpty() && password.isEmpty())),
         action = {
@@ -515,6 +519,7 @@ fun ChangePasswordSheet(modifier: Modifier = Modifier) {
         enabled = enabled,
         loading = flow.busy,
         error = error,
+        finished = flow.stage == EmailCodeModel.Stage.DONE,
         hasChanges = flow.stage == EmailCodeModel.Stage.CODE ||
             (flow.stage == EmailCodeModel.Stage.FORM && !(new.isEmpty() && confirm.isEmpty())),
         action = {

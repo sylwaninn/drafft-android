@@ -62,6 +62,7 @@ fun ChangePhoneSheet(modifier: Modifier = Modifier) {
         enabled = model.primaryEnabled,
         loading = model.busy,
         error = if (model.stage == PhoneVerificationModel.Stage.ENTER_NUMBER && model.isSameAsCurrent) L("That's already your number.") else null,
+        finished = model.stage == PhoneVerificationModel.Stage.VERIFIED,
         action = {
             when (model.stage) {
                 PhoneVerificationModel.Stage.ENTER_NUMBER -> scope.launch { model.sendCode() }
