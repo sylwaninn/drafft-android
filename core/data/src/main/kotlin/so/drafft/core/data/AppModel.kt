@@ -4,10 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.exception.AuthSessionMissingException
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.exceptions.RestException
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -36,6 +34,7 @@ import so.drafft.core.data.backend.MatchRow
 import so.drafft.core.data.backend.ProfileCard
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.backend.Safety
+import so.drafft.core.data.backend.SafetyOutbox
 import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.backend.asArray
 import so.drafft.core.data.backend.asBoolean
@@ -584,8 +583,7 @@ class AppModel(
         } catch (e: Exception) {
             // Refused by Auth (session revoked, user gone): ended. Offline or a server hiccup: the
             // saved session is the best we know.
-            val refused = e is AuthSessionMissingException || (e is RestException && e.statusCode in 400..499)
-            if (refused && session == sessionID) endSession()
+            if (Backend.refusesSession(e) && session == sessionID) endSession()
         }
     }
 
@@ -741,6 +739,9 @@ class AppModel(
         sessionCalendar.forgetAll()
         sessionStore.reset()
         blocked = emptyList()
+        // What's still waiting stays on this phone for the account's next sign-in (SafetyOutbox).
+        safetyRetry?.cancel()
+        safetyAttempts = 0
         dataExportRequestedAt = null
         termsConsent = TermsConsent.Gate.UNKNOWN
         filters = DiscoverFilters()
@@ -1573,7 +1574,14 @@ class AppModel(
 
     // endregion
 
-    // region Safety (AppModel+Safety.swift): blocking and unblocking, at once on the device, then on the server.
+    // region Safety (AppModel+Safety.swift): blocking and unblocking, at once on the device, then on the
+    // server, through an outbox kept on this phone (SafetyOutbox) until the server has it.
+
+    private val safetyOutbox = SafetyOutbox(defaults)
+    /** Blocks and unblocks on their way to the server: the send running, the next try. */
+    private var safetySending: Job? = null
+    private var safetyRetry: Job? = null
+    private var safetyAttempts = 0
 
     /**
      * Block (a report blocks too): they leave your deck, your likes and your chats, and undo
@@ -1581,15 +1589,8 @@ class AppModel(
      */
     fun block(profile: Profile) {
         if (blocked.any { it.id == profile.id }) return
-        blocked = listOf(profile) + blocked
-        queue = queue.filterNot { it.id == profile.id }
-        likedMe = likedMe.filterNot { it.id == profile.id }
-        matches = matches.filterNot { it.profile.id == profile.id }
-        history = history.filterNot { it.profile.id == profile.id }
-        conversations = conversations.filterNot { it.profile.id == profile.id }
-        chat.publish()
-        if (banner?.profile?.id == profile.id) banner = null
-        scope.launch { safety.block(profile.id) }
+        hide(profile)
+        queueSafety(SafetyOutbox.Action.BLOCK, profile)
     }
 
     /**
@@ -1599,7 +1600,107 @@ class AppModel(
     fun unblock(profile: Profile) {
         blocked = blocked.filterNot { it.id == profile.id }
         discovery.swiped -= profile.id
-        scope.launch { safety.unblock(profile.id) }
+        queueSafety(SafetyOutbox.Action.UNBLOCK, profile)
+    }
+
+    /**
+     * The blocked list as the server has it, with what this phone hasn't sent yet on top: Blocked people
+     * shows it after a relaunch or on another device too. Unchanged if it can't be read.
+     */
+    suspend fun loadBlocked() {
+        val session = sessionID
+        val user = backend.userID ?: return
+        val server = attempt { safety.blockedPeople() } ?: return
+        if (session != sessionID) return
+        val pending = safetyOutbox.pending(user)
+        val listedIDs = server.map { it.id }.toSet()
+        val waiting = pending.filter { it.value.action == SafetyOutbox.Action.BLOCK && it.key !in listedIDs }
+            .map { (id, entry) -> blocked.firstOrNull { it.id == id } ?: Safety.blockedProfile(id, entry.name) }
+        val listed = server.filter { pending[it.id]?.action != SafetyOutbox.Action.UNBLOCK }
+            .map { row -> blocked.firstOrNull { it.id == row.id } ?: row }
+        val list = waiting + listed
+        for (person in list) if (blocked.none { it.id == person.id }) hide(person)
+        blocked = list
+    }
+
+    /**
+     * Sends what this phone hasn't sent yet. A failure the server may get over (offline, a server error)
+     * waits and tries again; [announce] says so once, for an action just taken. Signed in, at launch and
+     * back at the front: whatever was left goes too. One send at a time: a block then an unblock reach
+     * the server in that order.
+     */
+    suspend fun sendPendingSafety(announce: Boolean = false) {
+        val previous = safetySending
+        val job = scope.launch {
+            previous?.join()
+            flushSafety(announce)
+        }
+        safetySending = job
+        job.join()
+    }
+
+    private suspend fun flushSafety(announce: Boolean) {
+        val user = backend.userID ?: return
+        for ((id, entry) in safetyOutbox.pending(user)) {
+            // Signed out (or into another account) meanwhile: the rest waits for this account's sign-in,
+            // never sent with someone else's session.
+            if (backend.userID != user) return
+            try {
+                safety.send(entry.action, id)
+                safetyOutbox.remove(entry, id, user)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (Safety.isFinal(e)) {
+                    safetyLog.warning("${entry.action} refused: $e")
+                    safetyOutbox.remove(entry, id, user)
+                    continue
+                }
+                if (announce) {
+                    notice = Notice(
+                        text = if (entry.action == SafetyOutbox.Action.BLOCK) {
+                            L("Couldn't reach drafft. The block goes through as soon as you're back online.")
+                        } else {
+                            L("Couldn't reach drafft. The unblock goes through as soon as you're back online.")
+                        },
+                    )
+                }
+                retrySafety()
+                return
+            }
+        }
+        safetyAttempts = 0
+    }
+
+    private fun hide(profile: Profile) {
+        blocked = listOf(profile) + blocked
+        queue = queue.filterNot { it.id == profile.id }
+        likedMe = likedMe.filterNot { it.id == profile.id }
+        matches = matches.filterNot { it.profile.id == profile.id }
+        history = history.filterNot { it.profile.id == profile.id }
+        conversations = conversations.filterNot { it.profile.id == profile.id }
+        chat.publish()
+        if (banner?.profile?.id == profile.id) banner = null
+    }
+
+    private fun queueSafety(action: SafetyOutbox.Action, profile: Profile) {
+        val user = backend.userID ?: return
+        safetyOutbox.add(SafetyOutbox.Entry(action, profile.name), profile.id, user)
+        safetyAttempts = 0
+        scope.launch { sendPendingSafety(announce = true) }
+    }
+
+    /** Tries again after 10 s, 30 s, 1 min, then every 5 min while the app is open. */
+    private fun retrySafety() {
+        safetyRetry?.cancel()
+        val delays = listOf(10, 30, 60, 300)
+        val wait = delays[minOf(safetyAttempts, delays.size - 1)]
+        safetyAttempts += 1
+        val session = sessionID
+        safetyRetry = scope.launch {
+            delay(wait * 1000L)
+            if (session == sessionID) sendPendingSafety()
+        }
     }
 
     // endregion
@@ -1613,6 +1714,8 @@ class AppModel(
     }
 
     companion object {
+        private val safetyLog = java.util.logging.Logger.getLogger("safety")
+
         /** The language picked last, read at launch before the first screen (`DrafftApplication`). */
         const val LANGUAGE_KEY = "appLanguage"
         /** No one yet: what `me` holds before the server's profile is read, and after signing out. */

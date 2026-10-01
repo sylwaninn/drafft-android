@@ -183,6 +183,8 @@ fun RootView(app: AppModel) {
         launch { appOpens.report() }
         purchaseCredit.resume(app)
         launch { chat.start(app) }
+        // Blocks made offline go now; then the blocked list as the server has it.
+        launch { app.sendPendingSafety(); app.loadBlocked() }
         userChannel.watch(app)
     }
     // A real return to the app (from the background): what changed while away.
@@ -196,6 +198,8 @@ fun RootView(app: AppModel) {
             scope.launch { app.loadWallet() }
             purchaseCredit.resume(app)
             scope.launch { sessions.refresh() }
+            // Blocks still waiting for the server, and those made on another device.
+            scope.launch { app.sendPendingSafety(); app.loadBlocked() }
             app.refreshDiscovery()
         }
     }
