@@ -42,10 +42,11 @@
 %s each
 %s every 6 months
 %s liked you back
+%s likes you too. Say hi, or propose a session while it's fresh.
 %s only sees it if you match.
 %s sees you first.
 %s session
-%s session planned on drafft.
+%s session, confirmed on drafft.
 %s sessions per week
 %s super liked you
 %s together, then coffee?
@@ -223,8 +224,8 @@ Cancelled
 Cancelled. You keep everything until %s.
 Center your face in the oval.
 Change
+Change or cancel it in Apple's subscription settings.
 Change or remove this time
-Change plan or cancel in Apple's subscription settings.
 Change time
 Change your password
 Chat not found
@@ -460,7 +461,6 @@ I understand my account will be deleted for good.
 I was SO sure that was the lie. Tell me it's not true
 I will never shut up about
 I'd drop everything to watch
-I'll know it's a match if
 I'm 18 or older and I accept the %s, the %s and the %s.
 I'm looking for someone who
 I've confirmed my email
@@ -491,8 +491,8 @@ It broke the drafft community rules. This decision is final.
 It couldn't be sent. Check your connection and try again.
 It goes to %s.
 It shows on your profile as “Training for…”. Big or small, it's a great conversation starter.
-It's a match.
-It's a match. Tap to say hi.
+It's mutual.
+It's mutual. Tap to say hi.
 It's never your fault
 It's not on your profile. Tap to see why.
 Jiu-jitsu
@@ -527,12 +527,13 @@ Leave sign-up?
 Leg day, I'll spot you?
 Legal Notice
 Legal information
+Length
 Less than 1 km
 Lie
 Lifestyle
 Like
 Like %s
-Like back and it's a match straight away.
+Like them back and it's mutual. Then propose a session.
 Like this answer
 Like this photo
 Like with this answer
@@ -543,8 +544,8 @@ Liked your profile
 Likes
 Likes & matches
 Likes you
+Loading options
 Loading packs
-Loading plans
 Loading profiles
 Loading your profile
 Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.
@@ -716,6 +717,7 @@ Opens the chat
 Opens their profile
 Optional
 Optional. It helps us make drafft better.
+Options couldn't load. Check your connection and try again.
 Or steal one of these
 Other times suggested
 Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
@@ -759,10 +761,10 @@ Photos you added will be deleted, and the others go back as they were.
 Pick 1 to 3 times that haven't passed.
 Pick While Using the App
 Pick a format for your interactive prompt. Matches play it and reply in one tap.
-Pick a plan to continue.
 Pick a prompt
 Pick a stronger password.
 Pick a time above
+Pick an option to continue.
 Pick as many as you like.
 Pick at least one sport.
 Pick at least one time to send.
@@ -780,8 +782,6 @@ Pilates
 Pitch
 Pitch it
 Place your face in the oval.
-Plan
-Plans couldn't load. Check your connection and try again.
 Play %s's voice intro
 Play voice message, %d seconds
 Playback speed
@@ -1192,6 +1192,7 @@ We'll text a 6-digit code to %s.
 We'll text you a code. Your number never shows on your profile.
 We're adding your purchase to your account.
 We're checking your account.
+We're on the same wavelength if
 We're preparing your export. A download link goes to %s, usually within 24 hours of %s. The link works for 7 days.
 We've set it to your phone's language. You can change it anytime in You.
 Weekday dawn runner, weekend long rides…
@@ -1252,8 +1253,7 @@ Yoga
 Yoga then a long lunch?
 You
 You already offer this time.
-You and %s both do %s. Say hi, then plan a first session.
-You and %s liked each other. Say hi, then plan a first session.
+You and %s both do %s. Say hi, or propose a session while it's fresh.
 You can block someone from their profile or a chat.
 You can close this. We'll switch as soon as you confirm.
 You can end a session anytime, no explanation needed.
@@ -1340,7 +1340,7 @@ Your session ended on this iPhone. Log in again to pick up where you left off.
 Your sport
 Your sports
 Your subscription
-Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
+Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your App Store subscriptions. Deleting drafft doesn't cancel it.
 Your subscription is up to date.
 Your turn
 at CrossFit

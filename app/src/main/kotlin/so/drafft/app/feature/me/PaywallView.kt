@@ -395,7 +395,7 @@ private fun Plans(store: Store, selected: TempoPlan?, onSelect: (TempoPlan) -> U
                 verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             ) {
                 Text(
-                    L("Plans couldn't load. Check your connection and try again."),
+                    L("Options couldn't load. Check your connection and try again."),
                     style = TextStyles.subheadline,
                     color = Color.White.copy(alpha = 0.75f),
                 )
@@ -407,7 +407,7 @@ private fun Plans(store: Store, selected: TempoPlan?, onSelect: (TempoPlan) -> U
                 Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = 120.dp)
-                    .semantics { contentDescription = L("Loading plans") },
+                    .semantics { contentDescription = L("Loading options") },
                 contentAlignment = Alignment.Center,
             ) { Spinner(Color.White) }
         }
@@ -529,7 +529,7 @@ private fun PaywallFooter(
         // Why it's disabled, only while it is: no empty line under the button once a plan is picked.
         AnimatedVisibility(plan == null, enter = fadeIn(Motion.select()), exit = fadeOut(Motion.select())) {
             Text(
-                L("Pick a plan to continue."),
+                L("Pick an option to continue."),
                 Modifier.padding(top = DS.Space.xs),
                 style = TextStyles.footnote,
                 color = Color.White.copy(alpha = 0.7f),
@@ -892,7 +892,7 @@ private fun Billing(
     val p = DS.palette
     SheetBlock(title = L("Billing")) {
         Text(
-            branded(L("Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.")),
+            branded(L("Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your App Store subscriptions. Deleting drafft doesn't cancel it.")),
             style = TextStyles.subheadline,
             color = p.body,
         )
@@ -932,7 +932,7 @@ private fun SubscriptionFooter(onManage: () -> Unit) {
     ) {
         DrafftButton(L("Manage subscription"), onClick = onManage, kind = DrafftButtonKind.DARK)
         Text(
-            L("Change plan or cancel in Apple's subscription settings."),
+            L("Change or cancel it in Apple's subscription settings."),
             style = TextStyles.footnote,
             color = DS.palette.body,
             textAlign = TextAlign.Center,

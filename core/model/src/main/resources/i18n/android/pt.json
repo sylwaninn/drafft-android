@@ -1,7 +1,7 @@
 {
  "Apple emails your receipt.": "O Google Play envia-te o recibo por email.",
  "Apple emails your receipt. Manage your subscription anytime in You.": "O Google Play envia-te o recibo por email. Gere a tua subscrição quando quiseres em Tu.",
- "Change plan or cancel in Apple's subscription settings.": "Altera-a ou cancela-a nas tuas subscrições do Google Play.",
+ "Change or cancel it in Apple's subscription settings.": "Altera-a ou cancela-a nas tuas subscrições do Google Play.",
  "Couldn't reach the App Store. Try again.": "Não foi possível contactar o Google Play. Tenta novamente.",
  "Location Services are off on this iPhone. Turn them on in Settings, under Privacy & Security.": "A localização está desativada neste telemóvel. Ativa-a nas definições rápidas ou em Definições, Localização.",
  "No drafft tempo purchase on this Apple ID.": "Nenhuma compra de drafft tempo nesta conta Google.",
@@ -13,6 +13,6 @@
  "Tap Location": "Toca em «Autorizações» e depois em «Localização»",
  "Turn them on in iPhone Settings to hear about matches and sessions.": "Ativa-as nas definições do telemóvel para saberes de matches e sessões.",
  "Your session ended on this iPhone. Log in again to pick up where you left off.": "Inicia sessão de novo neste telemóvel para continuar onde ficaste.",
- "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change your plan or cancel, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "A tua subscrição é cobrada através da tua conta Google e renova-se automaticamente, a menos que a canceles pelo menos 24 horas antes do fim do período atual. Para a alterar ou cancelar, vai às tuas subscrições do Google Play. Apagar o drafft não a cancela.",
+ "Your subscription is billed through your Apple Account and renews automatically unless you cancel it at least 24 hours before the end of the current period. To change or cancel it, go to your App Store subscriptions. Deleting drafft doesn't cancel it.": "A tua subscrição é cobrada através da tua conta Google e renova-se automaticamente, a menos que a canceles pelo menos 24 horas antes do fim do período atual. Para a alterar ou cancelar, vai às tuas subscrições do Google Play. Apagar o drafft não a cancela.",
  "drafft needs it to show people near you. While Using the App is enough, and only your area is ever shown.": "O drafft precisa dela para te mostrar pessoas perto de ti. Basta permiti-la só enquanto usas a app, e só a tua zona é mostrada."
 }
