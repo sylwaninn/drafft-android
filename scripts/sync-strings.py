@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copies the iPhone app's string catalog (drafft/Drafft/Resources/Localizable.xcstrings) into the
+"""Copies the iPhone app's string catalog (drafft-ios/Drafft/Resources/Localizable.xcstrings) into the
 Android app: one JSON table per language in core/model/src/main/resources/i18n/, read by `L(...)`.
 
 Both apps share the same keys (the English source text) and the same wording (WORDING.md), so the
@@ -14,7 +14,20 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT = os.path.join(os.path.dirname(ROOT), "drafft", "Drafft", "Resources", "Localizable.xcstrings")
+CATALOG = os.path.join("drafft-ios", "Drafft", "Resources", "Localizable.xcstrings")
+
+
+def default_catalog() -> str:
+    """The iPhone checkout next to this one, else the one at the workspace root (from a worktree)."""
+    here = os.path.dirname(ROOT)
+    while True:
+        candidate = os.path.join(here, CATALOG)
+        if os.path.exists(candidate) or os.path.dirname(here) == here:
+            return candidate
+        here = os.path.dirname(here)
+
+
+DEFAULT = default_catalog()
 OUT = os.path.join(ROOT, "core", "model", "src", "main", "resources", "i18n")
 LANGS = ["en", "fr", "es", "de", "it", "pt", "nl"]
 

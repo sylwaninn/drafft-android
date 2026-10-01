@@ -291,7 +291,7 @@ components:
 
 ---
 
-<!-- Synced copy of drafft/DESIGN.md. Do not edit here: edit it in drafft, then run drafft/scripts/sync-wording.sh. -->
+<!-- Synced copy of drafft-ios/DESIGN.md. Do not edit here: edit it in drafft-ios, then run scripts/sync-docs.sh in the drafft workspace. -->
 
 
 ## Overview
