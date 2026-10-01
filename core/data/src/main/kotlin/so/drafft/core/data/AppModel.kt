@@ -4,10 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.exception.AuthSessionMissingException
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.exceptions.RestException
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -584,8 +582,7 @@ class AppModel(
         } catch (e: Exception) {
             // Refused by Auth (session revoked, user gone): ended. Offline or a server hiccup: the
             // saved session is the best we know.
-            val refused = e is AuthSessionMissingException || (e is RestException && e.statusCode in 400..499)
-            if (refused && session == sessionID) endSession()
+            if (Backend.refusesSession(e) && session == sessionID) endSession()
         }
     }
 
