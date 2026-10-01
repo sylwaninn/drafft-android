@@ -365,6 +365,19 @@ class AppModel(
     /** Current matches (`my_matches`), newest first. */
     var matches by mutableStateOf<List<Match>>(emptyList())
 
+    /**
+     * Where a list from the server stands before it has anything to show: an empty list means "nobody"
+     * only once it was read (or this phone's copy of a read was shown). A first read that failed shows a
+     * retry, never an empty state.
+     */
+    sealed interface ListLoad {
+        data object Loading : ListLoad
+        data class Failed(val offline: Boolean) : ListLoad
+        data object Loaded : ListLoad
+    }
+    var likesLoad by mutableStateOf<ListLoad>(ListLoad.Loading)
+    var matchesLoad by mutableStateOf<ListLoad>(ListLoad.Loading)
+
     // Chats
 
     private var conversationsState by mutableStateOf<List<Conversation>>(emptyList())
@@ -547,6 +560,40 @@ class AppModel(
         }
     }
 
+    /**
+     * Logged in, or a password reset: to sign-up if it isn't finished (another device, a reinstall).
+     * Without an answer (offline, a server error), in as far as this phone knows, and to sign-up as soon
+     * as a read says it isn't finished: never left in the tabs with a profile that can't open.
+     */
+    suspend fun enterAfterLogIn() {
+        refreshAccount()?.let {
+            signIn(onboard = !it.onboarded)
+            return
+        }
+        signIn(onboard = false)
+        scope.launch { routeWhenAccountRead() }
+    }
+
+    /**
+     * In the tabs without knowing whether sign-up is finished: the account is read again, less often
+     * each time, until it answers, then sign-up comes back if it isn't finished.
+     */
+    suspend fun routeWhenAccountRead() {
+        val session = sessionID
+        var wait = 2.seconds
+        // Waits first: the read that just failed was the first try, and the tabs are on screen by then.
+        while (true) {
+            delay(wait)
+            if (session != sessionID || phase != Phase.MAIN) return
+            val account = refreshAccount()
+            if (account != null) {
+                if (!account.onboarded && session == sessionID && phase == Phase.MAIN) phase = Phase.ONBOARDING
+                return
+            }
+            wait = minOf(wait * 2, 60.seconds)
+        }
+    }
+
     fun finishOnboarding(profile: Profile) {
         onboarding.clear()
         me = profile
@@ -622,10 +669,12 @@ class AppModel(
         if (answer != null) {
             signIn(onboard = !answer.onboarded, immediately = true)
         } else {
-            // No answer yet (slow or no network): in, as far as this phone knows.
+            // No answer yet (slow or no network): in, as far as this phone knows, until the server says.
             signIn(onboard = false, immediately = true)
-            val account = read.awaitOrNull()
-            if (account != null && session == sessionID && !account.onboarded && phase == Phase.MAIN) phase = Phase.ONBOARDING
+            scope.launch {
+                read.awaitOrNull()
+                routeWhenAccountRead()
+            }
         }
     }
 
@@ -924,18 +973,31 @@ class AppModel(
     suspend fun loadLikes() {
         val premium = isPremium
         if (phase != Phase.MAIN) return
-        val data = attempt { backend.rpc("liked_me", jsonOf("p_limit" to LIKES_PAGE)) } ?: return
+        val data = try {
+            backend.rpc("liked_me", jsonOf("p_limit" to LIKES_PAGE))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (isPremium == premium) likesFailed(e)
+            return
+        }
         if (isPremium != premium) return
         if (premium) {
-            val likes = attemptOrNull { LikeCard.list(data) } ?: return
+            val likes = attemptOrNull { LikeCard.list(data) } ?: return likesFailed(null)
             if (blurredLikes.isNotEmpty()) blurredLikes = emptyList()
             applyLikes(likes.map { it.card })
             openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.LIKES) } }
         } else {
-            val fresh = BlurredLike.list(data) ?: return
+            val fresh = BlurredLike.list(data) ?: return likesFailed(null)
             if (likedMe.isNotEmpty()) likedMe = emptyList()
             if (fresh != blurredLikes) blurredLikes = fresh
         }
+        likesLoad = ListLoad.Loaded
+    }
+
+    /** A read that failed only shows if nothing was read yet: what's on screen stays otherwise. */
+    private fun likesFailed(error: Throwable?) {
+        if (likesLoad != ListLoad.Loaded) likesLoad = ListLoad.Failed(offline = error?.let(ServerMessage::isOffline) ?: false)
     }
 
     private fun applyLikes(cards: List<ProfileCard>) {
@@ -958,11 +1020,18 @@ class AppModel(
      */
     suspend fun loadMatches() {
         if (phase != Phase.MAIN) return
-        val data = attempt { backend.rpc("my_matches") } ?: return
-        val rows = attemptOrNull { MatchRow.list(data) } ?: return
-        applyMatches(rows, announce = discovery.matchesRead)
-        discovery.matchesRead = true
-        openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.MATCHES) } }
+        try {
+            val data = backend.rpc("my_matches")
+            val rows = MatchRow.list(data)
+            applyMatches(rows, announce = discovery.matchesRead)
+            discovery.matchesRead = true
+            matchesLoad = ListLoad.Loaded
+            openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.MATCHES) } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (matchesLoad != ListLoad.Loaded) matchesLoad = ListLoad.Failed(offline = ServerMessage.isOffline(e))
+        }
     }
 
     private fun applyMatches(rows: List<MatchRow>, announce: Boolean) {
@@ -1040,11 +1109,17 @@ class AppModel(
         // Cards are only kept with drafft tempo (a free account's list is blurred, read live).
         if (isPremium && likedMe.isEmpty()) {
             cache.entry(LocalCache.Kind.LIKES)?.let { entry -> attemptOrNull { LikeCard.list(entry.data) } }
-                ?.let { applyLikes(it.map { like -> like.card }) }
+                ?.let {
+                    applyLikes(it.map { like -> like.card })
+                    likesLoad = ListLoad.Loaded
+                }
         }
         if (matches.isEmpty()) {
             cache.entry(LocalCache.Kind.MATCHES)?.let { entry -> attemptOrNull { MatchRow.list(entry.data) } }
-                ?.let { applyMatches(it, announce = false) }
+                ?.let {
+                    applyMatches(it, announce = false)
+                    matchesLoad = ListLoad.Loaded
+                }
         }
     }
 
@@ -1130,7 +1205,7 @@ class AppModel(
     private sealed interface DeckOutcome {
         class Cards(val data: ByteArray) : DeckOutcome
         class Refused(val code: String) : DeckOutcome
-        data object Failed : DeckOutcome
+        class Failed(val error: Throwable) : DeckOutcome
     }
 
     /** One `discover` call; with no location on file, the location is sent first and it's asked again once. */
@@ -1141,7 +1216,7 @@ class AppModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val code = ServerMessage.code(e) ?: return DeckOutcome.Failed
+                val code = ServerMessage.code(e) ?: return DeckOutcome.Failed(e)
                 if (code == "location_required" && attempt == 0 && locationOnce.send()) continue
                 return DeckOutcome.Refused(code)
             }
@@ -1172,8 +1247,12 @@ class AppModel(
                 }
                 if (queue.isEmpty()) deckState = DeckState.Failed(ServerMessage.text(forCode = outcome.code) ?: ServerMessage.generic)
             }
-            DeckOutcome.Failed ->
-                if (queue.isEmpty()) deckState = DeckState.Failed(L("Couldn't connect. Check your connection and try again."))
+            is DeckOutcome.Failed ->
+                if (queue.isEmpty()) {
+                    deckState = DeckState.Failed(
+                        ServerMessage.text(outcome.error, offline = L("Couldn't connect. Check your connection and try again.")),
+                    )
+                }
         }
     }
 
@@ -1326,7 +1405,7 @@ class AppModel(
 
     /** A refusal or failure, above the tabs, in the person's language. */
     fun say(error: Throwable) {
-        val text = ServerMessage.text(error) ?: L("Couldn't connect. Check your connection and try again.")
+        val text = ServerMessage.text(error, offline = L("Couldn't connect. Check your connection and try again."))
         notice = Notice(text = text)
     }
 
@@ -1389,6 +1468,8 @@ class AppModel(
         history = emptyList()
         likedMe = emptyList()
         matches = emptyList()
+        likesLoad = ListLoad.Loading
+        matchesLoad = ListLoad.Loading
         likesLeft = null
         notice = null
     }

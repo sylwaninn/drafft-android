@@ -189,12 +189,6 @@ class Backend(
         client.auth.verifyEmailOtp(type = OtpType.Email.RECOVERY, email = email, token = code)
     }
 
-    /** Whether the signed-in person finished sign-up (`profiles.onboarded_at`). */
-    suspend fun isOnboarded(): Boolean {
-        val rows = myProfile(select = "onboarded_at").parseJsonOrNull().asArray
-        return rows?.firstOrNull().asObject?.get("onboarded_at").asString != null
-    }
-
     /** Emails a 6-digit code to the new address (the "Change email address" template shows `{{ .Token }}`). */
     suspend fun updateEmail(email: String) {
         identityChecked { client.auth.updateUser { this.email = email } }
