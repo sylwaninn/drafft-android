@@ -11,7 +11,8 @@ import kotlin.concurrent.withLock
 /**
  * The photo downloads running at once ([limit]: `Images.downloads`, fewer on a limited connection), the
  * highest priority first, then the oldest: the card in play finishes first instead of sharing the line
- * with everything fetched ahead. A download holds its slot until its body is read or closed.
+ * with everything fetched ahead. A download holds its slot until its body is read or closed, or its call
+ * is cancelled (`installImages` releases it then, whatever became of the response).
  */
 class PhotoDownloads(limit: Int = Images.downloads) {
     private val lock = ReentrantLock()
@@ -48,7 +49,9 @@ class PhotoDownloads(limit: Int = Images.downloads) {
         try {
             while (running >= limit || first() !== ticket) {
                 if (cancelled()) return false
-                turn.await(50, TimeUnit.MILLISECONDS)
+                // Woken by a release, a new limit or priority, or a cancelled call ([wake]); the timeout is
+                // only a safety net.
+                turn.await(1, TimeUnit.SECONDS)
             }
             running += 1
             true
@@ -63,6 +66,9 @@ class PhotoDownloads(limit: Int = Images.downloads) {
         running = maxOf(0, running - 1)
         turn.signalAll()
     }
+
+    /** A call was cancelled: whoever waits for it checks again at once. */
+    fun wake() = lock.withLock { turn.signalAll() }
 
     /** [photo]'s download (waiting, or asked later) now has priority [rank]. */
     fun prioritize(photo: String, rank: Int) = lock.withLock {

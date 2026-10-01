@@ -1,3 +1,5 @@
+@file:OptIn(coil3.annotation.ExperimentalCoilApi::class)
+
 package so.drafft.core.ui.platform
 
 import android.app.ActivityManager
@@ -13,13 +15,27 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
-import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.network.NetworkClient
+import coil3.network.NetworkFetcher
+import coil3.network.NetworkHeaders
+import coil3.network.NetworkRequest
+import coil3.network.NetworkResponse
+import coil3.network.NetworkResponseBody
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Dispatcher
+import okhttp3.EventListener
+import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -49,6 +65,7 @@ fun installImages(context: Context) {
         // admit them in arrival order before their priority is known.
         .dispatcher(Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 64 })
         .addInterceptor(PhotoDownloadInterceptor)
+        .eventListener(CancelledCalls)
         .build()
     val memory = ActivityManager.MemoryInfo().also { info ->
         app.getSystemService(ActivityManager::class.java)?.getMemoryInfo(info)
@@ -63,7 +80,7 @@ fun installImages(context: Context) {
                     .maxSizeBytes(Images.diskLimit)
                     .build()
             }
-            .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
+            .components { add(NetworkFetcher.Factory(networkClient = { PhotoNetworkClient(client) })) }
             .build()
     }
     // The disk cache reads its journal once, here rather than on the main thread at the first photo
@@ -104,9 +121,63 @@ private fun watchNetwork(context: Context) {
 }
 
 /**
+ * Coil's OkHttp client, with one difference: a response that arrives after its request was cancelled is
+ * closed (Coil 3.3's own drops it unclosed, and its download slot in [PhotoDownloads] with it: two such
+ * leaks on a limited line and no photo loads anywhere in the app).
+ */
+private class PhotoNetworkClient(private val client: OkHttpClient) : NetworkClient {
+    override suspend fun <T> executeRequest(request: NetworkRequest, block: suspend (response: NetworkResponse) -> T): T {
+        val call = client.newCall(request.toOkHttp())
+        val response = suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onResponse(call: Call, response: Response) {
+                    continuation.resume(response) { _, dropped, _ -> runCatching { dropped.close() } }
+                }
+
+                override fun onFailure(call: Call, e: IOException) {
+                    continuation.resumeWithException(e)
+                }
+            })
+        }
+        return response.use { block(it.toNetworkResponse()) }
+    }
+
+    private suspend fun NetworkRequest.toOkHttp(): Request {
+        val bytes = body?.let { body -> Buffer().also { body.writeTo(it) }.readByteString() }
+        val headers = Headers.Builder()
+        for ((key, values) in this.headers.asMap()) for (value in values) headers.addUnsafeNonAscii(key, value)
+        return Request.Builder().url(url).method(method, bytes?.toRequestBody()).headers(headers.build()).build()
+    }
+
+    private fun Response.toNetworkResponse(): NetworkResponse {
+        val headers = NetworkHeaders.Builder()
+        for ((key, value) in this.headers) headers.add(key, value)
+        return NetworkResponse(
+            code = code,
+            requestMillis = sentRequestAtMillis,
+            responseMillis = receivedResponseAtMillis,
+            headers = headers.build(),
+            body = NetworkResponseBody(body.source()),
+        )
+    }
+}
+
+/** The slot each running download holds, by call: released when the call is cancelled, whatever else happens. */
+private val heldSlots = ConcurrentHashMap<Call, () -> Unit>()
+
+/** A cancelled call gives its slot back, and whoever waits for one checks again at once. */
+private object CancelledCalls : EventListener() {
+    override fun canceled(call: Call) {
+        heldSlots.remove(call)?.invoke()
+        PhotoDownloads.shared.wake()
+    }
+}
+
+/**
  * Each photo download waits for its turn in [PhotoDownloads] (by the priority its request carries),
- * keeps its slot until its body is read or closed, and is timed from there: how fast it arrives tells
- * how fast the line is.
+ * keeps its slot until its body is read or closed or its call is cancelled, and is timed: how fast it
+ * arrives tells how fast the line is.
  */
 private object PhotoDownloadInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -117,8 +188,18 @@ private object PhotoDownloadInterceptor : Interceptor {
         val call = chain.call()
         if (!PhotoDownloads.shared.acquire(rank, photo) { call.isCanceled() }) throw IOException("Canceled")
         val released = AtomicBoolean(false)
-        val release = { if (released.compareAndSet(false, true)) PhotoDownloads.shared.release() }
-        // Leaves the queue now: how fast it arrives tells how fast the line is.
+        val release = {
+            if (released.compareAndSet(false, true)) {
+                heldSlots.remove(call)
+                PhotoDownloads.shared.release()
+            }
+        }
+        heldSlots[call] = release
+        // Cancelled between the turn and the line above: [CancelledCalls] may have looked already.
+        if (call.isCanceled()) {
+            release()
+            throw IOException("Canceled")
+        }
         val timing = NetworkQuality.shared.download()
         val response = try {
             chain.proceed(request)
