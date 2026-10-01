@@ -835,19 +835,40 @@ private fun ConsentBlock() {
 private fun PauseBlock() {
     val app = LocalAppModel.current
     val dismiss = LocalSheetDismiss.current
+    val scope = rememberCoroutineScope()
+    var pausing by remember { mutableStateOf(false) }
+    var pauseFailure by remember { mutableStateOf<String?>(null) }
     SheetBlock(title = L("Just need a break?")) {
         Text(L("Pausing hides you from Discover and keeps your matches and chats."), style = TextStyles.subheadline, color = DS.palette.body)
         DrafftButton(
             onClick = {
-                Haptics.success()
-                app.profilePaused = true
-                dismiss()
+                Haptics.tap()
+                pausing = true
+                pauseFailure = null
+                scope.launch {
+                    // Closes only once the server has it: a pause that didn't save stays here to say so.
+                    val failure = app.pauseNow()
+                    pausing = false
+                    if (failure != null) {
+                        pauseFailure = failure
+                    } else {
+                        Haptics.success()
+                        dismiss()
+                    }
+                }
             },
             kind = DrafftButtonKind.SECONDARY,
-            enabled = !app.profilePaused,
+            enabled = !app.profilePaused && !pausing,
         ) {
-            DrafftIcon("pause", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
-            Text(if (app.profilePaused) L("Your profile is paused") else L("Pause my profile instead"), maxLines = 2)
+            if (pausing) {
+                ButtonSpinner(DS.palette.ink)
+            } else {
+                DrafftIcon("pause", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
+                Text(if (app.profilePaused) L("Your profile is paused") else L("Pause my profile instead"), maxLines = 2)
+            }
+        }
+        pauseFailure?.let {
+            Text(it, style = TextStyles.footnote.semibold, color = DS.palette.negative)
         }
     }
 }
