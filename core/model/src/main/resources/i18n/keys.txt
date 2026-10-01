@@ -532,6 +532,7 @@ Lie
 Lifestyle
 Like
 Like %s
+Like back
 Like back and it's a match straight away.
 Like this answer
 Like this photo
@@ -953,6 +954,7 @@ Smoking
 Snowboarding
 Socially
 Someone from our team will review it, usually within 24 hours. It stays off your profile until then.
+Someone super liked you. Unlock with drafft tempo
 Someone who likes you. Unlock with drafft tempo
 Something I'm training for outside of sport
 Something casual, no pressure
