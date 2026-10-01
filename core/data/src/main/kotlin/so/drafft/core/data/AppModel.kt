@@ -156,6 +156,12 @@ class AppModel(
     /** The account read in flight, shared by everyone who asks meanwhile. */
     private var accountRefresh: Deferred<ProfileSync.Account?>? = null
 
+    /**
+     * In the tabs without knowing whether sign-up is finished: the next account read that answers
+     * decides (`routeWhenAccountRead`), whoever asked for it.
+     */
+    private var routeOnAccountRead = false
+
     /** The last account read, and when: a read asked for right after it reuses it. */
     private var lastAccountRead: Pair<Instant, ProfileSync.Account>? = null
 
@@ -573,28 +579,36 @@ class AppModel(
             signIn(onboard = !it.onboarded)
             return
         }
+        routeOnAccountRead = true
         signIn(onboard = false)
         scope.launch { routeWhenAccountRead() }
     }
 
     /**
      * In the tabs without knowing whether sign-up is finished: the account is read again, less often
-     * each time, until it answers, then sign-up comes back if it isn't finished.
+     * each time, until a read answers (this loop's or any other: Realtime, back at the front), and that
+     * read brings sign-up back if it isn't finished ([routeIfUnfinished]).
      */
     suspend fun routeWhenAccountRead() {
         val session = sessionID
         var wait = 2.seconds
         // Waits first: the read that just failed was the first try, and the tabs are on screen by then.
-        while (true) {
+        while (routeOnAccountRead) {
             delay(wait)
-            if (session != sessionID || phase != Phase.MAIN) return
-            val account = refreshAccount()
-            if (account != null) {
-                if (!account.onboarded && session == sessionID && phase == Phase.MAIN) phase = Phase.ONBOARDING
-                return
-            }
+            if (session != sessionID || phase != Phase.MAIN || !routeOnAccountRead) return
+            refreshAccount()?.let(::routeIfUnfinished)
             wait = minOf(wait * 2, 60.seconds)
         }
+    }
+
+    /**
+     * The first account read that answers in the tabs after an unknown sign-in: to sign-up if it isn't
+     * finished. One that answers before the tabs show (sign-in's own read) leaves it to the loop's next read.
+     */
+    private fun routeIfUnfinished(account: ProfileSync.Account) {
+        if (!routeOnAccountRead || phase != Phase.MAIN) return
+        routeOnAccountRead = false
+        if (!account.onboarded) phase = Phase.ONBOARDING
     }
 
     fun finishOnboarding(profile: Profile) {
@@ -673,9 +687,11 @@ class AppModel(
             signIn(onboard = !answer.onboarded, immediately = true)
         } else {
             // No answer yet (slow or no network): in, as far as this phone knows, until the server says.
+            // The late read, when it answers, decides ([routeIfUnfinished]); else it's tried again.
+            routeOnAccountRead = true
             signIn(onboard = false, immediately = true)
             scope.launch {
-                read.awaitOrNull()
+                read.awaitOrNull()?.let(::routeIfUnfinished)
                 routeWhenAccountRead()
             }
         }
@@ -808,6 +824,7 @@ class AppModel(
         email = ""
         phoneNumber = null
         applyServerPause(false)
+        routeOnAccountRead = false
         sessionID += 1
         phase = Phase.WELCOME
         tab = Tab.DISCOVER
@@ -845,6 +862,7 @@ class AppModel(
                 lastAccountRead = Instant.now() to account
                 apply(account, pauseReadAt = pauseEdits)
                 applyConsent(fromServer = account.consent)
+                routeIfUnfinished(account)
                 account
             } catch (e: CancellationException) {
                 throw e
