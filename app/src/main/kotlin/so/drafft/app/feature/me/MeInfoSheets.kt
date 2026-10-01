@@ -34,6 +34,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -195,6 +196,7 @@ fun BlockedPeopleSheet(modifier: Modifier = Modifier) {
     var pending by remember { mutableStateOf<Profile?>(null) }
     val blocked = app.blocked
     val p = DS.palette
+    LaunchedEffect(Unit) { app.loadBlocked() }
 
     MeInfoSheet(L("Blocked people"), modifier) {
         AnimatedContent(
@@ -257,7 +259,12 @@ private fun BlockedRow(person: Profile, onUnblock: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Photo(person.portrait, Modifier.size(36.dp).clip(CircleShape), side = 36.dp)
+        // Listed by the server after a relaunch: a name only, their photo isn't yours to see any more.
+        if (person.portrait.isEmpty()) {
+            RowBadge("user-block")
+        } else {
+            Photo(person.portrait, Modifier.size(36.dp).clip(CircleShape), side = 36.dp)
+        }
         Text(person.name, Modifier.weight(1f), style = TextStyles.body.semibold, color = p.ink)
         PressScaleButton(
             onClick = onUnblock,
