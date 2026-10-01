@@ -748,8 +748,9 @@ private fun JumpToLatestButton(unseen: Int, action: () -> Unit) {
 // MARK: - Header
 
 /**
- * The chat's navigation bar: back, the person (avatar, name, presence; opens their profile), propose
- * a session, and More (mute, mark as unread, then report or block, apart).
+ * The chat's navigation bar (ChatView.swift's toolbar), WhatsApp style: back, then the person
+ * (avatar at the bar controls' 44 dp, first name and presence beside it; opens their profile), and on
+ * the right propose a session and More (mute, mark as unread, then report or block, apart).
  */
 @Composable
 private fun ChatNavigationBar(
@@ -763,8 +764,8 @@ private fun ChatNavigationBar(
     val app = LocalAppModel.current
     var menu by remember { mutableStateOf(false) }
     val viewProfile = L("View %s's profile", convo.profile.name)
-    // Back on the left, the person in the middle (as centred as the buttons allow, at most 210 wide),
-    // the actions on the right, like the iPhone's bar.
+    val proposeLabel = L("Propose a session")
+    // Back, the person right after it (leading), the actions on the right, like the iPhone's bar.
     Layout(
         modifier = Modifier
             .fillMaxWidth()
@@ -779,40 +780,43 @@ private fun ChatNavigationBar(
                     .clearAndSetSemantics {
                         contentDescription = viewProfile
                         onClick { onProfile(); true }
-                    }
-                    .padding(vertical = 4.dp),
+                    },
                 horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Avatar(convo.profile.portrait, size = 32.dp)
+                // The size of Back and the trailing discs.
+                Avatar(convo.profile.portrait, size = BarControl)
                 Column {
-                    // Long names end with "…": the header never pushes the bar's buttons away (a
-                    // person's name, content, not copy).
+                    // The name takes the room up to the trailing buttons and ends with "…" only when it
+                    // can't fit: the one header text allowed to truncate (DESIGN.md, Headers).
                     Text(
                         convo.profile.name,
                         style = TextStyles.headline,
                         color = DS.palette.ink,
                         maxLines = 1,
-                        // design-lint: allow truncation - a person's name (content, not copy) in the header
+                        // design-lint: allow truncation - the chat header name, asked for by the user (DESIGN.md, Headers)
                         overflow = TextOverflow.Ellipsis,
                     )
                     PresenceLine(convo)
                 }
             }
-            // Icons only, each on its own glass disc (ChatView.swift's trailing bar item): proposing a
-            // session is the chat's main action, so it takes the accent fill; the overflow menu (vertical
-            // dots) stays a neutral utility.
-            Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
-                GlassCircleButton(
-                    "calendar-add",
-                    {
-                        Haptics.tap()
-                        onPropose()
-                    },
-                    contentDescription = L("Propose a session"),
-                    tint = DS.palette.lime,
-                    glyph = DS.palette.onLime,
-                )
+            // Proposing a session is the chat's main action: a solid accent disc; More (vertical dots) stays
+            // a neutral glass utility, the size of Back.
+            Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
+                Box(
+                    Modifier
+                        .size(BarControl)
+                        .pressScale({
+                            Haptics.tap()
+                            onPropose()
+                        })
+                        .semantics { contentDescription = proposeLabel }
+                        .background(DS.palette.lime, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // `.body.weight(.semibold)`.
+                    DrafftIcon("calendar-add", size = 20.4.dp, tint = DS.palette.onLime)
+                }
                 Box {
                     // Neutral icons: the menu doesn't take the accent tint.
                     GlassCircleButton("menu-dots-vertical", { menu = true }, contentDescription = L("More"))
@@ -845,17 +849,18 @@ private fun ChatNavigationBar(
         val back = measurables[0].measure(loose)
         val actions = measurables[2].measure(loose)
         val room = constraints.maxWidth - back.width - actions.width - gap * 2
-        val person = measurables[1].measure(loose.copy(maxWidth = max(0, min(210.dp.roundToPx(), room))))
+        val person = measurables[1].measure(loose.copy(maxWidth = max(0, room)))
         val height = maxOf(back.height, actions.height, person.height, constraints.minHeight)
         layout(constraints.maxWidth, height) {
             back.placeRelative(0, (height - back.height) / 2)
             actions.placeRelative(constraints.maxWidth - actions.width, (height - actions.height) / 2)
-            val centred = (constraints.maxWidth - person.width) / 2
-            val x = centred.coerceIn(back.width + gap, max(back.width + gap, constraints.maxWidth - actions.width - gap - person.width))
-            person.placeRelative(x, (height - person.height) / 2)
+            person.placeRelative(back.width + gap, (height - person.height) / 2)
         }
     }
 }
+
+/** Bar controls: Back, the trailing discs and the header avatar share one 44 dp diameter. */
+private val BarControl = 44.dp
 
 /** Under the name in the bar: "Typing…", or "Active now" while they have the app open (nothing otherwise). */
 @Composable
