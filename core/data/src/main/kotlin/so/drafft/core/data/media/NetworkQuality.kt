@@ -7,7 +7,7 @@ package so.drafft.core.data.media
  * Whether the connection is limited, for how much the app fetches ahead and how big (`ImageStore`,
  * `PhotoWindow`). Limited: a metered network (cellular), Data Saver, or photos measured arriving slowly
  * (under about 1.6 Mbit/s each, back to normal above 3.2: a gap so one slow photo doesn't flip it back
- * and forth). The speed is an average that follows the last few downloads ([measured]).
+ * and forth). The speed is an average that follows the last few downloads ([download]).
  */
 class NetworkQuality {
     private val lock = Any()
@@ -41,11 +41,37 @@ class NetworkQuality {
     }
 
     /**
-     * A photo download that brought [bytes] in [seconds]. Only sizeable downloads count (a small file is
-     * all latency, which says nothing of the line).
+     * Times a photo download started at [now] (seconds on a monotonic clock): once, a second in (a slow
+     * line shows within the first download, finished or not), or at its end for one shorter than that and
+     * of some size (a small file is all latency, which says nothing of the line).
      */
-    fun measured(bytes: Long, seconds: Double) {
-        if (bytes >= MIN_BYTES && seconds > 0) record(bytes / seconds)
+    fun download(now: Double = monotonicSeconds()): Download = Download(now)
+
+    /** One photo download's bytes so far, and whether its speed was recorded (once). */
+    inner class Download internal constructor(private val start: Double) {
+        private var total = 0L
+        private var recorded = false
+
+        /** [bytes] more arrived at [now]. */
+        fun received(bytes: Long, now: Double = monotonicSeconds()) {
+            val total = synchronized(this) { total += bytes; total }
+            val elapsed = now - start
+            if (elapsed >= 1 && claim()) record(total / elapsed)
+        }
+
+        /** The download ended at [now]: read to its end, or [failed] (an error, or cancelled). */
+        fun ended(failed: Boolean, now: Double = monotonicSeconds()) {
+            val total = synchronized(this) { total }
+            val elapsed = now - start
+            if ((elapsed >= 1 || (!failed && total >= MIN_BYTES)) && elapsed > 0 && claim()) record(total / elapsed)
+        }
+
+        /** True the first time only. */
+        private fun claim(): Boolean = synchronized(this) {
+            if (recorded) return false
+            recorded = true
+            true
+        }
     }
 
     private fun record(bytesPerSecond: Double) {
@@ -73,5 +99,7 @@ class NetworkQuality {
         private const val SLOW_BELOW = 200_000.0
         private const val FAST_ABOVE = 400_000.0
         private const val MIN_BYTES = 60_000L
+
+        private fun monotonicSeconds(): Double = System.nanoTime() / 1e9
     }
 }

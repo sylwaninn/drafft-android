@@ -22,12 +22,13 @@ import so.drafft.core.model.Profile
  * the rows about to scroll in). The cards on screen load their own photo, the one in play first
  * (`SwipeCard`'s priority); the window covers what comes after them:
  *
- * - the portraits of the next cards, to disk, at the copy their card needs: 6 ahead, 4 on a limited
- *   connection ([NetworkQuality]);
- * - on a limited connection, a small copy of each of those portraits first ([ImageStore.preview]), so a
- *   card never shows only its blurred preview: ahead of the card in play's full copy too
- *   (`DiscoverView`'s photo priority), small enough to keep up with the swipes;
- * - the other photos of the card in play (its profile, if opened), last, and only on a good connection.
+ * - on a good connection, the portraits of the next 6 cards, to disk, at the copy their card needs, then
+ *   the other photos of the card in play (its profile, if opened);
+ * - on a limited one ([NetworkQuality]), a small copy of the portraits on screen and of the next 8
+ *   instead ([ImageStore.preview], about 20 kB each): a full copy can't keep up with fast swipes on a
+ *   slow line, a small one can, so no card shows only its blurred preview. They come ahead of the card in
+ *   play's full copy too, and the cards behind it get their full copy last (`DiscoverView`'s photo
+ *   priority).
  *
  * Whatever leaves the window is cancelled: a fast run of swipes never leaves downloads running for cards
  * already gone, which would take the line from the card in play. Its requests start after the cards on
@@ -36,8 +37,9 @@ import so.drafft.core.model.Profile
  */
 class PhotoWindow private constructor() {
     /**
-     * Two at a time each, under the six (three when limited) downloads the pipeline allows: the cards on
-     * screen always have room.
+     * Two at a time each, under the six (two when limited) downloads the pipeline allows: the cards on
+     * screen always have room. Small copies are decoded ahead too (under a megabyte each), with the
+     * request the card's own small-copy layer makes: shown on arrival, from memory.
      */
     private val portraits = Prefetcher(maxConcurrent = 2)
     private val previews = Prefetcher(maxConcurrent = 2)
@@ -50,13 +52,11 @@ class PhotoWindow private constructor() {
     fun aim(context: PlatformContext, deck: List<Profile>, onScreen: Int, width: Int, height: Int) {
         if (width <= 0 || height <= 0) return
         val limited = NetworkQuality.shared.isLimited
-        val ahead = deck.drop(onScreen).take(if (limited) 4 else 6).map { it.portrait }
+        val ahead = if (limited) emptyList() else deck.drop(onScreen).take(6).map { it.portrait }
         portraits.set(ahead.mapNotNull { ImageStore.prefetchRequest(context, it, width, height, Images.Priority.LOW) })
         previews.set(
             if (limited) {
-                deck.take(onScreen + 4).map { it.portrait }.mapNotNull {
-                    ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_HIGH, previewOnly = true)
-                }
+                deck.take(onScreen + 8).map { it.portrait }.mapNotNull { ImageStore.preview(context, it, width, height) }
             } else {
                 emptyList()
             },

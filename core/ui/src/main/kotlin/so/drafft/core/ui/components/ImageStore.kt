@@ -157,23 +157,12 @@ object ImageStore {
 
     /**
      * A server photo about to show, fetched to disk (`PhotoWindow`): the copy [remoteRequest] picks for
-     * the same frame, or its small copy ([previewOnly], as [preview]). Decoded tiny and never kept in
-     * memory: it's decoded at its display size once it's drawn.
+     * the same frame. Decoded tiny and never kept in memory: it's decoded at its display size once it's
+     * drawn.
      */
-    fun prefetchRequest(
-        context: PlatformContext,
-        name: String,
-        width: Int,
-        height: Int,
-        priority: Images.Priority,
-        previewOnly: Boolean = false,
-    ): ImageRequest? {
+    fun prefetchRequest(context: PlatformContext, name: String, width: Int, height: Int, priority: Images.Priority): ImageRequest? {
         if (!name.startsWith("http")) return null
-        val url = if (previewOnly) {
-            previewURL(name, width, height) ?: return null
-        } else {
-            closest(context, name, fullWidth(name, PixelSize(width, height)), null)
-        }
+        val url = closest(context, name, fullWidth(name, PixelSize(width, height)), null)
         return ImageRequest.Builder(context)
             .data(url)
             .diskCacheKey(cacheID(url, null))

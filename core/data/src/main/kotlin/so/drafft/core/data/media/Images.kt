@@ -28,9 +28,9 @@ object Images {
     /** Downloaded bytes kept on disk. */
     const val diskLimit: Long = 300L shl 20
 
-    /** Downloads running at once: six share a fast line; on a slow one, three. */
+    /** Downloads running at once: six share a fast line; on a slow one, two. */
     const val downloads = 6
-    const val limitedDownloads = 3
+    const val limitedDownloads = 2
 
     /**
      * Download order among photos waiting (Nuke's request priorities on the iPhone): the deck card in

@@ -71,7 +71,7 @@ fun installImages(context: Context) {
     // (`ImageStore` asks it which copies are already on this phone).
     Thread({ SingletonImageLoader.get(app).diskCache?.size }, "image-cache-warmup").start()
     NetworkQuality.shared.onChange { limited ->
-        // Six downloads share a fast line; on a slow one, three, so the photo on screen isn't split six ways.
+        // Six downloads share a fast line; on a slow one, two, so the photo on screen isn't split six ways.
         PhotoDownloads.shared.limit = if (limited) Images.limitedDownloads else Images.downloads
     }
     watchNetwork(app)
@@ -122,36 +122,38 @@ private object PhotoDownloadInterceptor : Interceptor {
         if (!PhotoDownloads.shared.acquire(rank, photo) { call.isCanceled() }) throw IOException("Canceled")
         val released = AtomicBoolean(false)
         val release = { if (released.compareAndSet(false, true)) PhotoDownloads.shared.release() }
-        val start = System.nanoTime()
+        // Leaves the queue now: how fast it arrives tells how fast the line is.
+        val timing = NetworkQuality.shared.download()
         val response = try {
             chain.proceed(request)
         } catch (e: Throwable) {
             release()
+            timing.ended(failed = true)
             throw e
         }
         val body = response.body
         val successful = response.isSuccessful
         return response.newBuilder()
             .body(
-                TimedBody(body) { bytes, complete ->
+                TimedBody(body, onBytes = timing::received) { complete ->
                     release()
-                    if (complete && successful) NetworkQuality.shared.measured(bytes, (System.nanoTime() - start) / 1e9)
+                    timing.ended(failed = !(complete && successful))
                 },
             )
             .build()
     }
 }
 
-/** A response body that reports, once, how many bytes it gave and whether it was read to the end. */
+/** A response body that reports each chunk it gives, then, once, whether it was read to the end. */
 private class TimedBody(
     private val body: ResponseBody,
-    private val onEnd: (bytes: Long, complete: Boolean) -> Unit,
+    private val onBytes: (Long) -> Unit,
+    private val onEnd: (complete: Boolean) -> Unit,
 ) : ResponseBody() {
     private val ended = AtomicBoolean(false)
-    private var bytes = 0L
 
     private fun end(complete: Boolean) {
-        if (ended.compareAndSet(false, true)) onEnd(bytes, complete)
+        if (ended.compareAndSet(false, true)) onEnd(complete)
     }
 
     private val source: BufferedSource by lazy {
@@ -163,7 +165,7 @@ private class TimedBody(
                     end(complete = false)
                     throw e
                 }
-                if (read == -1L) end(complete = true) else bytes += read
+                if (read == -1L) end(complete = true) else onBytes(read)
                 return read
             }
 
