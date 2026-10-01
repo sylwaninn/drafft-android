@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -47,6 +49,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -85,6 +89,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.delay
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.media.PhotoDownloads
@@ -548,8 +553,36 @@ private fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
             modifier = Modifier.fillMaxSize().graphicsLayer { this.alpha = if (readyAtFirstFrame) 1f else alpha },
             contentScale = ContentScale.Crop,
         )
+        if (!ready && blur == 0f && min(maxWidth, maxHeight) >= 200.dp) {
+            // The sharp copy is on its way: the blurred preview or the small copy says so.
+            PhotoLoader(Modifier.align(Alignment.Center))
+        }
     }
 }
+
+/**
+ * A spinner over a large photo still showing its blurred preview or small copy. It appears after a
+ * moment, so a photo that arrives quickly (a good connection, the cache) never flashes it.
+ */
+@Composable
+private fun PhotoLoader(modifier: Modifier = Modifier) {
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(300)
+        shown.animateTo(1f, tween(200, easing = Motion.EaseOut))
+    }
+    Box(modifier.graphicsLayer { alpha = shown.value }.clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
+        // Its soft shadow, so it reads on a light photo too (a plain faint ring where blur isn't available).
+        CircularProgressIndicator(
+            Modifier.size(PhotoLoaderSize).blur(6.dp, BlurredEdgeTreatment.Unbounded),
+            color = Color.Black.copy(alpha = 0.35f),
+            strokeWidth = 3.5.dp,
+        )
+        CircularProgressIndicator(Modifier.size(PhotoLoaderSize), color = Color.White, strokeWidth = 2.5.dp)
+    }
+}
+
+private val PhotoLoaderSize = 24.dp
 
 /** A chat photo or poster from its bytes, decoded off the main thread at the bubble's size (see [MessageImage]). */
 @Composable
