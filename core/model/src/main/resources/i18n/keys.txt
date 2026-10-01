@@ -272,6 +272,8 @@ Continue with Google
 Cool morning run in Parc de la Tête d'Or?
 Copy
 Couldn't connect. Check your connection and try again.
+Couldn't reach drafft. The block goes through as soon as you're back online.
+Couldn't reach drafft. The unblock goes through as soon as you're back online.
 Couldn't reach the App Store. Try again.
 Couldn't send it. Check your connection and try again.
 Country code
