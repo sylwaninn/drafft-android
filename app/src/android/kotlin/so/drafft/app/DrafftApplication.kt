@@ -65,7 +65,6 @@ val appModule = module {
             revenueCatAPIKey = BuildConfig.REVENUECAT_API_KEY,
             smsCodeLifetime = BuildConfig.SMS_CODE_LIFETIME.toDouble(),
             turnstileSiteKey = BuildConfig.TURNSTILE_SITE_KEY,
-            mediaImageResizing = BuildConfig.MEDIA_IMAGE_RESIZING,
             environment = BuildConfig.ENVIRONMENT,
         )
     }

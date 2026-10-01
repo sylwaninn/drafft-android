@@ -121,8 +121,8 @@ object ImageStore {
 /** Hooks the data layer sets for photos on the server. */
 object PhotoUrls {
     /**
-     * The link to download for a photo shown [width] pixels wide. With image resizing on the media
-     * domain, the server sends a copy at the display width instead of the original (`Images.sized`).
+     * The link to download for a photo shown [width] pixels wide: the media Worker sends a copy at the
+     * display width instead of the original when a smaller one is enough (`Images.sized`).
      */
     @Volatile
     var sizer: (url: String, width: Int) -> String = { url, width -> Images.sized(url, width) ?: url }
