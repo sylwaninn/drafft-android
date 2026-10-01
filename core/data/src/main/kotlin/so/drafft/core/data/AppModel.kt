@@ -1205,11 +1205,14 @@ class AppModel(
 
     /**
      * Reads a batch. `RESTART` drops the deck on screen first (new filters or preferences): a card
-     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it.
+     * that doesn't fit them any more never shows. A `REFRESH` while one runs waits for it. [bySwipe]: the
+     * read a swipe asks for as the deck runs low; any other (the front, the channel, the filters) also
+     * tries again after the server ran out of new cards.
      */
-    fun loadDeck(mode: DeckLoad) {
+    fun loadDeck(mode: DeckLoad, bySwipe: Boolean = false) {
         if (phase != Phase.MAIN || profilePaused) return
         if (mode == DeckLoad.REFRESH && discovery.load != null) return
+        if (!bySwipe) discovery.exhausted = false
         discovery.load?.cancel()
         discovery.generation += 1
         val generation = discovery.generation
@@ -1267,6 +1270,10 @@ class AppModel(
                 val fresh = cards.filter { it.id !in hidden }
                 val byID = LinkedHashMap<String, Profile>()
                 for (card in fresh) if (card.id !in byID) byID[card.id] = card.profile(mediaBase = MediaURL.saved)
+                val held = queue.mapTo(HashSet()) { it.id }
+                // Fewer new cards than a batch: the server has no more for now. Swipes stop asking
+                // (each would read the same cards again) until another refresh.
+                discovery.exhausted = fresh.count { it.id !in held } < DECK_BATCH
                 val order = DeckMerge.merge(current = queue.map { it.id }, fresh = fresh.map { it.id }, keep = DECK_KEEP, exclude = hidden)
                 // The fresh copy of each card (new links, a changed profile), in the merged order.
                 queue = order.mapNotNull { byID[it] }
@@ -1330,7 +1337,7 @@ class AppModel(
         }
         saveDeck(filters)
         discovery.pace.swiped(at = System.nanoTime() / 1e9)
-        if (queue.size <= discovery.pace.lowWater) loadDeck(DeckLoad.REFRESH)
+        if (queue.size <= discovery.pace.lowWater && !discovery.exhausted) loadDeck(DeckLoad.REFRESH, bySwipe = true)
         // The last card went while the next batch is on its way: that's loading, not "no one new".
         if (queue.isEmpty() && discovery.load != null) deckState = DeckState.Loading
 
