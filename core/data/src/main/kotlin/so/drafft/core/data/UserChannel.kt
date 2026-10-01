@@ -138,7 +138,7 @@ class UserChannel(
                     purchaseCredit.resume(app)
                     sessionStore.refresh()
                     // Discovery missed nothing while the socket was down.
-                    app.refreshDiscovery()
+                    app.refreshDiscovery(DiscoveryFreshness.Moment.RECONNECTED)
                 }
                 // The streams only end when cancelled: the channel failing to join or being gone ends
                 // this one, and the others with it.

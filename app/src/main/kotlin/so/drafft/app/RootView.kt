@@ -31,6 +31,7 @@ import so.drafft.app.feature.auth.OnboardingView
 import so.drafft.app.feature.auth.SplashView
 import so.drafft.app.feature.auth.WelcomeView
 import so.drafft.core.data.AppModel
+import so.drafft.core.data.DiscoveryFreshness
 import so.drafft.core.data.backend.AppOpens
 import so.drafft.core.data.backend.DeviceIntegrity
 import so.drafft.core.data.chat.ChatService
@@ -200,7 +201,9 @@ fun RootView(app: AppModel) {
             scope.launch { sessions.refresh() }
             // Blocks still waiting for the server, and those made on another device.
             scope.launch { app.sendPendingSafety(); app.loadBlocked() }
-            app.refreshDiscovery()
+            // The deck, likes and matches as the server has them now (no card outlives it), if
+            // away long enough for them to have changed; quietly, over what's on screen.
+            app.refreshDiscovery(DiscoveryFreshness.Moment.FOREGROUND)
         }
     }
 }

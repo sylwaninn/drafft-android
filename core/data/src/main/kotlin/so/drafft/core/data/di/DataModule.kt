@@ -24,8 +24,8 @@ import so.drafft.core.data.platform.PlaybackControl
 /**
  * The app's state and its backend, as singletons (the iPhone's `.shared`). Needs, from elsewhere:
  * a [so.drafft.core.data.backend.BackendConfig] (the app, from its BuildConfig), the platform services
- * (`androidDataModule`: KeyValueStore, LocationProvider, AppInfo, AppLifecycle, DeviceIntegrityProvider,
- * DiagnosticsSource), and the other services AppModel talks to (ChatService, Store, PurchaseCredit,
+ * (`androidDataModule`: KeyValueStore, LocationProvider, AppInfo, AppLifecycle, MonotonicClock,
+ * DeviceIntegrityProvider, DiagnosticsSource), and the other services AppModel talks to (ChatService, Store, PurchaseCredit,
  * NotificationService, SessionStore, SessionCalendar, PhotoModeration, AudioPlayback).
  */
 val dataModule = module {
@@ -70,6 +70,7 @@ val dataModule = module {
             defaults = get(),
             cacheDirectory = File(get<AppInfo>().noBackupDir, "LocalCache"),
             lifecycle = get(),
+            clock = get(),
             playback = getOrNull(),
         )
     }
