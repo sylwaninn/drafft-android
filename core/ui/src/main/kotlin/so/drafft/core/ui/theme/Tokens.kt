@@ -98,6 +98,14 @@ class Palette private constructor(val isDark: Boolean) {
     val sage = c(0xEEEFF1, 0x0E0F10)
     val hairline = c(0xDADCE0, 0x2A2C2F)
 
+    /**
+     * The empty-state stickers are paper: the same in light and dark mode. A white die-cut edge, the
+     * sign in graphite's near-black whatever the mode, a grey back.
+     */
+    val stickerPaper = hex(0xFFFFFF)
+    val stickerBack = hex(0xE2E4E7)
+    val stickerInk = hex(0x111214)
+
     /** Always-dark surface for the polarity-flipped moments, lifted a step above the page in dark mode. */
     val night = c(0x2A2D31, 0x232528)
     val nightRaised = c(0x383B40, 0x2E3033)
