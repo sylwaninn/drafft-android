@@ -728,6 +728,8 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                 app.subscription = null
             }
         } else {
+            // Active again (a later Restore, back from Google Play): closing keeps the row.
+            endedOnClose = false
             app.subscription = sub
         }
     }
