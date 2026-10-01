@@ -18,7 +18,6 @@ data class ProfilePrompt(
                 "After a workout you'll find me",
                 "A stat I'm weirdly proud of",
                 "My competitive streak, rated",
-                "The sport I'm secretly bad at",
                 "My pre-race ritual involves",
                 "The worst run of my life happened when",
                 "I'd drop everything to watch",
@@ -28,11 +27,9 @@ data class ProfilePrompt(
                 "I've never been as sore as the day I",
             )),
             PromptCategory(id = "dating", icon = "heart", questions = listOf(
-                "We'll get along if",
                 "The way to win me over",
                 "I'll know it's a match if",
                 "Green flag in a training partner",
-                "Red flag: you skip",
                 "A first date that isn't dinner",
                 "I'm looking for someone who",
                 "You should not go out with me if",
@@ -64,7 +61,10 @@ data class ProfilePrompt(
         /** Every question in the library, flat. */
         val questions: List<String> get() = library.flatMap { it.questions }
 
-        private val known: Set<String> by lazy { questions.toSet() }
+        /** Taken out of the library; people who answered them still see them translated. */
+        private val retired = listOf("The sport I'm secretly bad at", "We'll get along if", "Red flag: you skip")
+
+        private val known: Set<String> by lazy { (questions + retired).toSet() }
 
         /** A library question in the app's language (questions not in the library are shown as is). */
         fun text(question: String): String = if (question in known) L(question) else question
@@ -78,6 +78,18 @@ data class Vitals(
     val diet: String,
     val chronotype: String,
 ) {
+    /** The drinking answer as a short phrase for summaries ("Drinks socially"); empty if unanswered. */
+    val drinksSummary: String
+        get() = when (drinks) {
+            "" -> ""
+            "Never" -> L("No alcohol")
+            "Rarely" -> L("Drinks rarely")
+            "Socially" -> L("Drinks socially")
+            "Post-race only" -> L("Drinks post-race only")
+            "Apéro is sacred" -> L("Drinks: apéro is sacred")
+            else -> drinks
+        }
+
     companion object {
         /** Nothing answered: what a new account starts with. */
         val blank = Vitals(drinks = "", smokes = "", diet = "", chronotype = "")
@@ -95,6 +107,7 @@ data class Vitals(
             "Rarely",
             "Socially",
             "Post-race only",
+            "Apéro is sacred",
             "Sometimes",
             "Yes",
         )
@@ -103,7 +116,15 @@ data class Vitals(
          * Lifestyle answers are saved as their English option, which stays their identity; this is the
          * text to show. Anything else (free text) is shown as is.
          */
-        fun label(value: String): String = if (value in options) L(value) else value
+        fun label(value: String, gender: Audience? = null): String = when {
+            value == "Meat lover" -> when (gender) {
+                Audience.WOMEN -> L("Meat lover (woman)")
+                Audience.MEN -> L("Meat lover (man)")
+                else -> L("Meat lover")
+            }
+            value in options -> L(value)
+            else -> value
+        }
     }
 }
 

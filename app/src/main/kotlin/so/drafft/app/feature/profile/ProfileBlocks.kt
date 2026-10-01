@@ -369,7 +369,7 @@ private fun vitalsItems(profile: Profile, showDistance: Boolean, showsPlace: Boo
     val pronouns = profile.pronouns
     if (!pronouns.isNullOrEmpty()) out += VitalsItem("user-rounded", pronouns)
     if (v != null) {
-        if (v.diet.isNotEmpty()) out += VitalsItem("chef-hat", Vitals.label(v.diet))
+        if (v.diet.isNotEmpty()) out += VitalsItem("chef-hat", Vitals.label(v.diet, profile.gender))
         if (v.drinks.isNotEmpty()) out += VitalsItem("wineglass", Vitals.label(v.drinks))
         if (v.smokes.isNotEmpty()) out += VitalsItem("forbidden-circle", if (v.smokes == "Never") L("Doesn't smoke") else Vitals.label(v.smokes))
     }
