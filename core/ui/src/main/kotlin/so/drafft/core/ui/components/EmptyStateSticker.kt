@@ -140,6 +140,32 @@ fun EmptyStateSticker(art: EmptyStateArt, modifier: Modifier = Modifier) {
 }
 
 /**
+ * The same sticker, at rest and still: no arrival, no pull. Drawn at the empty tab's size and scaled
+ * down, so it shares that sticker's sheet and looks the same, only smaller (the Likes banner's sign).
+ * Follows `StillSticker` in EmptyStateSticker.swift.
+ */
+@Composable
+fun StillSticker(art: EmptyStateArt, modifier: Modifier = Modifier, size: Float = 56f) {
+    val density = LocalDensity.current
+    val glyph = rememberVectorPainter(Symbols.vector("${art.symbol}-bold"))
+    val sheet = remember(art.symbol, density) { StickerSheet.make(glyph, StickerSide.value, density) }
+    Box(modifier.size(size.dp).clearAndSetSemantics { }, contentAlignment = Alignment.Center) {
+        Canvas(
+            Modifier
+                .size(StickerSide)
+                .graphicsLayer {
+                    val scale = size / StickerSide.value
+                    scaleX = scale
+                    scaleY = scale
+                    rotationZ = TILT_DEGREES
+                },
+        ) {
+            drawPeeled(sheet, corner(sheet.reach.dp.toPx(), 1f, Offset.Zero))
+        }
+    }
+}
+
+/**
  * Where the loose corner sits, from the top-right corner of the sticker: on the diagonal, as deep as
  * the arrival or the rest wants, then wherever the finger takes it.
  */

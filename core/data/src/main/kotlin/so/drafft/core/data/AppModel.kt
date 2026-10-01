@@ -60,6 +60,7 @@ import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.platform.PlaybackControl
+import so.drafft.core.data.sessions.ServerDate
 import so.drafft.core.data.sessions.SessionCalendar
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.store.PurchaseCredit
@@ -80,6 +81,7 @@ import so.drafft.core.model.Profile
 import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.TermsConsent
 import so.drafft.core.model.Vitals
+import so.drafft.core.model.newestFirst
 
 // Ports Drafft/Services/AppModel.swift and its extensions: AppModel+Account, +AccountSync,
 // +LiveProfile, +Matches, +Discover, +Sessions, +Wallet, +Pause and +Safety (one class here, one
@@ -989,7 +991,7 @@ class AppModel(
     // (front, reconnection). The last lists are kept on this phone and shown at launch.
 
     /**
-     * Everyone waiting for an answer, super likes first: the one read of `liked_me`. With drafft tempo
+     * Everyone waiting for an answer, newest first: the one read of `liked_me`. With drafft tempo
      * the server sends their cards; without, only a blurred list (`blurredLikes`, decision 5.5). Read
      * again when Likes opens, on a `like` or `wallet` event (drafft tempo starting or ending) and on
      * each (re)connection. Unchanged if it can't be read.
@@ -1009,7 +1011,7 @@ class AppModel(
         if (premium) {
             val likes = attemptOrNull { LikeCard.list(data) } ?: return likesFailed(null)
             if (blurredLikes.isNotEmpty()) blurredLikes = emptyList()
-            applyLikes(likes.map { it.card })
+            applyLikes(likes)
             openLocalCache()?.let { cache -> write { cache.save(data, LocalCache.Kind.LIKES) } }
         } else {
             val fresh = BlurredLike.list(data) ?: return likesFailed(null)
@@ -1024,9 +1026,12 @@ class AppModel(
         if (likesLoad != ListLoad.Loaded) likesLoad = ListLoad.Failed(offline = error?.let(ServerMessage::isOffline) ?: false)
     }
 
-    private fun applyLikes(cards: List<ProfileCard>) {
+    private fun applyLikes(likes: List<LikeCard>) {
         val hidden = hiddenIDs()
-        val fresh = cards.filter { it.isShowable && it.id !in hidden }.map { it.profile(mediaBase = MediaURL.saved) }
+        val fresh = likes
+            .filter { it.card.isShowable && it.card.id !in hidden }
+            .map { like -> like.card.profile(mediaBase = MediaURL.saved).copy(likedAt = like.likedAt?.let { attemptOrNull { ServerDate.parse(it) } }) }
+            .newestFirst(date = { it.likedAt }, id = { it.id })
         if (fresh != likedMe) likedMe = fresh
     }
 
@@ -1134,7 +1139,7 @@ class AppModel(
         if (isPremium && likedMe.isEmpty()) {
             cache.entry(LocalCache.Kind.LIKES)?.let { entry -> attemptOrNull { LikeCard.list(entry.data) } }
                 ?.let {
-                    applyLikes(it.map { like -> like.card })
+                    applyLikes(it)
                     likesLoad = ListLoad.Loaded
                 }
         }
