@@ -1062,6 +1062,7 @@ They won't be notified. The chat closes and you won't see each other again. Repo
 This %s account is
 This can't be undone.
 This code has expired. Send a new one.
+This email is already linked to another drafft account. Use another one.
 This file is too large.
 This file type isn't supported.
 This invite has already been answered.
@@ -1090,6 +1091,7 @@ Tomorrow
 Too many codes sent. Try again later.
 Too many emails sent. Wait a few minutes and try again.
 Too many tries.
+Too many tries. Wait a few minutes and try again.
 Too many wrong codes. For your security, this change is paused.
 Too many wrong codes. For your security, verification is paused.
 Topic
