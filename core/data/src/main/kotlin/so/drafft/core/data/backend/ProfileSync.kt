@@ -24,6 +24,8 @@ import so.drafft.core.data.media.MediaUploads
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.notifications.NotificationSettings
 import so.drafft.core.data.platform.Coordinate
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Audience
 import so.drafft.core.model.Icebreaker
@@ -180,6 +182,32 @@ class ProfileSync(
 
     /** Saves Edit profile's changes (the birthday stays as set at sign-up). */
     suspend fun save(p: Profile, previous: Profile, voice: Voice?) {
+        // Which parts changed, by name only, for analytics.
+        val changed = buildList {
+            if (p.name != previous.name) add("name")
+            if (p.bio != previous.bio) add("bio")
+            if (p.goal != previous.goal) add("goal")
+            if (p.favoriteSpot != previous.favoriteSpot) add("favorite_spot")
+            if (p.icebreaker != previous.icebreaker) add("icebreaker")
+            if (p.vitals != previous.vitals) add("lifestyle")
+            if (voice != null) add("voice_intro")
+            if (p.sports != previous.sports) add("sports")
+            if (p.prompts != previous.prompts) add("prompts")
+            if (p.allPhotos != previous.allPhotos) add("photos")
+        }
+        try {
+            saveChanges(p, previous, voice)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.ProfileEditFailed(Telemetry.reason(e)))
+            Telemetry.unexpected(e, "profile", "save")
+            throw e
+        }
+        if (changed.isNotEmpty()) Telemetry.track(AnalyticsEvent.ProfileEdited(changed))
+    }
+
+    private suspend fun saveChanges(p: Profile, previous: Profile, voice: Voice?) {
         requireLoaded()
         val fields = linkedMapOf<String, Any?>(
             "name" to p.name,

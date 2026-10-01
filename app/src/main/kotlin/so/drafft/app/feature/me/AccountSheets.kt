@@ -73,9 +73,13 @@ import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.CheckDisc
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
@@ -126,6 +130,7 @@ fun AccountSheet(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    TrackScreen(Screen.ACCOUNT)
     InteractiveDismissDisabled(hasChanges)
     val dismiss = LocalSheetDismiss.current
     var confirmDiscard by remember { mutableStateOf(false) }
@@ -647,12 +652,14 @@ fun ExportDataSheet(modifier: Modifier = Modifier) {
                 try {
                     // The server keeps one open request and says when it was made.
                     backend.rpc("request_data_export", emptyMap<String, Any?>())
+                    Telemetry.track(AnalyticsEvent.DataExportRequested())
                     Haptics.success()
                     app.dataExportRequestedAt = Instant.now()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     Haptics.warning()
+                    Telemetry.unexpected(e, "account", "data_export")
                     exportError = ServerMessage.text(
                         e, offline = L("Your request couldn't be sent. Check your connection and try again."),
                     )

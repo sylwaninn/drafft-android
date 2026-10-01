@@ -88,6 +88,8 @@ suspend inline fun <T> attempt(crossinline block: suspend () -> T): T? = try {
 } catch (e: CancellationException) {
     throw e
 } catch (e: Exception) {
+    // Quiet for the person, not for the team: what isn't offline or an explained refusal is reported.
+    so.drafft.core.data.telemetry.Telemetry.unexpected(e, area = "backend", action = "attempt")
     null
 }
 

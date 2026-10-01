@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.chat.ChatService
@@ -20,6 +21,8 @@ import so.drafft.core.data.platform.LocalNotifications
 import so.drafft.core.data.platform.PermissionStatus
 import so.drafft.core.data.platform.SystemPermission
 import so.drafft.core.data.sessions.SessionStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 
@@ -225,10 +228,21 @@ class NotificationService(
      */
     private fun changed() {
         if (applying) return
+        trackChanges(from = defaults.getString(SETTINGS_KEY), to = current)
         defaults.putString(SETTINGS_KEY, json.encodeToString(NotificationSettings.serializer(), current))
         val account = backend.userID?.toString() ?: return
         unsentFor = account
         send(current, account)
+    }
+
+    /** Each switch the person flipped (`notify_matches` off...); the language has its own event. */
+    private fun trackChanges(from: String?, to: NotificationSettings) {
+        val before = from?.let { runCatching { json.decodeFromString(NotificationSettings.serializer(), it) }.getOrNull() }?.fields ?: return
+        for ((key, value) in to.fields) {
+            if (key == "language" || before[key] == value) continue
+            val enabled = (value as? JsonPrimitive)?.booleanOrNull ?: continue
+            Telemetry.track(AnalyticsEvent.NotificationSettingChanged(key, enabled))
+        }
     }
 
     /**
@@ -341,6 +355,7 @@ class NotificationService(
      */
     suspend fun willPresent(info: Map<String, String>): Boolean {
         val kind = info["kind"]
+        Telemetry.track(AnalyticsEvent.PushReceived(pushKind(info), inForeground = true))
         // A refused photo while the app is open: its own banner says it, not the system's (shown once,
         // whether the push or the live `media` event comes first).
         if (kind == "photo_refused") {
@@ -377,6 +392,7 @@ class NotificationService(
     /** A notification was tapped (from `MainActivity`, with the notification's data). */
     fun didReceive(info: Map<String, String>) {
         val kind = info["kind"]
+        Telemetry.track(AnalyticsEvent.PushOpened(pushKind(info)))
         if (kind == "photo_refused") {
             info["media"]?.let { photoModeration.openRefusal(mediaID = it) }
             return
@@ -397,6 +413,14 @@ class NotificationService(
             }
         }
         openChatID = chatID
+    }
+
+    /** The push's kind as a code (`new_message` for Stream's chat pushes, `local` for the app's own). */
+    private fun pushKind(info: Map<String, String>): String = when {
+        info["kind"] != null -> info.getValue("kind").lowercase()
+        info["sender"] == "stream.chat" -> "new_message"
+        info["chatID"] != null -> "local"
+        else -> "unknown"
     }
 
     /**

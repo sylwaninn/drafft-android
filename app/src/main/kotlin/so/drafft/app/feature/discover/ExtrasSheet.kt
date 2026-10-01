@@ -1,5 +1,8 @@
 package so.drafft.app.feature.discover
 
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.ui.TrackPaywall
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -186,6 +189,14 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
     val opensOnLaunch = tab == ExtrasSheet.Tab.BOOST && (app.boosts > 0 || app.isBoosting())
 
     LaunchedEffect(Unit) { store.load() }
+    TrackPaywall(
+        when (tab) {
+            ExtrasSheet.Tab.BOOST -> AnalyticsEvent.ProductKind.BOOST
+            ExtrasSheet.Tab.SUPER_LIKE -> AnalyticsEvent.ProductKind.SUPER_LIKE
+            ExtrasSheet.Tab.LIKES -> AnalyticsEvent.ProductKind.TEMPO
+        },
+        screen = Screen.EXTRAS,
+    ) { receipt != null }
     LaunchedEffect(Unit) {
         if (!reduceMotion) {
             delay(100)

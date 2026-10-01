@@ -23,6 +23,9 @@ import org.koin.android.ext.android.inject
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.backend.BackendConfig
 import so.drafft.core.data.platform.AndroidLocationProvider
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.ui.platform.AndroidPlatformUi
 import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.theme.DrafftTheme
@@ -45,7 +48,11 @@ class MainActivity : ComponentActivity() {
         pendingPrompt = null
     }
 
-    private val askLocation = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+    private val askLocation = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        trackPermission(
+            listOf(Manifest.permission.ACCESS_COARSE_LOCATION),
+            if (granted.values.any { it }) AnalyticsEvent.PermissionResult.GRANTED else AnalyticsEvent.PermissionResult.DENIED,
+        )
         location.onPermissionResult()
     }
 
@@ -94,19 +101,42 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun prompt(permissions: List<String>): PermissionPrompter.Result {
         if (permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
+            trackPermission(permissions, AnalyticsEvent.PermissionResult.ALREADY_GRANTED)
             return PermissionPrompter.Result.GRANTED
         }
         pendingPrompt?.cancel()
         val answer = CompletableDeferred<Map<String, Boolean>>().also { pendingPrompt = it }
         askPermissions.launch(permissions.toTypedArray())
         val granted = answer.await()
-        return when {
+        val result = when {
             permissions.all { granted[it] == true } -> PermissionPrompter.Result.GRANTED
             // No rationale after a refusal: Android won't show the prompt again, only Settings can.
             permissions.none { ActivityCompat.shouldShowRequestPermissionRationale(this, it) } ->
                 PermissionPrompter.Result.DENIED_FOR_GOOD
             else -> PermissionPrompter.Result.DENIED
         }
+        trackPermission(
+            permissions,
+            when (result) {
+                PermissionPrompter.Result.GRANTED -> AnalyticsEvent.PermissionResult.GRANTED
+                PermissionPrompter.Result.DENIED -> AnalyticsEvent.PermissionResult.DENIED
+                PermissionPrompter.Result.DENIED_FOR_GOOD -> AnalyticsEvent.PermissionResult.BLOCKED
+            },
+        )
+        return result
+    }
+
+    /** Which permission was asked and the answer, on the screen that asked (product analytics). */
+    private fun trackPermission(permissions: List<String>, result: AnalyticsEvent.PermissionResult) {
+        val permission = when (permissions.firstOrNull()) {
+            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION -> AnalyticsEvent.Permission.LOCATION
+            Manifest.permission.POST_NOTIFICATIONS -> AnalyticsEvent.Permission.NOTIFICATIONS
+            Manifest.permission.CAMERA -> AnalyticsEvent.Permission.CAMERA
+            Manifest.permission.RECORD_AUDIO -> AnalyticsEvent.Permission.MICROPHONE
+            Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR -> AnalyticsEvent.Permission.CALENDAR
+            else -> AnalyticsEvent.Permission.PHOTOS
+        }
+        Telemetry.track(AnalyticsEvent.PermissionRequested(permission, result, during = ScreenTracker.current?.id ?: "unknown"))
     }
 
     override fun onResume() {

@@ -28,6 +28,8 @@ import so.drafft.core.data.AppModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 
 /**
  * Ports Drafft/Services/PurchaseCredit.swift.
@@ -154,7 +156,9 @@ class PurchaseCredit(
         val app = app?.get() ?: return
         if (pending.isEmpty()) return
         val before = pending.size
-        pending = pending.filterNot { it.isCredited(app) }
+        val credited = pending.filter { it.isCredited(app) }
+        credited.forEach(::trackCredited)
+        pending = pending - credited.toSet()
         if (pending.size == before) return
         save()
         if (pending.isEmpty()) {
@@ -241,10 +245,12 @@ class PurchaseCredit(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Backend.BackendError.Http) {
+            Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
             // Too many asks, or the store is slow to answer: the webhook credits it meanwhile.
             if (e.status == 429 || e.status == 503) THROTTLED_RETRY else null
         } catch (e: Exception) {
+            Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
             null
         }
@@ -271,12 +277,22 @@ class PurchaseCredit(
 
     /** The server credited [purchase]: it leaves the list, whatever the balances say. */
     private fun markCredited(purchase: Pending) {
+        if (purchase in pending) trackCredited(purchase)
         pending = pending - purchase
         walletChanged()
         save()
         if (pending.isEmpty()) {
             sync?.cancel()
             if (banner == Banner.ADDING) show(Banner.CREDITED)
+        }
+    }
+
+    private fun trackCredited(purchase: Pending) {
+        val seconds = ((System.currentTimeMillis() - purchase.date) / 1000).coerceAtLeast(0)
+        Telemetry.track(AnalyticsEvent.PurchaseCredited(seconds.toInt()))
+        // Paid and only credited long after: the webhook or purchase-sync is late, worth a look.
+        if (seconds > slowAfter.inWholeSeconds) {
+            Telemetry.problem("purchase credited late", area = "purchase", extra = mapOf("seconds_to_credit" to seconds))
         }
     }
 

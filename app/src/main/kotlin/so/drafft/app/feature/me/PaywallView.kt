@@ -1,5 +1,10 @@
 package so.drafft.app.feature.me
 
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
+import so.drafft.core.ui.TrackPaywall
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -151,6 +156,7 @@ fun PaywallView(
     val scroll = rememberScrollState()
 
     LaunchedEffect(Unit) { store.load() }
+    TrackPaywall(AnalyticsEvent.ProductKind.TEMPO) { receipt != null }
     // The iPhone turns off the swipe-down while a purchase runs; here system back waits too.
     BackHandler(enabled = purchasing || receipt != null) {}
 
@@ -310,7 +316,10 @@ fun PaywallView(
                         restoring = restoring,
                         restoreEnabled = !restoring && !purchasing && store.isLinked,
                         onRestore = ::restore,
-                        onLegal = { uriHandler.openUri(it.url()) },
+                        onLegal = {
+                            Telemetry.track(AnalyticsEvent.LegalDocOpened(it.rawValue))
+                            uriHandler.openUri(it.url())
+                        },
                     )
                 }
             }
@@ -706,6 +715,7 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
     val lifecycle = koinInject<AppLifecycle>()
     val scope = rememberCoroutineScope()
     var managing by remember { mutableStateOf(false) }
+    TrackScreen(Screen.SUBSCRIPTION)
     var restoring by remember { mutableStateOf(false) }
     // What Restore found, and whether it's good news (a failure or nothing active is a warning).
     var restoreResult by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
@@ -795,6 +805,7 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
             SubscriptionFooter(onManage = {
                 Haptics.tap()
                 managing = true
+                Telemetry.track(AnalyticsEvent.SubscriptionManageOpened())
                 uriHandler.openUri(PLAY_SUBSCRIPTIONS_URL)
             })
         },
@@ -818,7 +829,10 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                     restoring = restoring,
                     restoreResult = restoreResult,
                     onRestore = ::restore,
-                    onLegal = { uriHandler.openUri(it.url()) },
+                    onLegal = {
+                        Telemetry.track(AnalyticsEvent.LegalDocOpened(it.rawValue))
+                        uriHandler.openUri(it.url())
+                    },
                 )
             }
         }

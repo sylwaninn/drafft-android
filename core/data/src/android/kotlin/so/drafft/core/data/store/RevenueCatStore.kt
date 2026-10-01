@@ -27,6 +27,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.appLocale
 import com.revenuecat.purchases.CustomerInfo as RCCustomerInfo
 import com.revenuecat.purchases.Offering as RCOffering
@@ -86,6 +88,7 @@ class RevenueCatStore(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Telemetry.unexpected(e, "purchase", "link")
             linkedUserID = null
             return false
         }
@@ -129,6 +132,8 @@ class RevenueCatStore(
                 throw e
             } catch (e: Exception) {
                 state = Store.LoadState.FAILED
+                Telemetry.track(AnalyticsEvent.ProductsLoadFailed())
+                Telemetry.unexpected(e, "purchase", "load_offerings")
                 return
             }
         }
@@ -137,6 +142,28 @@ class RevenueCatStore(
     }
 
     override suspend fun purchase(pkg: Package): Store.Outcome {
+        val productID = pkg.storeProduct.productIdentifier
+        val kind = AnalyticsEvent.ProductKind.of(productID)
+        Telemetry.track(AnalyticsEvent.PurchaseStarted(kind, productID))
+        val outcome = try {
+            purchaseLinked(pkg)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.PurchaseFailed(kind, productID, Store.PurchaseProblem.from(e).name.lowercase()))
+            Telemetry.unexpected(e, "purchase", "purchase", mapOf("product_id" to productID))
+            throw e
+        }
+        Telemetry.track(
+            when (outcome) {
+                is Store.Outcome.Purchased -> AnalyticsEvent.PurchaseCompleted(kind, productID, pkg.storeProduct.currencyCode)
+                Store.Outcome.Cancelled -> AnalyticsEvent.PurchaseCancelled(kind, productID)
+            },
+        )
+        return outcome
+    }
+
+    private suspend fun purchaseLinked(pkg: Package): Store.Outcome {
         if (!link()) throw Store.StoreError.NotLinked
         val native = pkg.native as RCPackage
         // No purchase sheet without an activity on screen: nothing was asked of Google Play.
@@ -168,8 +195,18 @@ class RevenueCatStore(
     }
 
     override suspend fun restore(): CustomerInfo {
-        if (!link()) throw Store.StoreError.NotLinked
-        return purchases.awaitRestore().toInfo()
+        try {
+            if (!link()) throw Store.StoreError.NotLinked
+            val info = purchases.awaitRestore().toInfo()
+            Telemetry.track(AnalyticsEvent.PurchasesRestored(found = info.entitlements[Store.TEMPO_ENTITLEMENT]?.isActive == true))
+            return info
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.RestoreFailed())
+            Telemetry.unexpected(e, "purchase", "restore")
+            throw e
+        }
     }
 
     override suspend fun customerInfo(): CustomerInfo = purchases.awaitCustomerInfo().toInfo()

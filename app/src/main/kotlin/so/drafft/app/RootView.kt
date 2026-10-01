@@ -39,6 +39,9 @@ import so.drafft.core.data.UserChannel
 import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.store.PurchaseCredit
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.TelemetrySession
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftConfirm
@@ -63,6 +66,7 @@ fun RootView(app: AppModel) {
     val userChannel = koinInject<UserChannel>()
     val sessions = koinInject<SessionStore>()
     val foreground = koinInject<ForegroundReturns>()
+    val telemetry = koinInject<TelemetrySession>()
     val moderation = app.moderation
 
     // The tabs exist from shortly after launch, invisible under the welcome screen or sign-up.
@@ -147,6 +151,23 @@ fun RootView(app: AppModel) {
         }
     }
 
+    // Who is signed in and what the screen is, for crash reports and product analytics.
+    LaunchedEffect(Unit) { telemetry.watch(app) }
+    LaunchedEffect(app.phase, app.tab) {
+        ScreenTracker.base(
+            when (app.phase) {
+                AppModel.Phase.WELCOME -> Screen.WELCOME
+                AppModel.Phase.ONBOARDING -> Screen.ONBOARDING
+                AppModel.Phase.MAIN -> when (app.tab) {
+                    AppModel.Tab.DISCOVER -> Screen.DISCOVER
+                    AppModel.Tab.LIKES -> Screen.LIKES
+                    AppModel.Tab.SESSIONS -> Screen.SESSIONS
+                    AppModel.Tab.CHATS -> Screen.CHATS
+                    AppModel.Tab.ME -> Screen.ME
+                }
+            },
+        )
+    }
     LaunchedEffect(Unit) {
         // Once the welcome screen has drawn and settled.
         delay(800)

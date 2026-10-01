@@ -34,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,11 +64,15 @@ import so.drafft.app.feature.matches.UnmatchButton
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.GlassCircleButton
@@ -113,6 +118,10 @@ fun ProfileDetailView(
     onBlocked: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreen(Screen.PROFILE_DETAIL)
+    LaunchedEffect(profile.id) {
+        Telemetry.track(AnalyticsEvent.ProfileViewed(mode.name.lowercase(), hasVoice = profile.voiceIntro != null, photos = profile.allPhotos.size))
+    }
     val app = LocalAppModel.current
     val audio = koinInject<AudioPlayback>()
     val dismiss = LocalSheetDismiss.current

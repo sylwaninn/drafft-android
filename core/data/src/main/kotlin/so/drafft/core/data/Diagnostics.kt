@@ -12,10 +12,11 @@ import so.drafft.core.data.platform.DiagnosticsSource
 /**
  * What the system measures of the app on people's phones: crash, hang and exit diagnostics.
  *
- * For now they're written to the device log (tag `so.drafft.app`, category `metrics`) and kept as
- * JSON files in the app's files/Diagnostics (the last 30), readable with Android Studio's Device
- * Explorer or a bug report. Nothing leaves the phone yet: sending them (Sentry or the backend) comes
- * with that service.
+ * They're written to the device log (tag `so.drafft.app`, category `metrics`) and kept as JSON files
+ * in the app's files/Diagnostics (the last 30), readable with Android Studio's Device Explorer or a
+ * bug report. The log line also reaches Sentry (`TelemetryLogHandler`): a problem as a log, any other
+ * exit as a breadcrumb. Crashes and ANRs reach Sentry on their own, so a problem is a warning here,
+ * not a second error.
  */
 class Diagnostics(
     private val source: DiagnosticsSource,
@@ -26,7 +27,7 @@ class Diagnostics(
     /** Once, at launch. */
     fun start() {
         source.start { kind, json, summary, isProblem ->
-            log.log(if (isProblem) Level.SEVERE else Level.INFO, summary)
+            log.log(if (isProblem) Level.WARNING else Level.INFO, summary)
             keep(json, kind)
         }
     }

@@ -63,8 +63,12 @@ import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.TextLinkButton
@@ -90,6 +94,8 @@ import so.drafft.core.ui.theme.semibold
  */
 @Composable
 fun SelfieCaptureView(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    TrackScreen(Screen.SELFIE_VERIFICATION)
+    LaunchedEffect(Unit) { Telemetry.track(AnalyticsEvent.SelfieVerificationStarted()) }
     val platform = LocalPlatformUi.current
     val camera = platform.rememberFrontCamera()
     val openSettings = platform.rememberOpenAppSettings()
@@ -396,7 +402,8 @@ class SelfieCaptureModel(
         stage = Stage.Sending(photo)
         error = null
         try {
-            SelfieUpload.send(backend, photo)
+            Telemetry.trace("media.upload", "selfie") { SelfieUpload.send(backend, photo) }
+            Telemetry.track(AnalyticsEvent.SelfieVerificationSubmitted())
             Haptics.success()
             // The hold turns to review first: the camera closes onto the review screen, never back onto
             // the selfie request.
@@ -405,6 +412,8 @@ class SelfieCaptureModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.SelfieVerificationFailed(Telemetry.reason(e)))
+            Telemetry.unexpected(e, "verification", "selfie")
             if (ServerMessage.code(e) == "not_requested") {
                 // The team decided meanwhile (the hold was lifted or changed): nothing left to send here.
                 moderation.load()

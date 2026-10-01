@@ -18,6 +18,8 @@ import so.drafft.core.data.media.MediaUploads
 import so.drafft.core.data.media.VideoCompressor
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.sessions.from
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.DeliveryState
 import so.drafft.core.model.Message
@@ -299,31 +301,34 @@ class ChatThreads(
         val tickets = EdgeFunctionTicketProvider(backend.config.functionsURL, accessToken = { backend.accessToken() })
         scope.launch {
             try {
-                val media = when (val source = current.source) {
-                    is Upload.Source.Text -> error("a text goes through the chat service")
-                    is Upload.Source.Photo -> {
-                        val sent = MediaUploads.photo(source.data, purpose = MediaPurpose.CHAT_PHOTO, tickets = tickets)
-                        ChatPayload.Media(
-                            kind = ChatPayload.Media.Kind.PHOTO, key = sent.key, width = sent.width, height = sent.height,
-                            thumbhash = sent.thumbHash,
-                        )
-                    }
-                    is Upload.Source.Video -> {
-                        val sent = MediaUploads.video(
-                            source.url, purpose = MediaPurpose.CHAT_VIDEO, settings = VideoCompressor.Settings.chat,
-                            posterPurpose = MediaPurpose.CHAT_PHOTO, tickets = tickets,
-                        )
-                        ChatPayload.Media(
-                            kind = ChatPayload.Media.Kind.VIDEO, key = sent.key, width = sent.width, height = sent.height,
-                            duration = sent.duration, posterKey = sent.posterKey, thumbhash = sent.thumbHash,
-                        )
-                    }
-                    is Upload.Source.Voice -> {
-                        val key = MediaUploads.voice(source.url, purpose = MediaPurpose.CHAT_VOICE, tickets = tickets)
-                        ChatPayload.Media(
-                            kind = ChatPayload.Media.Kind.VOICE, key = key, duration = source.duration,
-                            levels = ChatService.compact(source.levels),
-                        )
+                // Timed (Sentry Performance): compression and upload, the slow part of a media message.
+                val media = Telemetry.trace("media.upload", "chat ${current.source.telemetryKind.name.lowercase()}") {
+                    when (val source = current.source) {
+                        is Upload.Source.Text -> error("a text goes through the chat service")
+                        is Upload.Source.Photo -> {
+                            val sent = MediaUploads.photo(source.data, purpose = MediaPurpose.CHAT_PHOTO, tickets = tickets)
+                            ChatPayload.Media(
+                                kind = ChatPayload.Media.Kind.PHOTO, key = sent.key, width = sent.width, height = sent.height,
+                                thumbhash = sent.thumbHash,
+                            )
+                        }
+                        is Upload.Source.Video -> {
+                            val sent = MediaUploads.video(
+                                source.url, purpose = MediaPurpose.CHAT_VIDEO, settings = VideoCompressor.Settings.chat,
+                                posterPurpose = MediaPurpose.CHAT_PHOTO, tickets = tickets,
+                            )
+                            ChatPayload.Media(
+                                kind = ChatPayload.Media.Kind.VIDEO, key = sent.key, width = sent.width, height = sent.height,
+                                duration = sent.duration, posterKey = sent.posterKey, thumbhash = sent.thumbHash,
+                            )
+                        }
+                        is Upload.Source.Voice -> {
+                            val key = MediaUploads.voice(source.url, purpose = MediaPurpose.CHAT_VOICE, tickets = tickets)
+                            ChatPayload.Media(
+                                kind = ChatPayload.Media.Kind.VOICE, key = key, duration = source.duration,
+                                levels = ChatService.compact(source.levels),
+                            )
+                        }
                     }
                 }
                 // Only the person's own chat objects are ever sent (keys, never links).
@@ -343,6 +348,9 @@ class ChatThreads(
                 throw e
             } catch (e: Exception) {
                 log.log(Level.WARNING, "media send failed: ${e.message}")
+                val kind = current.source.telemetryKind
+                Telemetry.track(AnalyticsEvent.MessageFailed(kind, Telemetry.reason(e)))
+                Telemetry.unexpected(e, "chat", "send_media", mapOf("kind" to kind))
                 val pending = uploads[current.matchID] ?: return@launch
                 val i = pending.indexOfFirst { it.message.id == current.message.id }
                 if (i >= 0) {
@@ -385,3 +393,12 @@ class ChatThreads(
 
     fun upload(messageID: String, matchID: String): Upload? = uploads[matchID]?.firstOrNull { it.message.id == messageID }
 }
+
+/** What kind of message an upload makes, for analytics. */
+private val ChatThreads.Upload.Source.telemetryKind: AnalyticsEvent.MessageKind
+    get() = when (this) {
+        is ChatThreads.Upload.Source.Photo -> AnalyticsEvent.MessageKind.PHOTO
+        is ChatThreads.Upload.Source.Video -> AnalyticsEvent.MessageKind.VIDEO
+        is ChatThreads.Upload.Source.Voice -> AnalyticsEvent.MessageKind.VOICE
+        is ChatThreads.Upload.Source.Text -> AnalyticsEvent.MessageKind.TEXT
+    }

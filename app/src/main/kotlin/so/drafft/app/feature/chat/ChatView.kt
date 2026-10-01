@@ -109,6 +109,9 @@ import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.sessions.from
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.DateText
 import so.drafft.core.model.DeliveryState
@@ -120,6 +123,7 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.appLocale
 import so.drafft.core.model.clock
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.Avatar
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.EdgeBars
@@ -218,6 +222,7 @@ fun ChatView(
     focusSession: UUID? = null,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreen(Screen.CHAT)
     val app = LocalAppModel.current
     val chat = koinInject<ChatService>()
     val playback = koinInject<AudioPlayback>()
@@ -230,6 +235,9 @@ fun ChatView(
     val onScreen = LocalTabIsCurrent.current
     DisposableEffect(conversationID, onScreen) {
         if (!onScreen) return@DisposableEffect onDispose { }
+        app.conversation(conversationID)?.let {
+            Telemetry.track(AnalyticsEvent.ChatOpened(unread = it.unread, messages = it.messages.size))
+        }
         app.openChatID = conversationID
         chat.open(conversationID)
         app.markRead(conversationID)

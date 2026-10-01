@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.sentry.android)
 }
 
 // Push (FCM) needs the Firebase project's google-services.json, per environment
@@ -15,11 +16,13 @@ if (hasFirebaseConfig) apply(plugin = libs.plugins.google.services.get().pluginI
 
 // Each flavor's values live in config/<flavor>.properties, committed, like the iPhone's
 // Config/*.xcconfig: public keys only (Supabase publishable key, RevenueCat public SDK key,
-// Turnstile site key). The local Supabase depends on the machine: scripts/local-backend.sh writes
-// its URL and key to local.private.properties (gitignored), like the iPhone's Local.private.xcconfig.
+// Turnstile site key, Sentry DSN, PostHog project key). The local Supabase depends on the machine:
+// scripts/local-backend.sh writes its URL and key to local.private.properties (gitignored), like the
+// iPhone's Local.private.xcconfig.
 val flavors = listOf("production", "staging", "local")
 val machineKeys = setOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY")
-val secretLike = Regex("sb_secret_|service_role|PRIVATE KEY")
+// Supabase secret keys, Sentry auth tokens (sntrys_/sntryu_), PostHog personal API keys (phx_).
+val secretLike = Regex("sb_secret_|service_role|PRIVATE KEY|sntrys_|sntryu_|phx_")
 
 fun readProperties(path: String): Map<String, String>? {
     val file = rootProject.file(path)
@@ -41,6 +44,15 @@ fun flavorConfig(flavor: String): Map<String, String> {
     if (flavor != "local" && url.isNotEmpty() && !url.startsWith("https://")) {
         throw GradleException("SUPABASE_URL ($flavor) must be https.")
     }
+    // Telemetry stays in the EU, like the backend: PostHog's EU cloud, Sentry's EU region (ingest.de.sentry.io).
+    val postHogHost = values["POSTHOG_HOST"].orEmpty()
+    if (postHogHost.isNotEmpty() && !postHogHost.startsWith("https://eu.")) {
+        throw GradleException("POSTHOG_HOST ($flavor) must be PostHog's EU cloud (https://eu.i.posthog.com).")
+    }
+    val dsn = values["SENTRY_DSN"].orEmpty()
+    if (dsn.isNotEmpty() && !Regex("^https://[0-9a-f]+@o\\d+\\.ingest\\.de\\.sentry\\.io/\\d+$").matches(dsn)) {
+        throw GradleException("SENTRY_DSN ($flavor) must be a DSN of Sentry's EU region (https://<key>@o<org>.ingest.de.sentry.io/<project>).")
+    }
     return values
 }
 
@@ -59,6 +71,9 @@ fun com.android.build.api.dsl.VariantDimension.flavorFields(flavor: String) {
     buildConfigField("String", "TURNSTILE_SITE_KEY", v["TURNSTILE_SITE_KEY"].orEmpty().quoted())
     buildConfigField("int", "SMS_CODE_LIFETIME", (v["SMS_CODE_LIFETIME"]?.toIntOrNull() ?: 600).toString())
     buildConfigField("String", "ENVIRONMENT", (if (flavor == "production") "" else flavor).quoted())
+    buildConfigField("String", "SENTRY_DSN", v["SENTRY_DSN"].orEmpty().quoted())
+    buildConfigField("String", "POSTHOG_API_KEY", v["POSTHOG_API_KEY"].orEmpty().quoted())
+    buildConfigField("String", "POSTHOG_HOST", (v["POSTHOG_HOST"] ?: "https://eu.i.posthog.com").quoted())
 }
 
 android {
@@ -143,6 +158,27 @@ androidComponents {
         val check = tasks.register("check${name}Config") { doLast { throw GradleException(message) } }
         tasks.matching { it.name == "pre${name}Build" }.configureEach { dependsOn(check) }
     }
+}
+
+// Sentry: release builds upload their R8 mapping and source context, so crashes read as the code was
+// written. Needs SENTRY_AUTH_TOKEN (an organization token, CI secret or shell), SENTRY_ORG and
+// SENTRY_PROJECT; without them the build still works and nothing is uploaded. The SDK is a plain
+// dependency of core:data: the plugin installs nothing and rewrites no bytecode.
+val sentryUpload = !System.getenv("SENTRY_AUTH_TOKEN").isNullOrBlank()
+sentry {
+    org.set(System.getenv("SENTRY_ORG"))
+    projectName.set(System.getenv("SENTRY_PROJECT"))
+    authToken.set(System.getenv("SENTRY_AUTH_TOKEN"))
+    // The mapping's id is always built in, so a mapping uploaded later still matches.
+    includeProguardMapping.set(true)
+    autoUploadProguardMapping.set(sentryUpload)
+    includeSourceContext.set(sentryUpload)
+    autoUploadSourceContext.set(sentryUpload)
+    uploadNativeSymbols.set(false)
+    autoInstallation.enabled.set(false)
+    tracingInstrumentation.enabled.set(false)
+    includeDependenciesReport.set(false)
+    telemetry.set(false)
 }
 
 kotlin {

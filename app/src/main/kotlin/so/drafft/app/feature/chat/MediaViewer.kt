@@ -62,9 +62,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import so.drafft.core.data.media.MediaURL
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.MessageImage
 import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.components.rememberPhotoRequest
@@ -125,6 +127,7 @@ fun MediaViewer(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreen(Screen.MEDIA_VIEWER)
     val shown = remember(items, start) { if (items.any { it.id == start.id }) items else listOf(start) }
     val pager = rememberPagerState(initialPage = shown.indexOfFirst { it.id == start.id }.coerceAtLeast(0)) { shown.size }
     var zoomed by remember { mutableStateOf(false) }

@@ -23,9 +23,11 @@ import kotlinx.coroutines.launch
 import org.koin.compose.getKoin
 import org.koin.core.parameter.parametersOf
 import so.drafft.app.feature.me.AccountSheet
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.SheetBlock
@@ -43,6 +45,7 @@ import so.drafft.core.ui.theme.semibold
  */
 @Composable
 fun ChangePhoneSheet(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.PHONE_VERIFICATION)
     val app = LocalAppModel.current
     val dismiss = LocalSheetDismiss.current
     val scope = rememberCoroutineScope()

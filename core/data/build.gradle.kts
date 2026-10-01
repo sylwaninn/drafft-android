@@ -73,6 +73,11 @@ dependencies {
     implementation(libs.firebase.messaging)
     // The face on the first photo (AndroidFaceCheck), on device.
     implementation(libs.mlkit.face.detection)
+    // Telemetry (src/android/.../telemetry): crashes, errors, performance and logs on Sentry (Kotlin and
+    // native crashes), product analytics on PostHog. The model only sees `Telemetry` (src/main).
+    implementation(libs.sentry.android.core)
+    implementation(libs.sentry.android.ndk)
+    implementation(libs.posthog.android)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit)

@@ -77,6 +77,7 @@ import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -85,6 +86,7 @@ import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.model.SportEntry
 import so.drafft.core.model.Vitals
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.AdaptiveRow
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
@@ -317,6 +319,7 @@ private const val ROOT = "editProfile"
  */
 @Composable
 fun EditProfileView(profile: Profile, modifier: Modifier = Modifier) {
+    TrackScreen(Screen.EDIT_PROFILE)
     val app = LocalAppModel.current
     val dismiss = LocalSheetDismiss.current
     val profileSync = koinInject<ProfileSync>()

@@ -121,6 +121,8 @@ import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.LocationProvider
 import so.drafft.core.data.platform.PermissionStatus
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.model.AppLanguage
@@ -180,8 +182,13 @@ enum class OnboardingStep {
 
     val rawValue: Int get() = ordinal
 
+    /** The step's id in analytics (`show_me`), the same on the iPhone. */
+    val telemetryID: String get() = name.lowercase()
+
     enum class Chapter(val rawValue: String) {
         ACCOUNT("Account"), YOU("About you"), SPORTS("Sports"), PROFILE("Profile");
+
+        val telemetryID: String get() = name.lowercase()
 
         val title: String
             get() = when (this) {
@@ -258,6 +265,8 @@ fun OnboardingView(modifier: Modifier = Modifier) {
     LaunchedEffect(phone) {
         snapshotFlow { phone.stage }.drop(1).collect { if (it == PhoneVerificationModel.Stage.VERIFIED) state.save() }
     }
+    // Each step shown, for the sign-up funnel (the first one of a resumed sign-up says so).
+    LaunchedEffect(state.step) { state.stepShown() }
 }
 
 // MARK: - State
@@ -321,6 +330,23 @@ private class OnboardingState(
 
     /** The language saved with the progress, for the app to switch to once sign-up shows. */
     var restoredLanguage: AppLanguage? = null
+
+    /** When this sign-up was opened, and the step on screen was shown (monotonic, for durations). */
+    private val openedAt = System.nanoTime()
+    private var stepShownAt = System.nanoTime()
+    private var resumedStep: Int? = null
+
+    fun stepShown() {
+        stepShownAt = System.nanoTime()
+        val resumed = resumedStep == step
+        resumedStep = null
+        Telemetry.track(AnalyticsEvent.OnboardingStepViewed(current.telemetryID, current.chapter.telemetryID, step, resumed))
+    }
+
+    private fun stepCompleted(skipped: Boolean) {
+        val seconds = ((System.nanoTime() - stepShownAt) / 1_000_000_000).toInt()
+        Telemetry.track(AnalyticsEvent.OnboardingStepCompleted(current.telemetryID, current.chapter.telemetryID, step, skipped, seconds))
+    }
 
     val steps = OnboardingStep.entries
     val current: OnboardingStep get() = steps[step]
@@ -416,10 +442,13 @@ private class OnboardingState(
             recordConsent()
             return
         }
+        // Continue on a complete step, Skip on an optional one left empty.
         if (step >= steps.size - 1) {
+            stepCompleted(skipped = !complete(current))
             finish()
             return
         }
+        stepCompleted(skipped = !complete(current))
         if (steps[step + 1].chapter != current.chapter) Haptics.success() else Haptics.tap()
         go(step + 1)
     }
@@ -431,6 +460,7 @@ private class OnboardingState(
         scope.launch {
             try {
                 profileSync.acceptTerms()
+                Telemetry.track(AnalyticsEvent.TermsAccepted(TermsConsent.VERSION, during = "sign_up"))
                 recordedTerms = TermsConsent.VERSION
                 recordingConsent = false
                 advance()
@@ -440,6 +470,8 @@ private class OnboardingState(
             } catch (e: Exception) {
                 Haptics.warning()
                 recordingConsent = false
+                Telemetry.track(AnalyticsEvent.OnboardingStepBlocked(current.telemetryID, Telemetry.reason(e)))
+                Telemetry.unexpected(e, "onboarding", "accept_terms")
                 when (val f = profileSync.termsFailure(e)) {
                     TermsConsent.Failure.SignOut -> app.endSession()
                     is TermsConsent.Failure.Message -> consentError = f.text
@@ -520,6 +552,10 @@ private class OnboardingState(
         forward = true
         // Clamped: a saved step from an older, longer flow must not index past the steps.
         step = (languageSwitchStep ?: target).coerceIn(0, steps.size - 1)
+        if (languageSwitchStep == null) {
+            resumedStep = step
+            Telemetry.track(AnalyticsEvent.OnboardingResumed(current.telemetryID, step))
+        }
         languageSwitchStep = null
     }
 
@@ -574,6 +610,7 @@ private class OnboardingState(
             } catch (e: ProfileSync.SyncError.Refused) {
                 finishing = false
                 Haptics.warning()
+                Telemetry.track(AnalyticsEvent.OnboardingFailed(e.code.lowercase()))
                 if (e.code == "terms_required") {
                     // The server has no consent on record (the one noted on this phone was lost there):
                     // back to the rules step, unticked, to record it again.
@@ -587,12 +624,23 @@ private class OnboardingState(
                 return@launch
             } catch (e: Exception) {
                 Haptics.warning()
+                Telemetry.track(AnalyticsEvent.OnboardingFailed(Telemetry.reason(e)))
+                Telemetry.unexpected(e, "onboarding", "finish")
                 finishError = profileSaveFailure(e, photosCheck)
                 finishing = false
                 return@launch
             }
             finishing = false
             Haptics.success()
+            // Counts and yes/no only: never the answers themselves (gender, who to meet, lifestyle).
+            Telemetry.track(
+                AnalyticsEvent.OnboardingCompleted(
+                    photos = photos.size, sports = sports.size, prompts = answeredPrompts.size, hasVoice = voice != null,
+                    hasBio = p.bio.isNotEmpty(), hasIcebreaker = icebreaker.isComplete, answeredLifestyle = lifestyle.hasLifestyle,
+                    notificationsAllowed = notifications.isAllowed,
+                    minutes = ((System.nanoTime() - openedAt) / 60_000_000_000).toInt(),
+                ),
+            )
             app.finishOnboarding(p)
         }
     }

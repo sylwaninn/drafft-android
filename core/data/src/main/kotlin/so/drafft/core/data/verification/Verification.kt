@@ -26,6 +26,9 @@ import kotlinx.coroutines.launch
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.appLocale
 
@@ -33,7 +36,8 @@ import so.drafft.core.model.appLocale
 
 // Contracts
 
-sealed class VerificationError(message: String) : Exception(message) {
+/** [code]: the case's stable name (`tooManyCodes`), kept through minification for analytics. */
+sealed class VerificationError(val code: String) : Exception(code) {
     data object InvalidNumber : VerificationError("invalidNumber") { private fun readResolve(): Any = InvalidNumber }
     data object SendFailed : VerificationError("sendFailed") { private fun readResolve(): Any = SendFailed }
     data object WrongCode : VerificationError("wrongCode") { private fun readResolve(): Any = WrongCode }
@@ -401,17 +405,21 @@ class PhoneVerificationModel(
             Haptics.success()
             return
         }
+        val resend = stage == Stage.ENTER_CODE
         try {
             service.sendCode(e164)
             code = ""
             stage = Stage.ENTER_CODE
             startResendTimer()
+            Telemetry.track(AnalyticsEvent.PhoneCodeSent(during, resend))
             Haptics.success()
         } catch (e: CancellationException) {
             busy = false
             throw e
         } catch (e: Exception) {
             val failure = e as? VerificationError ?: VerificationError.SendFailed
+            Telemetry.track(AnalyticsEvent.PhoneCodeFailed(during, failure.reason))
+            Telemetry.unexpected(e, "phone", "send_code")
             error = failure.message
             // Nothing to fix on the number there: waiting, or confirming the email, is the way.
             needsHelp = failure !in listOf(
@@ -438,13 +446,16 @@ class PhoneVerificationModel(
             verifiedNumber = e164
             stage = Stage.VERIFIED
             timer?.cancel()
+            Telemetry.track(AnalyticsEvent.PhoneVerified(during))
             Haptics.success()
         } catch (e: VerificationError.Expired) {
+            Telemetry.track(AnalyticsEvent.PhoneVerificationFailed(during, e.reason))
             error = L("This code has expired. Send a new one.")
             code = ""
             Haptics.warning()
         } catch (e: VerificationError.NumberTaken) {
             // Verified on another account meanwhile: no code fixes that, the number has to change.
+            Telemetry.track(AnalyticsEvent.PhoneVerificationFailed(during, e.reason))
             changeNumber()
             error = e.message
             Haptics.warning()
@@ -452,6 +463,7 @@ class PhoneVerificationModel(
             busy = false
             throw e
         } catch (e: VerificationError) {
+            Telemetry.track(AnalyticsEvent.PhoneVerificationFailed(during, e.reason))
             if (e == VerificationError.WrongCode) {
                 wrongCode()
             } else {
@@ -461,10 +473,18 @@ class PhoneVerificationModel(
                 Haptics.warning()
             }
         } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.PhoneVerificationFailed(during, Telemetry.reason(e)))
+            Telemetry.unexpected(e, "phone", "verify")
             wrongCode()
         }
         busy = false
     }
+
+    /** Where the check runs (`onboarding`, `phone_verification`), for analytics. */
+    private val during: String get() = ScreenTracker.current?.id ?: "unknown"
+
+    private val VerificationError.reason: String
+        get() = this.code.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
 
     /** A wrong code uses up a try; the last one locks the step. */
     private fun wrongCode() {

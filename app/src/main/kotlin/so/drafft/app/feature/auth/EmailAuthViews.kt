@@ -52,8 +52,10 @@ import so.drafft.app.feature.verification.OneTimeCodeEntry
 import so.drafft.app.feature.verification.rememberEmailCodeModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.CheckDisc
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftField
@@ -199,6 +201,7 @@ internal fun PasswordRules(password: String) {
 
 @Composable
 fun SignUpView(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.EMAIL_SIGN_UP)
     val app = LocalAppModel.current
     val backend = koinInject<Backend>()
     val nav = LocalNavStack.current
@@ -312,6 +315,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
  */
 @Composable
 fun ConfirmEmailView(email: String, modifier: Modifier = Modifier) {
+    TrackScreen(Screen.EMAIL_CODE)
     val app = LocalAppModel.current
     val backend = koinInject<Backend>()
     val nav = LocalNavStack.current
@@ -365,6 +369,7 @@ fun ConfirmEmailView(email: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun LogInView(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.EMAIL_LOG_IN)
     val app = LocalAppModel.current
     val backend = koinInject<Backend>()
     val nav = LocalNavStack.current

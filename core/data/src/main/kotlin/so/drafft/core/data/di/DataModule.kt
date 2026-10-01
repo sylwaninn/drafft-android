@@ -20,6 +20,7 @@ import so.drafft.core.data.location.LocationOnce
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.platform.PlaybackControl
+import so.drafft.core.data.telemetry.TelemetrySession
 
 /**
  * The app's state and its backend, as singletons (the iPhone's `.shared`). Needs, from elsewhere:
@@ -52,6 +53,7 @@ val dataModule = module {
     single { LocationGate(get()) }
     single { UserChannel(get(), get(), get(), get()) }
     single { Diagnostics(get(), get()) }
+    single { TelemetrySession(get(), get()) }
     single {
         AppModel(
             backend = get(),
