@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.model.Audience
 import so.drafft.core.model.L
 import so.drafft.core.model.Vitals
 import so.drafft.core.ui.components.FlowLayout
@@ -40,19 +41,21 @@ fun LifestylePicker(
     onVitalsChange: (Vitals) -> Unit,
     /** Unselected chip fill (sage on a white block). */
     chipFill: Color = DS.palette.canvasSoft,
+    /** Picks gendered labels ("Viandarde"). */
+    gender: Audience? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(DS.Space.lg)) {
-        Group(L("Early bird or night owl?"), listOf("Very early bird", "Early bird", "Night owl"), vitals.chronotype, chipFill) {
+        Group(L("Early bird or night owl?"), listOf("Very early bird", "Early bird", "Night owl"), vitals.chronotype, chipFill, gender) {
             onVitalsChange(vitals.copy(chronotype = it))
         }
-        Group(L("How you eat"), listOf("Omnivore", "Flexitarian", "Vegetarian", "Vegan", "Pescatarian"), vitals.diet, chipFill) {
+        Group(L("How you eat"), listOf("Omnivore", "Meat lover", "Flexitarian", "Vegetarian", "Vegan", "Pescatarian"), vitals.diet, chipFill, gender) {
             onVitalsChange(vitals.copy(diet = it))
         }
-        Group(L("Drinking"), listOf("Never", "Rarely", "Socially", "Post-race only"), vitals.drinks, chipFill) {
+        Group(L("Drinking"), listOf("Never", "Rarely", "Socially", "Post-race only", "Apéro is sacred"), vitals.drinks, chipFill, gender) {
             onVitalsChange(vitals.copy(drinks = it))
         }
-        Group(L("Smoking"), listOf("Never", "Sometimes", "Yes"), vitals.smokes, chipFill) {
+        Group(L("Smoking"), listOf("Never", "Sometimes", "Yes"), vitals.smokes, chipFill, gender) {
             onVitalsChange(vitals.copy(smokes = it))
         }
     }
@@ -60,14 +63,14 @@ fun LifestylePicker(
 
 /** [options] are the stored answers (English); chips show them translated. */
 @Composable
-private fun Group(title: String, options: List<String>, value: String, chipFill: Color, onPick: (String) -> Unit) {
+private fun Group(title: String, options: List<String>, value: String, chipFill: Color, gender: Audience?, onPick: (String) -> Unit) {
     val p = DS.palette
     Column(verticalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
         Text(title, style = TextStyles.subheadline.semibold, color = p.ink)
         FlowLayout(spacing = DS.Space.sm) {
             options.forEach { o ->
                 val on = value == o
-                val label = Vitals.label(o)
+                val label = Vitals.label(o, gender)
                 val bg by animateColorAsState(if (on) p.lime else chipFill, Motion.select(), label = "lifestyleFill")
                 val fg by animateColorAsState(if (on) p.onLime else p.ink, Motion.select(), label = "lifestyleInk")
                 Box(

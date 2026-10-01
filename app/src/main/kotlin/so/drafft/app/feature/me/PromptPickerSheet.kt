@@ -212,7 +212,8 @@ private fun CategoryBlock(c: PromptCategory, list: List<String>, selection: Stri
 @Composable
 private fun PromptRow(q: String, isSelected: Boolean, onTap: () -> Unit) {
     val p = DS.palette
-    val text = ProfilePrompt.text(q)
+    // In the list a question trails off, inviting the answer; on the profile it stands alone.
+    val text = "${ProfilePrompt.text(q)}…"
     Row(
         Modifier
             .fillMaxWidth()
