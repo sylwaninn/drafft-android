@@ -1642,6 +1642,9 @@ class AppModel(
     private suspend fun flushSafety(announce: Boolean) {
         val user = backend.userID ?: return
         for ((id, entry) in safetyOutbox.pending(user)) {
+            // Signed out (or into another account) meanwhile: the rest waits for this account's sign-in,
+            // never sent with someone else's session.
+            if (backend.userID != user) return
             try {
                 safety.send(entry.action, id)
                 safetyOutbox.remove(entry, id, user)
