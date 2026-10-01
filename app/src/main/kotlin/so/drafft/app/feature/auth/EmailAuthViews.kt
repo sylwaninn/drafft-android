@@ -209,11 +209,11 @@ fun SignUpView(modifier: Modifier = Modifier) {
     var emailFocused by remember { mutableStateOf(false) }
 
     val emailError: String? = when {
-        problem == AuthProblem.EMAIL_TAKEN -> problem?.message
+        problem == AuthProblem.EMAIL_TAKEN || problem == AuthProblem.INVALID_EMAIL -> problem?.message
         !emailTouched || email.isEmpty() || Validation.isEmail(email) -> null
         else -> L("That doesn't look like an email address. Check for typos.")
     }
-    val passwordError: String? = problem?.takeIf { it != AuthProblem.EMAIL_TAKEN }?.message
+    val passwordError: String? = problem?.takeIf { it != AuthProblem.EMAIL_TAKEN && it != AuthProblem.INVALID_EMAIL }?.message
     val passedRules = PasswordRule.all.count { it.test(password) }
     val canSubmit = Validation.isEmail(email) && passedRules == PasswordRule.all.size
 
@@ -262,7 +262,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
                 text = email,
                 onTextChange = {
                     email = it
-                    if (problem == AuthProblem.EMAIL_TAKEN) problem = null
+                    if (problem == AuthProblem.EMAIL_TAKEN || problem == AuthProblem.INVALID_EMAIL) problem = null
                 },
                 modifier = Modifier.onFocusChanged {
                     // Leaving the field counts as done with it.
@@ -283,7 +283,7 @@ fun SignUpView(modifier: Modifier = Modifier) {
                     text = password,
                     onTextChange = {
                         password = it
-                        if (problem != AuthProblem.EMAIL_TAKEN) problem = null
+                        if (problem != AuthProblem.EMAIL_TAKEN && problem != AuthProblem.INVALID_EMAIL) problem = null
                     },
                     modifier = Modifier.focusRequester(passwordFocus),
                     prompt = L("Create a password"),
