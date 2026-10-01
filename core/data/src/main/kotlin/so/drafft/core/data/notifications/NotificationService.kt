@@ -225,19 +225,50 @@ class NotificationService(
      */
     private fun changed() {
         if (applying) return
-        val settings = current
-        defaults.putString(SETTINGS_KEY, json.encodeToString(NotificationSettings.serializer(), settings))
+        defaults.putString(SETTINGS_KEY, json.encodeToString(NotificationSettings.serializer(), current))
+        val account = backend.userID?.toString() ?: return
+        unsentFor = account
+        send(current, account)
+    }
+
+    /**
+     * The account whose settings changed here and haven't reached the server yet (offline, a failed
+     * save): kept over the server's copy, and sent again at each account read until one goes through.
+     */
+    private var unsentFor: String?
+        get() = defaults.getString(UNSENT_KEY)
+        set(value) = if (value == null) defaults.remove(UNSENT_KEY) else defaults.putString(UNSENT_KEY, value)
+
+    /** Bumped by each send: only the latest one clears [unsentFor]. */
+    private var sends = 0
+
+    /**
+     * The switch stays as the person set it: a save that fails is sent again at the next account read
+     * (return to the app), never undone by the server's older copy.
+     */
+    private fun send(settings: NotificationSettings, account: String) {
+        sends += 1
+        val send = sends
         scope.launch {
-            if (!backend.hasSession()) return@launch
-            attempt { backend.updateMyProfile(settings.fields) }
+            // Still marked unsent on failure: `applyServer` sends it again.
+            attempt { backend.updateMyProfile(settings.fields) } ?: return@launch
+            if (send == sends && unsentFor == account) unsentFor = null
         }
     }
 
     /**
-     * The settings saved on the profile (another device, a reinstall) replace the phone's. Read with the
-     * rest of the profile row (`AppModel.refreshAccount`).
+     * The settings saved on the profile (another device, a reinstall) replace the phone's, unless this
+     * phone has a change the server hasn't got yet: that one is sent again instead. Read with the rest
+     * of the profile row (`AppModel.refreshAccount`).
      */
     fun applyServer(remote: NotificationSettings) {
+        val account = backend.userID?.toString()
+        if (account != null && unsentFor == account) {
+            send(current, account)
+            return
+        }
+        // Another account's leftover: this one's server copy wins.
+        unsentFor = null
         applying = true
         apply(remote)
         applying = false
@@ -385,6 +416,7 @@ class NotificationService(
 
     private companion object {
         const val SETTINGS_KEY = "notificationSettings"
+        const val UNSENT_KEY = "notificationSettingsUnsent"
         val json = Json { ignoreUnknownKeys = true }
     }
 }
