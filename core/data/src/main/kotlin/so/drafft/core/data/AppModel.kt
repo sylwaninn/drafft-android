@@ -1236,7 +1236,7 @@ class AppModel(
             if (state !== discovery || generation != discovery.generation) return@launch
             if (outcome is DeckOutcome.Cards) discovery.pace.read(took = (System.nanoTime() - started) / 1e9)
             discovery.load = null
-            apply(outcome, filters)
+            apply(outcome, filters, limit)
         }
     }
 
@@ -1262,18 +1262,18 @@ class AppModel(
         return DeckOutcome.Refused("location_required")
     }
 
-    private fun apply(outcome: DeckOutcome, filters: DiscoverFilters) {
+    private fun apply(outcome: DeckOutcome, filters: DiscoverFilters, limit: Int) {
         when (outcome) {
             is DeckOutcome.Cards -> {
-                val cards = (attemptOrNull { ProfileCard.list(outcome.data) } ?: emptyList()).filter { it.isShowable }
+                val sent = attemptOrNull { ProfileCard.list(outcome.data) } ?: emptyList()
+                // Less than asked: the server has no more for now. Swipes stop asking (each would read
+                // the same cards again) until another refresh. A full page may have more behind it.
+                discovery.exhausted = sent.size < limit
+                val cards = sent.filter { it.isShowable }
                 val hidden = hiddenIDs()
                 val fresh = cards.filter { it.id !in hidden }
                 val byID = LinkedHashMap<String, Profile>()
                 for (card in fresh) if (card.id !in byID) byID[card.id] = card.profile(mediaBase = MediaURL.saved)
-                val held = queue.mapTo(HashSet()) { it.id }
-                // Fewer new cards than a batch: the server has no more for now. Swipes stop asking
-                // (each would read the same cards again) until another refresh.
-                discovery.exhausted = fresh.count { it.id !in held } < DECK_BATCH
                 val order = DeckMerge.merge(current = queue.map { it.id }, fresh = fresh.map { it.id }, keep = DECK_KEEP, exclude = hidden)
                 // The fresh copy of each card (new links, a changed profile), in the merged order.
                 queue = order.mapNotNull { byID[it] }

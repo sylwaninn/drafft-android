@@ -42,7 +42,7 @@ class DiscoveryState {
     /** Swipes sent but not answered yet. */
     var pendingSwipes = 0
 
-    /** The last read had fewer new cards than a batch: swipes don't ask again until another refresh. */
+    /** The last read brought fewer cards than asked: swipes don't ask again until another refresh. */
     var exhausted = false
 }
 
