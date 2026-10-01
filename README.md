@@ -42,7 +42,7 @@ at launch and says what's missing.
 
 ### Git hooks
 
-Once per clone: `git config core.hooksPath .agents/git-hooks` (commit format, no push to `main`; see
+Once per clone: `git config core.hooksPath .agents/git-hooks` (commit format, no push to `main` or `staging`; see
 `.agents/rules/`).
 
 ### Push notifications (FCM)
