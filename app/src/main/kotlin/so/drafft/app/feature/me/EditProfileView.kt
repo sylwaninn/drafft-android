@@ -67,7 +67,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 import org.koin.compose.koinInject
 import so.drafft.app.feature.auth.FrequencyStepper
 import so.drafft.app.feature.profile.IcebreakerEditor
@@ -75,7 +74,6 @@ import so.drafft.app.feature.profile.LifestylePicker
 import so.drafft.app.feature.profile.VoiceIntroRecorder
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.backend.ProfileSync
-import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.media.PhotoCompressor
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.platform.Haptics
