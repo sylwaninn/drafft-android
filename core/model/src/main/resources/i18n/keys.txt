@@ -1052,7 +1052,6 @@ There's already an account with this email. Log in instead.
 They agree or disagree
 They can't see your profile or message you, and you won't see them.
 They guess the right answer
-They like you.
 They offered
 They pick a side, then see yours
 They see you first, with a red heart on your profile. It doesn't use a daily like.
