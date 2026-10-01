@@ -502,9 +502,15 @@ private fun Hero(tab: ExtrasSheet.Tab, lifted: () -> Float, onClose: () -> Unit)
             Row(verticalAlignment = Alignment.Top) {
                 Inventory(tab)
                 Spacer(Modifier.weight(1f))
-                PressScaleButton(onClick = onClose, modifier = Modifier.size(44.dp), contentDescription = L("Close")) {
-                    Box(Modifier.size(40.dp).background(Color.White.copy(alpha = 0.14f), CircleShape), contentAlignment = Alignment.Center) {
-                        DrafftIcon("close", size = (17f * 1.2f).dp, tint = Color.White)
+                // Likes with drafft tempo: nothing to buy, the pinned "Keep swiping" only closes the
+                // sheet, so no close button (never both). The space stays so the hero doesn't move.
+                if (tab == ExtrasSheet.Tab.LIKES && app.isPremium) {
+                    Spacer(Modifier.size(44.dp))
+                } else {
+                    PressScaleButton(onClick = onClose, modifier = Modifier.size(44.dp), contentDescription = L("Close")) {
+                        Box(Modifier.size(40.dp).background(Color.White.copy(alpha = 0.14f), CircleShape), contentAlignment = Alignment.Center) {
+                            DrafftIcon("close", size = (17f * 1.2f).dp, tint = Color.White)
+                        }
                     }
                 }
             }

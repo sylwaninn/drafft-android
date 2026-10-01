@@ -263,6 +263,7 @@ Come a little closer.
 Come try my usual %s spot?
 Coming up
 Community Guidelines
+Confirm %s
 Confirm %s, %s
 Confirm new password
 Confirm with your password.
@@ -713,7 +714,6 @@ One-time purchase, never expires.
 Only people who do one of my sports
 Only the drafft team sees it, never other members.
 Only your first name is shown.
-Open App Store subscriptions
 Open Settings
 Open a chat with a match and propose a session. Confirmed ones show up here.
 Open chat
@@ -728,6 +728,7 @@ Optional
 Optional. It helps us make drafft better.
 Options couldn't load. Check your connection and try again.
 Or steal one of these
+Other times
 Other times suggested
 Our automatic check spotted something that doesn't fit our community guidelines, like nudity, violence or hateful symbols. Only you can see it. If we got it wrong, ask for a second look.
 Our team can unlock it for you.
@@ -1055,7 +1056,7 @@ The security check didn't go through. Try again.
 The snack that fuels my entire personality
 The sport I'm secretly bad at
 The two new passwords don't match.
-The way to win me over
+To convince me, propose
 The worst run of my life happened when
 There's already an account with this email. Log in instead.
 They agree or disagree

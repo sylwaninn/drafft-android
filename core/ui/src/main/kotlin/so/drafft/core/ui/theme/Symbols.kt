@@ -127,7 +127,7 @@ object Symbols {
             "masks" to R.drawable.ic_masks,
             "medal-ribbons-star" to R.drawable.ic_medal_ribbons_star,
             "meditation" to R.drawable.ic_meditation,
-            "menu-dots" to R.drawable.ic_menu_dots,
+            "menu-dots-vertical" to R.drawable.ic_menu_dots_vertical,
             "microphone" to R.drawable.ic_microphone,
             "minus" to R.drawable.ic_minus,
             "moon" to R.drawable.ic_moon,

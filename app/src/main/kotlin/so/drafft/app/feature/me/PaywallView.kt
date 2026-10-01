@@ -817,7 +817,6 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                 Billing(
                     restoring = restoring,
                     restoreResult = restoreResult,
-                    onOpenStore = { uriHandler.openUri(PLAY_SUBSCRIPTIONS_URL) },
                     onRestore = ::restore,
                     onLegal = { uriHandler.openUri(it.url()) },
                 )
@@ -901,7 +900,6 @@ private fun Included() {
 private fun Billing(
     restoring: Boolean,
     restoreResult: Pair<String, Boolean>?,
-    onOpenStore: () -> Unit,
     onRestore: () -> Unit,
     onLegal: (LegalDoc) -> Unit,
 ) {
@@ -912,10 +910,6 @@ private fun Billing(
             style = TextStyles.subheadline,
             color = p.body,
         )
-        TextLinkButton(onClick = onOpenStore) {
-            DrafftIcon("arrow-right-up", size = 18.dp, tint = p.accentInk)
-            Text(L("Open App Store subscriptions"), style = TextStyles.subheadline.semibold, color = p.accentInk)
-        }
         CompositionLocalProvider(LocalContentColor provides p.body) {
             LegalLinks(
                 restoring = restoring,

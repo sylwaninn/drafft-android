@@ -98,7 +98,7 @@ internal fun SheetPage(
     title: String,
     scroll: ScrollState,
     modifier: Modifier = Modifier,
-    onClose: () -> Unit = LocalSheetDismiss.current,
+    onClose: (() -> Unit)? = LocalSheetDismiss.current,
     leading: (@Composable () -> Unit)? = null,
     bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
@@ -441,6 +441,8 @@ fun SessionSafetySheet(
         title = L("Meet safely"),
         scroll = scroll,
         modifier = modifier,
+        // No close button: "Got it" is the one way out (and the swipe down or back), never both.
+        onClose = null,
         bottomBar = {
             DrafftButton(
                 L("Got it"),
