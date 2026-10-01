@@ -20,7 +20,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.DrafftJson
 import so.drafft.core.data.backend.ServerMessage
-import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.backend.jsonArray
 import so.drafft.core.data.backend.optString
 import so.drafft.core.data.backend.requireObject
@@ -286,7 +285,7 @@ class PhotoModeration(
                 // Left without saving while it was on its way: it goes at once.
                 if (discarded.remove(path)) {
                     states.remove(slot(path))
-                    scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
+                    scope.launch { deleteOnServer(id) }
                     return@launch
                 }
                 mediaIDs[path] = id
@@ -300,10 +299,30 @@ class PhotoModeration(
         }
     }
 
+    /**
+     * Deletes a photo the person took off (refused, or a draft never saved). The screen already let it go,
+     * so a failure isn't put back on it: tried again a few times (offline, a server hiccup) so it doesn't
+     * come back with the next read. Already gone (`not_found`) is done; drafts missed here are deleted by
+     * the server after a few days.
+     */
+    private suspend fun deleteOnServer(id: String) {
+        for (attempt in 0 until 4) {
+            try {
+                backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id))))
+                return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (ServerMessage.code(e) == "not_found" || e == Backend.BackendError.SignedOut) return
+                if (attempt < 3) delay((2L shl attempt).seconds)
+            }
+        }
+    }
+
     /** Asks a person to look at a refused photo again. It stays off the profile meanwhile. */
     suspend fun requestReview(path: String) {
         // Not uploaded (yet): nothing the team could look at, so never say it was sent.
-        val id = id(path) ?: throw Backend.BackendError.Http(404, "photo not on the server")
+        val id = id(path) ?: throw Backend.BackendError.Http(404, "not_found")
         backend.rpc("request_media_review", JsonObject(mapOf("p_media" to JsonPrimitive(id))))
         states[slot(path)] = State.InReview
     }
@@ -315,7 +334,7 @@ class PhotoModeration(
     fun remove(path: String) {
         removeRequest = path
         id(path)?.let { id ->
-            scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
+            scope.launch { deleteOnServer(id) }
         }
         mediaIDs.remove(path)
         serverIDs.remove(slot(path))
@@ -333,7 +352,7 @@ class PhotoModeration(
             val id = mediaIDs[path]
             when {
                 id != null -> {
-                    scope.launch { attempt { backend.rpc("delete_media", JsonObject(mapOf("p_id" to JsonPrimitive(id)))) } }
+                    scope.launch { deleteOnServer(id) }
                     mediaIDs.remove(path)
                     saveIDs()
                     states.remove(slot(path))
