@@ -799,11 +799,23 @@ private fun ChatNavigationBar(
                     PresenceLine(convo)
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-                GlassCircleButton("calendar-add", onPropose, contentDescription = L("Propose a session"))
+            // Icons only, each on its own glass disc (ChatView.swift's trailing bar item): proposing a
+            // session is the chat's main action, so it takes the accent fill; the overflow menu (vertical
+            // dots) stays a neutral utility.
+            Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.xs)) {
+                GlassCircleButton(
+                    "calendar-add",
+                    {
+                        Haptics.tap()
+                        onPropose()
+                    },
+                    contentDescription = L("Propose a session"),
+                    tint = DS.palette.lime,
+                    glyph = DS.palette.onLime,
+                )
                 Box {
                     // Neutral icons: the menu doesn't take the accent tint.
-                    GlassCircleButton("menu-dots", { menu = true }, contentDescription = L("More"))
+                    GlassCircleButton("menu-dots-vertical", { menu = true }, contentDescription = L("More"))
                     // Profile and sessions are one tap away in the bar: this is about the chat, then
                     // safety, apart.
                     ChatMenu(expanded = menu, onDismiss = { menu = false }) {
