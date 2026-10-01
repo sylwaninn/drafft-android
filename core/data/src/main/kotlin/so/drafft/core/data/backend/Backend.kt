@@ -149,7 +149,7 @@ class Backend(
      * email (backend auth-email) is already in that language.
      */
     suspend fun signUp(email: String, password: String, language: AppLanguage): SignUpResult = tracked(
-        done = { AnalyticsEvent.SignUpStarted(AnalyticsEvent.AuthMethod.EMAIL) },
+        done = { AnalyticsEvent.AccountCreated(AnalyticsEvent.AuthMethod.EMAIL) },
         failed = { AnalyticsEvent.SignUpFailed(Telemetry.reason(it)) },
     ) {
         val user = identityChecked {

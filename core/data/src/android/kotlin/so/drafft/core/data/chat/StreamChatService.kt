@@ -607,7 +607,7 @@ class StreamChatService(
 
     private companion object {
         const val TYPE = "messaging"
-        const val PAGE = 30
+        const val PAGE = ChatService.PAGE
     }
 }
 
@@ -617,12 +617,15 @@ private suspend fun <T : Any> Call<T>.value(): T = when (val result = await()) {
     is Result.Failure -> throw StreamException(result.value)
 }
 
-/** Stream's error, with its cause when it has one (offline shows as the IOException under it). */
+/**
+ * Stream's error, with its cause when it has one. A network error without an HTTP status never reached
+ * Stream (offline): it carries an IOException, so it counts as offline, not as a bug.
+ */
 private class StreamException(error: StreamError) : Exception(
     error.message,
     when (error) {
         is StreamError.ThrowableError -> error.cause
-        is StreamError.NetworkError -> error.cause
+        is StreamError.NetworkError -> error.cause ?: java.io.IOException(error.message).takeIf { error.statusCode !in 400..599 }
         else -> null
     },
 )

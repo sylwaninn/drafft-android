@@ -25,16 +25,19 @@ class TelemetrySession(
     fun setConsent(value: AnalyticsConsent) {
         if (value == Telemetry.consent) return
         AnalyticsConsent.save(value, defaults)
-        // Said before a refusal stops PostHog, so the refusal itself is counted (without the account).
-        Telemetry.track(AnalyticsEvent.AnalyticsConsentChanged(value))
+        // Applied first: after a refusal not even the refusal goes to PostHog (Sentry's breadcrumbs keep it).
         Telemetry.applyConsent(value)
+        Telemetry.track(AnalyticsEvent.AnalyticsConsentChanged(value))
     }
 
     suspend fun watch(app: AppModel) = coroutineScope {
         launch {
             backend.client.auth.sessionStatus.collect { status ->
                 when (status) {
-                    is SessionStatus.Authenticated -> Telemetry.signedIn(status.session.user?.id?.lowercase())
+                    // A session read back from the phone may not carry its user yet: the account's id
+                    // then comes from Auth, and nothing changes while neither has it.
+                    is SessionStatus.Authenticated ->
+                        (status.session.user?.id ?: backend.userID?.toString())?.let { Telemetry.signedIn(it.lowercase()) }
                     is SessionStatus.NotAuthenticated -> Telemetry.signedIn(null)
                     else -> Unit
                 }

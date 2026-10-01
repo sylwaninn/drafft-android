@@ -3,6 +3,7 @@ package so.drafft.core.data.telemetry
 import android.content.Context
 import io.sentry.Breadcrumb
 import io.sentry.Hint
+import io.sentry.ProfileLifecycle
 import io.sentry.ISpan
 import io.sentry.Sentry
 import io.sentry.SentryAttributes
@@ -118,9 +119,16 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
                 options.isEnableAutoSessionTracking = true
                 options.maxBreadcrumbs = 150
 
-                // Performance: app start, slow and frozen frames, request traces, some profiles.
-                options.tracesSampleRate = config.tracesSampleRate
+                // Performance: app start, slow and frozen frames, request traces, some profiles. A request
+                // outside any trace is a trace of its own: the most frequent kind, so the most sampled
+                // down (the quota goes to app starts, screen loads and uploads, where slowness is felt).
+                options.tracesSampler = SentryOptions.TracesSamplerCallback { context ->
+                    val operation = context.transactionContext.operation
+                    if (operation == "http.client") config.requestSampleRate else config.tracesSampleRate
+                }
+                // Profiles follow the sampled traces (the default, MANUAL, would never start one).
                 options.profileSessionSampleRate = config.profileSampleRate
+                options.profileLifecycle = ProfileLifecycle.TRACE
                 options.isEnablePerformanceV2 = true
                 options.isEnableFramesTracking = true
 

@@ -121,6 +121,9 @@ object Telemetry {
     @Volatile
     private var identified = false
 
+    /** The super properties, sent again after a reset (PostHog's reset forgets them). */
+    private val registered = java.util.concurrent.ConcurrentHashMap<String, Any>()
+
     /** The screen on show, for the next error report and the events' `screen` property. */
     @Volatile
     var currentScreen: Screen? = null
@@ -160,7 +163,7 @@ object Telemetry {
         crashes.setUser(id)
         if (previous != null && previous != id) {
             identified = false
-            analytics.reset()
+            resetAnalytics()
         }
         identifyIfAllowed()
     }
@@ -176,6 +179,7 @@ object Telemetry {
     fun register(key: String, value: Any) {
         val safe = PrivacyGuard.properties("register", mapOf(key to value))
         safe.forEach { (k, v) ->
+            registered[k] = v
             crashes.setTag(k, v.toString())
             analytics.register(k, v)
         }
@@ -188,10 +192,16 @@ object Telemetry {
         if (value != AnalyticsConsent.GRANTED && identified) {
             // Withdrawn: what follows is anonymous again, under a new id.
             identified = false
-            analytics.reset()
+            resetAnalytics()
         }
         identifyIfAllowed()
         if (before != value) crashes.breadcrumb(Breadcrumb("consent", "analytics ${value.id}"))
+    }
+
+    /** A new anonymous id, with the super properties registered again on it. */
+    private fun resetAnalytics() {
+        analytics.reset()
+        registered.forEach { (k, v) -> analytics.register(k, v) }
     }
 
     private fun identifyIfAllowed() {
@@ -269,5 +279,6 @@ object Telemetry {
         userID = null
         identified = false
         currentScreen = null
+        registered.clear()
     }
 }

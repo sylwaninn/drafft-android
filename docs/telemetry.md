@@ -73,9 +73,17 @@ long as the privacy policy says so and people can object.
 | `store_unconfirmed` | **Yes** | Google Play may have charged without RevenueCat confirming |
 | `unexpected` | **Yes** | Anything else |
 
-So an alert in Sentry means something needs a fix. Every non-2xx response is also a Sentry log line
-(searchable, not an issue), and every request is a span (`http.client`, `POST rest/v1/rpc/discover`)
-with its status and duration. Media uploads (`media.upload`) are timed too.
+So an alert in Sentry means something needs a fix. A 4xx with a one-word code (`not_found`,
+`already_swiped`) is a refusal the server meant, even when the app has no words for it; a 401 is the
+session's business. Every non-2xx response is also a Sentry log line (searchable, not an issue).
+`attempt(report = false) { }` keeps connection upkeep (realtime joins) out of Sentry; RevenueCat and
+Stream unreachable count as offline.
+
+Performance: every request is a span (`http.client`, `POST rest/v1/rpc/discover`) with its status and
+duration, a child of the running trace (app start, screen load) or a trace of its own. Lone requests are
+the most frequent traces, so production keeps 2% of them and 20% of the others (app starts, uploads);
+staging and local keep everything. Media uploads (`media.upload`) are timed too. Profiles follow 5% of
+the sampled traces in production (`ProfileLifecycle.TRACE`).
 
 The app's own `java.util.logging` loggers (`so.drafft.*`) reach Sentry through `TelemetryLogHandler`:
 INFO as breadcrumbs, WARNING as logs, SEVERE as events.
@@ -94,7 +102,7 @@ pushed screen and sheet that matters (`profile_detail`, `chat`, `paywall`, `extr
 
 | Area | Events |
 |---|---|
-| Account | `sign_up_started`, `sign_up_failed`, `email_confirmed`, `email_code_resent`, `logged_in`, `log_in_failed`, `password_reset_requested`, `password_reset_completed`, `logged_out`, `session_ended`, `account_deleted`, `account_delete_failed`, `email_changed`, `password_changed`, `data_export_requested`, `terms_accepted`, `analytics_consent_changed`, `account_held` |
+| Account | `account_created`, `sign_up_failed`, `email_confirmed`, `email_code_resent`, `logged_in`, `log_in_failed`, `password_reset_requested`, `password_reset_completed`, `logged_out`, `session_ended`, `account_deleted`, `account_delete_failed`, `email_changed`, `password_changed`, `data_export_requested`, `terms_accepted`, `analytics_consent_changed`, `account_held` |
 | Sign-up | `onboarding_step_viewed`, `onboarding_step_completed` (with `skipped`, `seconds_on_step`), `onboarding_step_blocked`, `onboarding_resumed`, `onboarding_completed`, `onboarding_failed` |
 | Phone | `phone_code_sent`, `phone_code_failed`, `phone_verified`, `phone_verification_failed` |
 | Discover | `deck_loaded`, `deck_load_failed`, `deck_empty_shown`, `profile_swiped` (`like`, `pass`, `super_like`; from the deck or Likes), `swipe_refused`, `swipe_undone`, `daily_like_limit_reached`, `profile_viewed`, `filters_changed`, `boost_started`, `boost_failed` |
@@ -102,7 +110,7 @@ pushed screen and sheet that matters (`profile_detail`, `chat`, `paywall`, `extr
 | Chat | `chat_opened`, `message_sent` (kind, reply, first message, duration), `message_failed`, `message_retried`, `message_reacted`, `message_deleted`, `chat_muted`, `chat_marked_unread` |
 | Sessions | `session_proposed` (sport, options), `session_countered`, `session_responded`, `session_cancelled`, `session_action_failed`, `session_added_to_calendar` |
 | Purchases | `paywall_viewed` (kind, `from_screen`), `paywall_dismissed`, `products_load_failed`, `purchase_started`, `purchase_completed`, `purchase_cancelled`, `purchase_failed`, `purchase_credited` (`seconds_to_credit`), `purchases_restored`, `restore_failed`, `subscription_manage_opened` |
-| Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_added`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
+| Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_upload_started` (`retry`), `photo_upload_failed`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
 | Safety | `user_blocked`, `user_unblocked`, `user_reported` (category), `report_failed` |
 | Settings and system | `language_changed`, `permission_requested` (permission, result, during), `notification_setting_changed`, `push_received`, `push_opened`, `legal_doc_opened`, `support_contacted` |
 
@@ -152,6 +160,8 @@ the mapping can be uploaded later with `sentry-cli`.
 
 - Region EU, "Discard client IP data" on, GeoIP enrichment kept (country and city only).
 - Person profiles: identified only (also set in the SDK).
+- Feature flags are not preloaded (each preload is a billed request): turn `preloadFeatureFlags` on
+  with the first experiment.
 - Data retention: within the CNIL's audience measurement guidance (an identifier lives 13 months at
   most, the data 25 months at most).
 - Dashboards to start with: the sign-up funnel (`onboarding_step_viewed` by `step_index`), activation

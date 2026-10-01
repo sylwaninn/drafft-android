@@ -248,6 +248,9 @@ class PhotoModeration(
         return null
     }
 
+    /** Photos whose upload started in this launch: another start is a retry. */
+    private val attempted = mutableSetOf<String>()
+
     /** Clears a failed attempt and sends the photo again. */
     fun retry(path: String) {
         states.remove(slot(path))
@@ -265,7 +268,8 @@ class PhotoModeration(
     fun submit(path: String) {
         if (states[slot(path)] != null) return
         states[slot(path)] = State.Uploading
-        Telemetry.track(AnalyticsEvent.PhotoAdded(where = ScreenTracker.current?.id ?: "unknown"))
+        Telemetry.track(AnalyticsEvent.PhotoUploadStarted(where = ScreenTracker.current?.id ?: "unknown", retry = path in attempted))
+        attempted += path
         scope.launch {
             try {
                 val data = withContext(Dispatchers.IO) { File(path).readBytes() }
@@ -302,6 +306,7 @@ class PhotoModeration(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Telemetry.track(AnalyticsEvent.PhotoUploadFailed(Telemetry.reason(e)))
                 Telemetry.unexpected(e, "photos", "upload")
                 states[slot(path)] = State.Failed(failure(e))
             }

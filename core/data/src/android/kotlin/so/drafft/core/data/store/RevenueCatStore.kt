@@ -88,7 +88,7 @@ class RevenueCatStore(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Telemetry.unexpected(e, "purchase", "link")
+            report(e, "link")
             linkedUserID = null
             return false
         }
@@ -133,7 +133,7 @@ class RevenueCatStore(
             } catch (e: Exception) {
                 state = Store.LoadState.FAILED
                 Telemetry.track(AnalyticsEvent.ProductsLoadFailed())
-                Telemetry.unexpected(e, "purchase", "load_offerings")
+                report(e, "load_offerings")
                 return
             }
         }
@@ -183,6 +183,15 @@ class RevenueCatStore(
         }
     }
 
+    /** RevenueCat unreachable (offline) is a breadcrumb; anything else is reported. */
+    private fun report(e: Exception, action: String) {
+        if ((e as? PurchasesException)?.code == PurchasesErrorCode.NetworkError) {
+            Telemetry.breadcrumb("purchase", "$action offline", Telemetry.Level.WARNING)
+        } else {
+            Telemetry.unexpected(e, "purchase", action)
+        }
+    }
+
     /** The Swift `PurchaseProblem(error)`'s cases, from RevenueCat's code. */
     private fun problem(code: PurchasesErrorCode): Store.PurchaseProblem = when (code) {
         PurchasesErrorCode.PaymentPendingError -> Store.PurchaseProblem.PENDING
@@ -204,7 +213,7 @@ class RevenueCatStore(
             throw e
         } catch (e: Exception) {
             Telemetry.track(AnalyticsEvent.RestoreFailed())
-            Telemetry.unexpected(e, "purchase", "restore")
+            report(e, "restore")
             throw e
         }
     }

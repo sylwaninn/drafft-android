@@ -66,7 +66,8 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
                 surveys = false
                 personProfiles = PersonProfiles.IDENTIFIED_ONLY
                 optOut = optedOut
-                preloadFeatureFlags = true
+                // No feature flags yet: each preload is a billed request. Turn on with the first experiment.
+                preloadFeatureFlags = false
                 releaseIdentifier = config.release
                 debug = config.isDebugBuild && config.environment == "local"
                 // Small batches: a session is short and the app may be killed in the background.
@@ -76,9 +77,10 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
                 addBeforeSend(
                     PostHogBeforeSend { event ->
                         if (event.event.startsWith("$")) return@PostHogBeforeSend event
-                        @Suppress("UNCHECKED_CAST")
-                        (event.properties as? MutableMap<String, Any>)?.keys?.removeAll(PrivacyGuard.forbidden)
-                        event
+                        val properties = event.properties ?: return@PostHogBeforeSend event
+                        if (properties.keys.none { it in PrivacyGuard.forbidden }) return@PostHogBeforeSend event
+                        // A copy: the event's own map may not be writable.
+                        event.copy(properties = properties.filterKeys { it !in PrivacyGuard.forbidden }.toMutableMap())
                     },
                 )
             }

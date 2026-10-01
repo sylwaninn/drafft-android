@@ -53,7 +53,8 @@ sealed class AnalyticsEvent(val name: String, vararg props: Pair<String, Any?>) 
 
     // MARK: Account
 
-    class SignUpStarted(method: AuthMethod) : AnalyticsEvent("sign_up_started", "method" to method)
+    /** The account exists (its email still to confirm, or already signed in): sign-up's first step. */
+    class AccountCreated(method: AuthMethod) : AnalyticsEvent("account_created", "method" to method)
     class SignUpFailed(reason: String) : AnalyticsEvent("sign_up_failed", "reason" to reason)
     class EmailConfirmed : AnalyticsEvent("email_confirmed")
     class EmailCodeResent : AnalyticsEvent("email_code_resent")
@@ -151,7 +152,8 @@ sealed class AnalyticsEvent(val name: String, vararg props: Pair<String, Any?>) 
     // MARK: Chat
 
     class ChatOpened(unread: Int, messages: Int) : AnalyticsEvent("chat_opened", "unread_count" to unread, "messages_count" to messages)
-    class MessageSent(kind: MessageKind, isReply: Boolean, isFirst: Boolean, durationSeconds: Int?) :
+    /** [isFirst]: null when the phone can't tell (only the latest messages are loaded). */
+    class MessageSent(kind: MessageKind, isReply: Boolean, isFirst: Boolean?, durationSeconds: Int?) :
         AnalyticsEvent(
             "message_sent",
             "kind" to kind, "is_reply" to isReply, "is_first_message" to isFirst, "duration_seconds" to durationSeconds,
@@ -207,7 +209,11 @@ sealed class AnalyticsEvent(val name: String, vararg props: Pair<String, Any?>) 
     /** Which parts changed (codes: `photos`, `bio`, `sports`...), never their content. */
     class ProfileEdited(fields: List<String>) : AnalyticsEvent("profile_edited", "fields" to fields, "fields_count" to fields.size)
     class ProfileEditFailed(reason: String) : AnalyticsEvent("profile_edit_failed", "reason" to reason)
-    class PhotoAdded(where: String) : AnalyticsEvent("photo_added", "where" to where)
+    /** A picked photo starts its upload (a retry counts again: [retry]). */
+    class PhotoUploadStarted(where: String, retry: Boolean) :
+        AnalyticsEvent("photo_upload_started", "where" to where, "retry" to retry)
+
+    class PhotoUploadFailed(reason: String) : AnalyticsEvent("photo_upload_failed", "reason" to reason)
     class PhotoRemoved : AnalyticsEvent("photo_removed")
     class PhotoModerated(verdict: String) : AnalyticsEvent("photo_moderated", "verdict" to verdict)
     class PhotoReviewRequested : AnalyticsEvent("photo_review_requested")

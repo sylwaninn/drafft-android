@@ -30,6 +30,12 @@ data class TelemetryConfig(
      */
     val tracesSampleRate: Double get() = if (environment == "production") 0.2 else 1.0
 
+    /**
+     * Share of lone backend requests traced (a request inside a sampled trace always is): dozens per
+     * session, so 2% in production still gives every endpoint's percentiles at scale.
+     */
+    val requestSampleRate: Double get() = if (environment == "production") 0.02 else 1.0
+
     /** Share of traced sessions profiled (the code paths behind a slow trace). */
     val profileSampleRate: Double get() = if (environment == "production") 0.05 else 0.0
 }

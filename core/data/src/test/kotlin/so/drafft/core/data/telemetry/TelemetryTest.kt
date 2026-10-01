@@ -103,6 +103,15 @@ class TelemetryTest {
     }
 
     @Test
+    fun superPropertiesSurviveANewAnonymousID() {
+        Telemetry.register("app_environment", "production")
+        Telemetry.signedIn("a")
+        Telemetry.signedIn(null)
+        val afterReset = analytics.calls.dropWhile { it != "reset" }
+        assertTrue("register:app_environment=production" in afterReset, afterReset.toString())
+    }
+
+    @Test
     fun aRefusalStillKeepsBreadcrumbsForCrashReports() {
         Telemetry.applyConsent(AnalyticsConsent.DENIED)
         Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.MY_SWIPE))
@@ -147,7 +156,7 @@ class TelemetryTest {
     @Test
     fun everyEventNameIsSnakeCase() {
         val samples = listOf(
-            AnalyticsEvent.SignUpStarted(AnalyticsEvent.AuthMethod.EMAIL), AnalyticsEvent.OnboardingCompleted(3, 2, 1, true, false, true, false, true, 9),
+            AnalyticsEvent.AccountCreated(AnalyticsEvent.AuthMethod.EMAIL), AnalyticsEvent.OnboardingCompleted(3, 2, 1, true, false, true, false, true, 9),
             AnalyticsEvent.PurchaseCompleted(AnalyticsEvent.ProductKind.TEMPO, "so.drafft.app.tempo.monthly:base", "EUR"),
             AnalyticsEvent.ProfileEdited(listOf("photos", "bio")), AnalyticsEvent.UserReported("harassment"),
         )
@@ -175,6 +184,116 @@ class TelemetryTest {
             analytics.calls.filter { it.startsWith("screen") },
         )
         ScreenTracker.reset()
+    }
+
+    @Test
+    fun everyEventPassesThePrivacyGuardUntouched() {
+        // Every event of the catalog, with sample values: a forbidden or free-text property fails here.
+        val all = listOf(
+            AnalyticsEvent.AccountCreated(AnalyticsEvent.AuthMethod.entries.first()),
+            AnalyticsEvent.SignUpFailed("some_code"),
+            AnalyticsEvent.EmailConfirmed(),
+            AnalyticsEvent.EmailCodeResent(),
+            AnalyticsEvent.LoggedIn(AnalyticsEvent.AuthMethod.entries.first()),
+            AnalyticsEvent.LogInFailed("some_code"),
+            AnalyticsEvent.PasswordResetRequested(),
+            AnalyticsEvent.PasswordResetCompleted(),
+            AnalyticsEvent.LoggedOut(),
+            AnalyticsEvent.SessionEnded("some_code"),
+            AnalyticsEvent.AccountDeleted(),
+            AnalyticsEvent.AccountDeleteFailed("some_code"),
+            AnalyticsEvent.EmailChanged(),
+            AnalyticsEvent.PasswordChanged(),
+            AnalyticsEvent.DataExportRequested(),
+            AnalyticsEvent.TermsAccepted("some_code", "some_code"),
+            AnalyticsEvent.AnalyticsConsentChanged(AnalyticsConsent.GRANTED),
+            AnalyticsEvent.AccountHeld(),
+            AnalyticsEvent.OnboardingStepViewed("some_code", "some_code", 3, true),
+            AnalyticsEvent.OnboardingStepCompleted("some_code", "some_code", 3, true, 3),
+            AnalyticsEvent.OnboardingStepBlocked("some_code", "some_code"),
+            AnalyticsEvent.OnboardingResumed("some_code", 3),
+            AnalyticsEvent.OnboardingCompleted(3, 3, 3, true, true, true, true, true, 3),
+            AnalyticsEvent.OnboardingFailed("some_code"),
+            AnalyticsEvent.PhoneCodeSent("some_code", true),
+            AnalyticsEvent.PhoneCodeFailed("some_code", "some_code"),
+            AnalyticsEvent.PhoneVerified("some_code"),
+            AnalyticsEvent.PhoneVerificationFailed("some_code", "some_code"),
+            AnalyticsEvent.DeckLoaded(3, "some_code", true, 1.5),
+            AnalyticsEvent.DeckLoadFailed("some_code"),
+            AnalyticsEvent.DeckEmptyShown(true),
+            AnalyticsEvent.ProfileSwiped(AnalyticsEvent.SwipeAction.entries.first(), AnalyticsEvent.SwipeSource.entries.first(), true, true, 3, 3),
+            AnalyticsEvent.SwipeRefused(AnalyticsEvent.SwipeAction.entries.first(), "some_code"),
+            AnalyticsEvent.SwipeUndone(AnalyticsEvent.SwipeAction.entries.first()),
+            AnalyticsEvent.DailyLikeLimitReached(),
+            AnalyticsEvent.ProfileViewed("some_code", true, 3),
+            AnalyticsEvent.FiltersChanged(3, 3, true),
+            AnalyticsEvent.BoostStarted(3),
+            AnalyticsEvent.BoostFailed("some_code"),
+            AnalyticsEvent.VoiceIntroPlayed("some_code"),
+            AnalyticsEvent.IcebreakerAnswered(),
+            AnalyticsEvent.LikesViewed(3, true),
+            AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.entries.first()),
+            AnalyticsEvent.MatchScreenAction("some_code"),
+            AnalyticsEvent.Unmatched(),
+            AnalyticsEvent.MatchEnded(),
+            AnalyticsEvent.ChatOpened(3, 3),
+            AnalyticsEvent.MessageSent(AnalyticsEvent.MessageKind.entries.first(), true, true, 3),
+            AnalyticsEvent.MessageFailed(AnalyticsEvent.MessageKind.entries.first(), "some_code"),
+            AnalyticsEvent.MessageRetried(),
+            AnalyticsEvent.MessageReacted(true),
+            AnalyticsEvent.MessageDeleted(),
+            AnalyticsEvent.ChatMuted(true),
+            AnalyticsEvent.ChatMarkedUnread(),
+            AnalyticsEvent.SessionProposed("some_code", 3),
+            AnalyticsEvent.SessionCountered(3),
+            AnalyticsEvent.SessionResponded(AnalyticsEvent.SessionResponse.entries.first()),
+            AnalyticsEvent.SessionCancelled(),
+            AnalyticsEvent.SessionActionFailed("some_code", "some_code"),
+            AnalyticsEvent.SessionAddedToCalendar(),
+            AnalyticsEvent.PaywallViewed(AnalyticsEvent.ProductKind.entries.first(), Screen.DISCOVER),
+            AnalyticsEvent.PaywallDismissed(AnalyticsEvent.ProductKind.entries.first(), true),
+            AnalyticsEvent.ProductsLoadFailed(),
+            AnalyticsEvent.PurchaseStarted(AnalyticsEvent.ProductKind.entries.first(), "some_code"),
+            AnalyticsEvent.PurchaseCompleted(AnalyticsEvent.ProductKind.entries.first(), "some_code", "some_code"),
+            AnalyticsEvent.PurchaseCancelled(AnalyticsEvent.ProductKind.entries.first(), "some_code"),
+            AnalyticsEvent.PurchaseFailed(AnalyticsEvent.ProductKind.entries.first(), "some_code", "some_code"),
+            AnalyticsEvent.PurchaseCredited(3),
+            AnalyticsEvent.PurchasesRestored(true),
+            AnalyticsEvent.RestoreFailed(),
+            AnalyticsEvent.SubscriptionManageOpened(),
+            AnalyticsEvent.ProfileEdited(listOf("photos", "bio")),
+            AnalyticsEvent.ProfileEditFailed("some_code"),
+            AnalyticsEvent.PhotoUploadStarted("some_code", true),
+            AnalyticsEvent.PhotoUploadFailed("some_code"),
+            AnalyticsEvent.PhotoRemoved(),
+            AnalyticsEvent.PhotoModerated("some_code"),
+            AnalyticsEvent.PhotoReviewRequested(),
+            AnalyticsEvent.VoiceIntroRecorded(3, "some_code"),
+            AnalyticsEvent.ProfilePaused(true),
+            AnalyticsEvent.SelfieVerificationStarted(),
+            AnalyticsEvent.SelfieVerificationSubmitted(),
+            AnalyticsEvent.SelfieVerificationFailed("some_code"),
+            AnalyticsEvent.UserBlocked(),
+            AnalyticsEvent.UserUnblocked(),
+            AnalyticsEvent.UserReported("some_code"),
+            AnalyticsEvent.ReportFailed("some_code"),
+            AnalyticsEvent.LanguageChanged("some_code", "some_code"),
+            AnalyticsEvent.PermissionRequested(AnalyticsEvent.Permission.entries.first(), AnalyticsEvent.PermissionResult.entries.first(), "some_code"),
+            AnalyticsEvent.NotificationSettingChanged("some_code", true),
+            AnalyticsEvent.PushOpened("some_code"),
+            AnalyticsEvent.PushReceived("some_code", true),
+            AnalyticsEvent.LegalDocOpened("some_code"),
+            AnalyticsEvent.SupportContacted("some_code", true),
+            AnalyticsEvent.ShareTapped("some_code"),
+        )
+        PrivacyGuard.strict = true
+        val names = all.map { it.name }
+        assertEquals(names.size, names.toSet().size, "two events share a name")
+        for (event in all) {
+            assertTrue(Regex("^[a-z]+(_[a-z]+)*$").matches(event.name), event.name)
+            val kept = PrivacyGuard.properties(event.name, event.properties)
+            assertEquals(event.properties.filterValues { it != null }.keys, kept.keys, event.name)
+        }
     }
 
     // Privacy
@@ -223,6 +342,9 @@ class TelemetryTest {
         Telemetry.unexpected(Backend.BackendError.Http(400, "daily_like_limit"), "discover")
         Telemetry.unexpected(Backend.BackendError.Http(429, "rate"), "discover")
         Telemetry.unexpected(Store.StoreError.Failed(Store.PurchaseProblem.PENDING), "purchase")
+        // Codes the server meant, even without words in the app, and an expired token.
+        Telemetry.unexpected(Backend.BackendError.Http(404, "not_found"), "matches")
+        Telemetry.unexpected(Backend.BackendError.Http(401, "JWT expired"), "account")
         assertTrue(crashes.captured.isEmpty())
 
         Telemetry.unexpected(Backend.BackendError.Http(503, "upstream"), "discover", "load_deck")

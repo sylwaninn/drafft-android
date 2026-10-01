@@ -520,10 +520,20 @@ class AppModel(
         Telemetry.track(
             AnalyticsEvent.MessageSent(
                 kind = AnalyticsEvent.kind(content), isReply = replyTo != null,
-                isFirst = conversation.messages.none { it.fromMe }, durationSeconds = duration,
+                isFirst = isFirstMessage(conversation), durationSeconds = duration,
             ),
         )
         chat.send(content, id, replyTo)
+    }
+
+    /**
+     * Whether this is the person's first message in the chat. Only the latest page of messages is on the
+     * phone: with a full page and none of theirs, it can't be told (null).
+     */
+    private fun isFirstMessage(conversation: Conversation): Boolean? = when {
+        conversation.messages.any { it.fromMe } -> false
+        conversation.messages.size < ChatService.PAGE -> true
+        else -> null
     }
 
     /** Your reaction on one of their messages (never on your own: WhatsApp-style, minus self-reactions). */

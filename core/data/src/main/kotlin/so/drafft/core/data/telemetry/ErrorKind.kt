@@ -61,11 +61,15 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
                 return when {
                     error.status == 429 -> RATE_LIMITED
                     error.status >= 500 -> SERVER
-                    ServerMessage.text(forCode = error.serverMessage) != null -> REFUSED
+                    // An expired or revoked token: the session refresh and the sign-out handle it.
+                    error.status == 401 -> SIGNED_OUT
+                    // A code (one word) is a refusal the server meant (`not_found`, `already_swiped`),
+                    // whether or not the app has words for it. A sentence is the database failing.
+                    ServerMessage.isCode(error.serverMessage) -> REFUSED
                     else -> CLIENT_CONTRACT
                 }
             }
-            if (ServerMessage.text(error) != null) return REFUSED
+            if (ServerMessage.code(error) != null) return REFUSED
             if (ServerMessage.isOffline(error)) return OFFLINE
             return UNEXPECTED
         }
