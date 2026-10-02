@@ -465,7 +465,7 @@ fun LikablePhoto(
                 } else Modifier,
             ),
     ) {
-        Photo(name, Modifier.fillMaxSize())
+        Photo(name, Modifier.fillMaxSize(), detail = true)
         DrafftIcon(
             "heart",
             Modifier
