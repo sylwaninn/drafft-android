@@ -17,6 +17,7 @@ import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.platform.LocationProvider
 import so.drafft.core.data.platform.MonotonicClock
 import so.drafft.core.data.platform.NetworkMonitor
+import so.drafft.core.data.platform.PlayDeviceIntegrity
 import so.drafft.core.data.platform.ProcessAppLifecycle
 import so.drafft.core.data.platform.SharedPreferencesKeyValueStore
 import so.drafft.core.data.platform.UnsupportedDeviceIntegrity
@@ -33,6 +34,9 @@ val androidDataModule = module {
     single<MonotonicClock> { ElapsedRealtimeClock }
     single { AndroidLocationProvider(androidContext(), get()) } bind LocationProvider::class
     single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
-    single<DeviceIntegrityProvider> { UnsupportedDeviceIntegrity }
+    single<DeviceIntegrityProvider> {
+        val project = get<BackendConfig>().playIntegrityProjectNumber.toLongOrNull()
+        if (project == null) UnsupportedDeviceIntegrity else PlayDeviceIntegrity(androidContext(), project)
+    }
     single<DiagnosticsSource> { ExitReasonDiagnostics(androidContext(), get()) }
 }

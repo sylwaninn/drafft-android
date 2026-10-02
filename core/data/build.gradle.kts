@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
     // Location (AndroidLocationProvider): the fused provider, awaited as coroutines.
     implementation(libs.play.services.location)
+    implementation(libs.play.integrity)
     implementation(libs.kotlinx.coroutines.play.services)
     // Push (DrafftMessagingService, AndroidLocalNotifications): the FCM token and incoming pushes.
     implementation(platform(libs.firebase.bom))

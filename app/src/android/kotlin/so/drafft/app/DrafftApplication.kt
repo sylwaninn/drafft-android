@@ -88,6 +88,7 @@ val appModule = module {
             smsCodeLifetime = BuildConfig.SMS_CODE_LIFETIME.toDouble(),
             turnstileSiteKey = BuildConfig.TURNSTILE_SITE_KEY,
             environment = BuildConfig.ENVIRONMENT,
+            playIntegrityProjectNumber = BuildConfig.PLAY_INTEGRITY_PROJECT_NUMBER,
         )
     }
     single<ForegroundReturns> { ProcessForegroundReturns() }

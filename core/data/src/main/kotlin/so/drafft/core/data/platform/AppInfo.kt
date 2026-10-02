@@ -54,12 +54,12 @@ fun interface PlaybackControl {
 }
 
 /**
- * A device attestation token for the server. Null when the device can't give one. On Android this would be
- * Play Integrity, not wired yet: [isSupported] is false and nothing is sent.
+ * A device attestation token for the server (Play Integrity on Android). Null when the device can't give
+ * one. [requestHash] binds the token to the account: the server compares it with its own.
  */
 interface DeviceIntegrityProvider {
     val isSupported: Boolean
-    suspend fun token(): String?
+    suspend fun token(requestHash: String): String?
 }
 
 /**

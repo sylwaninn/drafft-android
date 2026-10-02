@@ -40,6 +40,10 @@ fun flavorConfig(flavor: String): Map<String, String> {
     values.forEach { (key, value) ->
         if (secretLike.containsMatchIn(value)) throw GradleException("$key ($flavor) looks like a secret: only public keys go in the app.")
     }
+    val playProject = values["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty()
+    if (playProject.isNotEmpty() && !playProject.all(Char::isDigit)) {
+        throw GradleException("PLAY_INTEGRITY_PROJECT_NUMBER ($flavor) must be the number of the Google Cloud project, digits only.")
+    }
     val url = values["SUPABASE_URL"].orEmpty()
     if (flavor != "local" && url.isNotEmpty() && !url.startsWith("https://")) {
         throw GradleException("SUPABASE_URL ($flavor) must be https.")
@@ -75,6 +79,7 @@ fun com.android.build.api.dsl.VariantDimension.flavorFields(flavor: String) {
     buildConfigField("String", "TURNSTILE_SITE_KEY", v["TURNSTILE_SITE_KEY"].orEmpty().quoted())
     buildConfigField("int", "SMS_CODE_LIFETIME", (v["SMS_CODE_LIFETIME"]?.toIntOrNull() ?: 600).toString())
     buildConfigField("String", "ENVIRONMENT", (if (flavor == "production") "" else flavor).quoted())
+    buildConfigField("String", "PLAY_INTEGRITY_PROJECT_NUMBER", v["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty().quoted())
     buildConfigField("String", "SENTRY_DSN", v["SENTRY_DSN"].orEmpty().quoted())
     buildConfigField("String", "POSTHOG_API_KEY", v["POSTHOG_API_KEY"].orEmpty().quoted())
     buildConfigField("String", "POSTHOG_HOST", (v["POSTHOG_HOST"] ?: "https://eu.i.posthog.com").quoted())
