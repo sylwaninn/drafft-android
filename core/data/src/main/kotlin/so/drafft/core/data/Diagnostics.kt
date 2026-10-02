@@ -15,9 +15,10 @@ import so.drafft.core.data.telemetry.Telemetry
  *
  * They're written to the device log (tag `so.drafft.app`, category `metrics`) and kept as JSON files
  * in the app's files/Diagnostics (the last 30), readable with Android Studio's Device Explorer or a
- * bug report. The log line also reaches Sentry (`TelemetryLogHandler`): a problem as a log, any other
- * exit as a breadcrumb and a log line. Crashes and ANRs reach Sentry on their own, so a problem is a warning here,
- * not a second error.
+ * bug report. Every summary also reaches Sentry as a log line, searchable by release: a problem through
+ * `TelemetryLogHandler` (it is logged at WARNING), any other exit directly (as the iPhone does for its
+ * MetricKit payloads), with a breadcrumb for the next report. Crashes and ANRs reach Sentry on their own,
+ * so a problem is only a warning here, never a second error.
  */
 class Diagnostics(
     private val source: DiagnosticsSource,

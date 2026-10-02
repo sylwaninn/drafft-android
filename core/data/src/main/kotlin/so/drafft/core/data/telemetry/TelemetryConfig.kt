@@ -2,6 +2,8 @@ package so.drafft.core.data.telemetry
 
 import java.net.URI
 
+// Ports Drafft/Services/Telemetry/Core/TelemetryConfig.swift.
+
 /**
  * The build's telemetry keys (config/<flavor>.properties, through BuildConfig). Both are public by
  * design: a Sentry DSN only lets an app send events, a PostHog project key only lets it capture.

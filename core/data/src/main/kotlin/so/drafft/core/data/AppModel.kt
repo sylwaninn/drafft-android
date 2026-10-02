@@ -1962,9 +1962,12 @@ class AppModel(
             } catch (e: Exception) {
                 if (Safety.isFinal(e)) {
                     safetyLog.warning("${entry.action} refused: $e")
+                    // Reported before the entry goes (a refusal the server meant stays a breadcrumb, a contract bug alerts).
+                    Telemetry.unexpected(e, "safety", entry.action.name.lowercase())
                     safetyOutbox.remove(entry, id, user)
                     continue
                 }
+                // Every retry lands here: Telemetry reports the same failure once per 5 minutes at most.
                 Telemetry.unexpected(e, "safety", entry.action.name.lowercase())
                 if (announce) {
                     notice = Notice(

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -155,7 +156,9 @@ fun RootView(app: AppModel) {
     // The tabs are built invisibly under the splash, the welcome screen and sign-up: the screen on show
     // stays on Discover until then, so no `$screen` is sent for tabs nobody sees.
     val baseScreen = TelemetrySession.baseScreen(app, prebuilding = splashShown || !inMain)
-    LaunchedEffect(baseScreen) { ScreenTracker.base(baseScreen) }
+    // Set as the change is applied (not a frame later in a LaunchedEffect), so the screens leaving with the
+    // old tab don't publish it again before the new base is there.
+    SideEffect { ScreenTracker.base(baseScreen) }
     LaunchedEffect(Unit) {
         // Once the welcome screen has drawn and settled.
         delay(800)

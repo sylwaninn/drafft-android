@@ -1,5 +1,7 @@
 package so.drafft.core.data.telemetry
 
+// Ports Drafft/Services/Telemetry/Core/PrivacyGuard.swift.
+
 /**
  * The last check before anything goes to Sentry or PostHog. drafft holds sensitive data (gender, who
  * someone wants to meet, lifestyle answers: they can reveal orientation, health or beliefs, GDPR
@@ -7,9 +9,11 @@ package so.drafft.core.data.telemetry
  *
  * - Property names on the [forbidden] list are dropped, whatever the event.
  * - Values are numbers, booleans, or short codes (`like`, `so.drafft.app.boost.5`, `discover`): a
- *   string with spaces, capitals or punctuation is something a person typed and is dropped.
+ *   string with spaces, capitals or punctuation other than `_ . : -` is something a person typed and is
+ *   dropped, and so is one that is only an identifier (a UUID: someone's id) or only digits, seven or
+ *   more (a phone number).
  * - Free text that must go (a log line, an error message) is [scrub]bed of emails, phone numbers,
- *   ids, tokens and exact coordinates.
+ *   ids, tokens and exact coordinates. A request's path loses its query ([path]); [scrub] doesn't.
  *
  * A dropped property is logged (and so reaches Sentry's logs, through [Telemetry.log] directly: not
  * a second time as a breadcrumb); in unit tests it throws ([strict]), so the mistake shows where it's made.
@@ -65,14 +69,18 @@ object PrivacyGuard {
     /** A short code (`daily_like_limit`), not words. */
     fun isCode(text: String): Boolean = slug.matches(text)
 
+    /** A property's value: a short code that isn't someone's id (a UUID) or a phone-like run of digits. */
+    fun isValue(text: String): Boolean =
+        isCode(text) && !uuidAlone.matches(text) && !(text.length >= 7 && text.all { it in '0'..'9' })
+
     private fun allowed(value: Any): Any? = when (value) {
         is Boolean, is Int, is Long, is Short, is Byte -> value
         is Double -> value.takeIf { it.isFinite() }
         is Float -> value.toDouble().takeIf { it.isFinite() }
         is Enum<*> -> value.name.lowercase()
-        is CharSequence -> value.toString().takeIf(slug::matches)
+        is CharSequence -> value.toString().takeIf(::isValue)
         // Lists of codes only (like the iPhone's [String]): a list of anything else could carry words.
-        is Collection<*> -> value.takeIf { list -> list.size <= 20 && list.all { it is CharSequence && slug.matches(it) } }
+        is Collection<*> -> value.takeIf { list -> list.size <= 20 && list.all { it is CharSequence && isValue(it.toString()) } }
             ?.map { it.toString() }
         else -> null
     }
@@ -84,9 +92,10 @@ object PrivacyGuard {
     private val jwt = Regex("eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")
     private val coordinates = Regex("-?\\d{1,3}\\.\\d{3,}\\s*,\\s*-?\\d{1,3}\\.\\d{3,}")
     private val uuid = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    private val uuidAlone = Regex("(?i)$uuid")
     private val query = Regex("\\?[^\\s]*")
 
-    /** Free text with what identifies someone taken out. Query strings go too (they carry ids and filters). */
+    /** Free text with what identifies someone taken out: emails, numbers, ids, tokens, coordinates. */
     fun scrub(text: String): String = text
         .replace(jwt, "[token]")
         .replace(bearer) { it.groupValues[1] + "[token]" }

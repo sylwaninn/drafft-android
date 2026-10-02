@@ -7,6 +7,8 @@ import com.posthog.PostHogBeforeSend
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 
+// Ports Drafft/Services/Telemetry/PostHogAnalytics.swift.
+
 /**
  * [Telemetry.Analytics] on PostHog, EU cloud. Only what [AnalyticsEvent] and [Screen] describe, plus
  * PostHog's own app lifecycle events (installed, updated, opened, backgrounded). No autocapture of
@@ -24,8 +26,8 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
         PostHog.screen(screenTitle = name, properties = properties)
     }
 
-    override fun identify(id: String, properties: Map<String, Any>) {
-        PostHog.identify(distinctId = id, userProperties = properties)
+    override fun identify(id: String) {
+        PostHog.identify(distinctId = id)
     }
 
     override fun setPersonProperties(properties: Map<String, Any>) {

@@ -2,6 +2,8 @@ package so.drafft.core.data.telemetry
 
 import so.drafft.core.data.platform.KeyValueStore
 
+// Ports Drafft/Services/Telemetry/Core/AnalyticsConsent.swift.
+
 /**
  * What the person said about usage analytics (PostHog), kept on the phone.
  *
@@ -9,8 +11,9 @@ import so.drafft.core.data.platform.KeyValueStore
  *   a sign-out renews. Audience measurement the person can object to (the privacy policy says how).
  * - [GRANTED]: events are linked to the account's id (the same pseudonymous id as Sentry, RevenueCat
  *   and the backend), so a journey can be followed across devices and support can find it.
- * - [DENIED]: nothing goes to PostHog. Crash and error reports (Sentry) still go: they keep the
- *   service working and safe, and carry no usage.
+ * - [DENIED]: nothing goes to PostHog, and no usage trail goes to Sentry either (no product event or
+ *   screen as a breadcrumb). Crash and error reports (Sentry) still go: they keep the service working
+ *   and safe, and carry only what happened inside the failure (its error breadcrumbs, its logs).
  *
  * Asking belongs to You › Privacy & data, once the iPhone catalog has its words (docs/telemetry.md).
  */

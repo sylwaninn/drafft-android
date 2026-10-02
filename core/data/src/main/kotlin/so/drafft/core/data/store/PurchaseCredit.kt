@@ -90,6 +90,9 @@ class PurchaseCredit(
     var banner: Banner? by mutableStateOf(null)
         private set
 
+    /** Read back from the phone (not bought in this launch): their age includes the time the app was away. */
+    private var restored: Set<Pending> = emptySet()
+
     /** Swiped away: it shows again at the next launch only. */
     private var dismissedThisLaunch = false
     private var userID: String? = null
@@ -181,6 +184,7 @@ class PurchaseCredit(
         userID?.let { defaults.remove(key(it)) }
         userID = null
         pending = emptyList()
+        restored = emptySet()
         banner = null
         dismissedThisLaunch = false
     }
@@ -245,10 +249,12 @@ class PurchaseCredit(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Backend.BackendError.Http) {
-            Telemetry.unexpected(e, "purchase", "purchase_sync")
+            // Too many asks, or the store is slow to answer: the webhook credits it meanwhile. Expected,
+            // so not an error report.
+            val throttled = isThrottled(e)
+            if (!throttled) Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
-            // Too many asks, or the store is slow to answer: the webhook credits it meanwhile.
-            if (e.status == 429 || e.status == 503) THROTTLED_RETRY else null
+            if (throttled) THROTTLED_RETRY else null
         } catch (e: Exception) {
             Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
@@ -290,15 +296,16 @@ class PurchaseCredit(
     private fun trackCredited(purchase: Pending) {
         val seconds = ((System.currentTimeMillis() - purchase.date) / 1000).coerceAtLeast(0)
         Telemetry.track(AnalyticsEvent.PurchaseCredited(seconds.toInt()))
-        // Paid and only credited long after: the webhook or purchase-sync is late, worth a look.
-        if (seconds > slowAfter.inWholeSeconds) {
+        // Paid and only credited long after: the webhook or purchase-sync is late, worth a look. Not for
+        // a purchase read back from the phone after the app was away: that time isn't the server's.
+        if (isLate(seconds, restored = purchase in restored)) {
             Telemetry.problem("purchase credited late", area = "purchase", extra = mapOf("seconds_to_credit" to seconds))
         }
     }
 
     private fun load(userID: String): List<Pending> = runCatching {
         defaults.getString(key(userID))?.let { json.decodeFromString(listSerializer, it) } ?: emptyList()
-    }.getOrDefault(emptyList())
+    }.getOrDefault(emptyList()).also { restored = it.toSet() }
 
     private fun save() {
         val id = userID ?: return
@@ -319,6 +326,12 @@ class PurchaseCredit(
 
         /** Throttled or down: the webhook will credit it, ask again no sooner than this. */
         private val THROTTLED_RETRY = 60.seconds
+
+        /** `purchase-sync` is throttled (429) or the store is slow (503): expected, the webhook credits it. */
+        internal fun isThrottled(error: Backend.BackendError.Http): Boolean = error.status == 429 || error.status == 503
+
+        /** Credited long after the purchase is a problem to look at, unless the app was away meanwhile. */
+        internal fun isLate(seconds: Long, restored: Boolean): Boolean = !restored && seconds > slowAfter.inWholeSeconds
 
         private val json = Json { ignoreUnknownKeys = true }
         private val listSerializer = ListSerializer(Pending.serializer())

@@ -2,6 +2,8 @@ package so.drafft.core.data.telemetry
 
 import so.drafft.core.model.MessageContent
 
+// Ports Drafft/Services/Telemetry/Core/AnalyticsEvent.swift.
+
 /**
  * Every product event the app sends, in one place: the tracking plan (docs/telemetry.md) as code.
  *

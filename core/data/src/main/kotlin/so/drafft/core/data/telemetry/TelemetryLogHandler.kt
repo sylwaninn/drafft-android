@@ -5,6 +5,8 @@ import java.util.logging.Level
 import java.util.logging.LogRecord
 import java.util.logging.Logger
 
+// Ports Drafft/Services/Telemetry/AppLog.swift.
+
 /**
  * The app's own log lines (`java.util.logging`, the iPhone's `AppLog` on `os.Logger`) also go to Sentry:
  * INFO as a breadcrumb (it comes with the next error report), WARNING also as a Sentry log (searchable,
@@ -13,12 +15,12 @@ import java.util.logging.Logger
  * the app's loggers: libraries report through their own channels.
  */
 class TelemetryLogHandler : Handler() {
-    override fun publish(record: LogRecord?) {
-        record ?: return
-        if (!isLoggable(record)) return
-        val name = record.loggerName ?: return
-        if (!isOurs(name)) return
-        val text = record.message ?: return
+    override fun publish(record: LogRecord?) = safely {
+        record ?: return@safely
+        if (!isLoggable(record)) return@safely
+        val name = record.loggerName ?: return@safely
+        if (!isOurs(name)) return@safely
+        val text = record.message ?: return@safely
         val area = area(name)
         val attributes = mapOf<String, Any>("logger" to area)
         when {

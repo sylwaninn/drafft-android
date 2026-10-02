@@ -12,11 +12,13 @@ and `core/data/src/android/.../telemetry/` (the two SDKs).
 | Region | EU (`*.ingest.de.sentry.io`, enforced by the app and the build) | EU cloud (`https://eu.i.posthog.com`, enforced by the app and the build) |
 | Legal basis | Legitimate interest: keeping the service working and safe. Already named in the privacy policy (`/privacy#data`) | Consent for linking events to the account; anonymous audience measurement otherwise (see below) |
 | Who | The account's id (Supabase user id), always | The account's id only with consent (`AnalyticsConsent.GRANTED`); a random install id otherwise |
-| Never | Screenshots, view hierarchy, session replay, IP address, name, email, phone, message content | Autocapture of taps, session replay, surveys, the profile's sensitive answers, anything typed |
+| Never | Screenshots, view hierarchy, session replay, IP address, name, email, phone, message content, other services' URLs | Autocapture of taps, screen autocapture, session replay, surveys, error tracking, the profile's sensitive answers, anything typed |
 
 The app talks to neither SDK directly: everything goes through `Telemetry` (an object with pluggable
 engines, like `Haptics`), which applies `PrivacyGuard` and the person's consent first. Without keys
-(local builds, unit tests) every call does nothing.
+(local builds, unit tests) every call does nothing. `Telemetry` never throws into the app: an engine
+that fails, or a bug in it, is logged on the phone only and swallowed (unit tests, in strict mode, get
+the exception back).
 
 ## Identity: who is who, within the GDPR
 
@@ -30,7 +32,9 @@ number ever goes with it.
 - **PostHog** gets it only once the person agreed to usage analytics (`identify`). Before that, events
   carry a random id of this install (`personProfiles = IDENTIFIED_ONLY`: no person profile is
   created), which a sign-out renews. Funnels and retention still work per install.
-- A refusal (`DENIED`) opts PostHog out entirely, persisted by the SDK. Sentry keeps working.
+- A refusal (`DENIED`) opts PostHog out entirely, persisted by the SDK, and Sentry gets no usage
+  either: no product event and no screen as a breadcrumb. Sentry keeps its crash and error reports,
+  which carry no usage (their own error breadcrumbs and logs only).
 - Withdrawing consent resets PostHog to a fresh anonymous id: nothing that follows links back.
 
 Why consent for PostHog: identified, per-person product analytics reads an identifier from the phone
@@ -48,26 +52,34 @@ long as the privacy policy says so and people can object.
   orientation, health or beliefs), what people write or record (`bio`, `message`, `text`, `note`,
   `prompt`, `answer`), location (`latitude`, `neighborhood`...), another person (`target_id`,
   `match_id`...) and secrets.
-- Values must be numbers, booleans, or short codes (`^[a-z0-9][a-z0-9_.:-]*$`): a sentence someone
-  typed never passes. Enums become their lowercase name.
+- Values must be numbers, booleans, or short codes (`^[a-z0-9][a-z0-9_.:-]{0,79}$`: 80 characters at
+  most, `_ . : -` the only punctuation): a sentence someone typed never passes, nor a value that is a
+  UUID (another person's id) or only digits, seven or more (a phone number). A list holds 20 codes at
+  most. Enums become their lowercase name.
 - Free text that must go (log lines, exception messages, breadcrumbs) is scrubbed of emails, phone
-  numbers, UUIDs (another person's id), tokens, JWTs and coordinates, and URLs lose their query string.
+  numbers, UUIDs (another person's id), tokens, JWTs and coordinates. Request labels and breadcrumb
+  URLs also lose their query string (`PrivacyGuard.path`); `scrub` alone doesn't strip it.
 - A dropped property is logged (so it reaches Sentry's logs). Unit tests run it in strict mode, where
   it throws.
 - Discover filters send distance and the number of sports, never who someone wants to meet. Sign-up
   sends counts and yes/no (photos, sports, prompts, "answered lifestyle"), never the answers. Reports
   send the category, never the details. Profile edits send which fields changed, never their content.
+- PostHog's `beforeSend` drops the property names on the `forbidden` list; Sentry's `beforeSend`,
+  `beforeBreadcrumb` and logs' `beforeSend` scrub the message text, the exceptions' messages, the
+  breadcrumbs and the user's fields. They run on the way out as a second net, but they don't check the
+  shape of values (a code or a sentence): that is `PrivacyGuard`'s job when the value is set.
 
 ## Errors: what alerts and what doesn't
 
-`Telemetry.unexpected(error, area, action)` is called in a `catch` that swallows or rethrows a failure
-the app didn't expect. Best-effort upkeep written `attempt { }` (the Swift `try?`: realtime joins, wallet
-and block-list reads that run again) is not reported, unless a call asks for it with its own area and
-action. It classifies the error (`ErrorKind`):
+`Telemetry.unexpected(error, area, action)` is called in a `catch` that swallows or rethrows a
+failure the app didn't expect. Best-effort upkeep written `attempt { }` (the Swift `try?`: realtime
+joins, wallet and block-list reads that run again) is not reported, unless a call asks for it with its
+own area and action. It classifies the error (`ErrorKind`):
 
-| Kind | Sentry event? | Example |
+| Kind | Sentry issue? | Example |
 |---|---|---|
-| `cancelled`, `offline`, `signed_out` | No (breadcrumb) | Airplane mode, a coroutine cancelled |
+| `cancelled` | No (nothing at all) | A coroutine cancelled, a call the HTTP client cancelled |
+| `offline`, `signed_out` | No (breadcrumb) | Airplane mode, a timeout, an expired token |
 | `refused` | No (breadcrumb) | `daily_like_limit`, a wrong password, a wrong SMS code |
 | `rate_limited`, `store_declined` | No (breadcrumb) | HTTP 429, a purchase waiting for a parent |
 | `client_contract` | **Yes** | A 4xx without a code the app knows: app and server disagree |
@@ -75,22 +87,31 @@ action. It classifies the error (`ErrorKind`):
 | `store_unconfirmed` | **Yes** | Google Play may have charged without RevenueCat confirming |
 | `unexpected` | **Yes** | Anything else |
 
-So an alert in Sentry means something needs a fix. A 4xx with a one-word code (`not_found`,
+So an issue in Sentry means something needs a fix. A 4xx with a one-word code (`not_found`,
 `already_swiped`) is a refusal the server meant, even when the app has no words for it; a 401 is the
 session's business. Every non-2xx response is also a Sentry log line (searchable, not an issue).
-RevenueCat and Stream unreachable count as offline, and a call the HTTP client cancelled is `cancelled`.
-A cancelled task is never a failure: `Telemetry.track` drops any event whose `reason` is `cancelled`.
+RevenueCat and Stream unreachable count as offline, and so does a timeout; a TLS or certificate
+failure doesn't (`unexpected`). The same failure (area, action, kind) is one Sentry issue per 5
+minutes, the rest are breadcrumbs, so a retry loop can't flood; the error's kind is also a tag and an
+extra (`error_kind`), next to the caller's own extras. A cancelled task is never a failure:
+`Telemetry.track` drops any event whose `reason` is `cancelled`.
 
 Performance: every request is a span (`http.client`, `POST rest/v1/rpc/discover`) with its status and
 duration, a child of the running trace (app start, screen load) or a trace of its own. Lone requests are
 the most frequent traces, so production keeps 2% of them and 20% of the others (app starts, uploads);
-staging and local keep everything. Media uploads (`media.upload`) are timed too. Profiles follow 5% of
-the sampled traces in production (`ProfileLifecycle.TRACE`).
+staging and local keep everything. Media uploads (`media.upload`) are timed too. A span ends as its
+outcome says: cancelled is not a failure, a 4xx the server meant takes the response's status (not found,
+resource exhausted...), only an exception or a 5xx is an internal error. Ids in a span's name are
+scrubbed. Profiles follow 5% of the sampled traces in production (`ProfileLifecycle.TRACE`).
 
 The app's own `java.util.logging` loggers (`so.drafft.*`) reach Sentry through `TelemetryLogHandler`, by
 level: INFO is a breadcrumb (it comes with the next error report), WARNING is also a Sentry log line
 (searchable, never an issue), SEVERE is a Sentry issue (something that should never happen, like a
 backend that isn't deployed). Lower levels stay on the phone.
+
+System exit diagnostics (what MetricKit gives the iPhone): crashes and ANRs reach Sentry on their own;
+`Diagnostics` keeps why past runs ended (`ApplicationExitInfo`) on the phone and sends their daily
+summary as a Sentry log line. PostHog's queue is sent when the app leaves the front.
 
 ## The tracking plan
 
@@ -119,7 +140,10 @@ while it's on show in the current tab (not while the tabs are hidden); `TrackPay
 | Purchases | `paywall_viewed` (kind, `from_screen`), `paywall_dismissed`, `products_load_failed`, `purchase_started`, `purchase_completed`, `purchase_cancelled`, `purchase_failed`, `purchase_credited` (`seconds_to_credit`), `purchases_restored`, `restore_failed`, `subscription_manage_opened` |
 | Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_upload_started` (`retry`), `photo_upload_failed`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `voice_intro_recorded` (`duration_seconds`, `where`), `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
 | Safety | `user_blocked`, `user_unblocked`, `user_reported` (category), `report_failed` |
-| Settings and system | `language_changed`, `permission_requested` (permission, result, during; sent when the system asked or the person is blocked, never for a permission already granted), `notification_setting_changed`, `push_received` (only while the app is on screen), `push_opened`, `legal_doc_opened`, `support_contacted`, `share_tapped` (`what`: `photo` or `video`, from the media viewer) |
+| Settings and system | `language_changed`, `permission_requested` (permission, result, during; sent when the system asked or the person is blocked, never for a permission already granted), `notification_setting_changed`, `push_received` (only while the app is on screen, so `in_foreground` is always true), `push_opened`, `legal_doc_opened`, `support_contacted`, `share_tapped` (`what`: `photo` or `video`, from the media viewer) |
+
+Events fire when the person acts (the screen answers at once, the server confirms after), and a
+`*_failed` event follows when it didn't work: success counts are the events minus their failures.
 
 Revenue is not computed on the phone: turn on RevenueCat's PostHog integration (purchases, renewals,
 cancellations and refunds with their real amounts, under event names like `rc_initial_purchase_event`,
@@ -127,7 +151,9 @@ keyed by the same app user id).
 
 ### Adding an event
 
-1. Add a class to `AnalyticsEvent` with typed parameters (enums, numbers, booleans, codes).
+1. Add a class to `AnalyticsEvent` with typed parameters (enums, numbers, booleans, codes), and a sample
+   of it to the catalog test `everyEventPassesThePrivacyGuardUntouched` (it fails when an event has
+   none).
 2. Call `Telemetry.track(...)` where the thing happened, preferably in the model (`AppModel`, a
    service) rather than a button: the model knows whether it worked.
 3. Add it to the table above, and to the iPhone app with the same name and properties.
@@ -145,8 +171,9 @@ keyed by the same app user id).
 
 Empty values turn the service off. Production and staging share the Sentry project (the
 `environment` tag separates them); PostHog uses one project per environment so tests never pollute
-real numbers. The app and the build both refuse a non-EU host (anything but exactly `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`), and the build refuses anything shaped like a secret (`sntrys_`,
-`sntryu_`, `phx_`).
+real numbers. The app and the build both refuse a non-EU host (anything but exactly
+`https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`),
+and the build refuses anything shaped like a secret (`sntrys_`, `sntryu_`, `phx_`).
 
 ### Readable stack traces (CI secrets)
 
@@ -177,6 +204,10 @@ the mapping can be uploaded later with `sentry-cli`.
 
 ## What remains to do outside this repository
 
+- **Consent switch (first, in the iPhone app):** a switch in You › Privacy & data ("Share usage
+  analytics", off by default, with one line on what it means), and optionally a one-time question after
+  sign-up. Its words go in the iPhone catalog first (WORDING.md), then `TelemetrySession.setConsent`
+  wires it. Until then everyone is in anonymous mode.
 - **Privacy policy (drafft-web):** add PostHog (EU) to `/privacy#data` with the purpose, the anonymous
   mode, the consent for linking to the account, and how to object; Sentry is already listed.
 - **Account deletion (drafft-backend, `delete-account`):** delete the PostHog person and its events
@@ -184,10 +215,6 @@ the mapping can be uploaded later with `sentry-cli`.
   server-side, never in the app). Sentry keeps events for its retention period (90 days); an erasure
   request within it is handled by deleting the issues and events matching `user.id:<id>`. Data export
   should say that analytics data can be requested too.
-- **Consent screen (first, in the iPhone app):** a switch in You › Privacy & data ("Share usage analytics",
-  off by default, with one line on what it means), and optionally a one-time question after sign-up.
-  Its words go in the iPhone catalog first (WORDING.md), then `TelemetrySession.setConsent` wires it.
-  Until then everyone is in anonymous mode.
 - **Google Play Data safety form:** declare "App activity: app interactions", "App info and
   performance: crash logs, diagnostics", "Device or other IDs" (the install id), collected, not shared,
   processed by service providers, encrypted in transit; user ids linked to the account for crash logs.

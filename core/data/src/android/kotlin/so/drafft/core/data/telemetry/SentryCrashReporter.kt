@@ -17,6 +17,8 @@ import io.sentry.android.core.SentryAndroid
 import io.sentry.logger.SentryLogParameters
 import io.sentry.protocol.User
 
+// Ports Drafft/Services/Telemetry/SentryCrashReporter.swift.
+
 /**
  * [Telemetry.CrashReporter] on Sentry (EU region, picked by the DSN). Crashes (Kotlin and native),
  * ANRs, the errors [Telemetry.unexpected] reports, app start and frame metrics, request traces, the
@@ -54,6 +56,8 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
         Sentry.captureException(error) { scope ->
             scope.setTag("area", report.area)
             report.action?.let { scope.setTag("action", it) }
+            // Filterable: the kind of error (`server`, `client_contract`), next to the extras.
+            report.extra["error_kind"]?.let { scope.setTag("error_kind", Telemetry.render(it)) }
             report.extra.forEach { (k, v) -> scope.setExtra(k, Telemetry.render(v)) }
             report.fingerprint?.let { scope.fingerprint = it }
         }
@@ -83,10 +87,25 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
     }
 
     private class SentrySpan(private val span: ISpan) : Telemetry.Span {
-        override fun setData(key: String, value: Any) = span.setData(key, value)
-        override fun finish(ok: Boolean) {
+        /** The response's status, when the span timed a request: what a refusal's span status says. */
+        private var httpStatus: Int? = null
+
+        override fun setData(key: String, value: Any) {
+            if (key == "http.response.status_code" && value is Int) httpStatus = value
+            span.setData(key, value)
+        }
+
+        override fun finish(outcome: Telemetry.Outcome) {
             if (span.isFinished) return
-            span.finish(if (ok) SpanStatus.OK else SpanStatus.INTERNAL_ERROR)
+            span.finish(
+                when (outcome) {
+                    Telemetry.Outcome.OK -> SpanStatus.OK
+                    Telemetry.Outcome.CANCELLED -> SpanStatus.CANCELLED
+                    // The server answered: its status (not found, resource exhausted...), never an internal error.
+                    Telemetry.Outcome.REFUSED -> SpanStatus.fromHttpStatusCode(httpStatus, SpanStatus.INVALID_ARGUMENT)
+                    Telemetry.Outcome.FAILED -> SpanStatus.INTERNAL_ERROR
+                },
+            )
         }
     }
 
@@ -154,7 +173,11 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
             return SentryCrashReporter()
         }
 
-        /** The last pass over an event: what an exception's message may carry, and the user's id only. */
+        /**
+         * The last pass over an event: drops what identifies someone from the message text, the exceptions'
+         * messages, the breadcrumbs and the user (the id stays). It doesn't re-check the tags and extras:
+         * [PrivacyGuard] vetted those when they were set.
+         */
         private fun scrubbed(event: SentryEvent): SentryEvent {
             event.message?.let { m ->
                 m.formatted = m.formatted?.let(PrivacyGuard::scrub)

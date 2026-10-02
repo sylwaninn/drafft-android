@@ -58,15 +58,16 @@ class DrafftApplication : Application() {
         koin.get<so.drafft.core.data.notifications.NotificationService>()
     }
 
+    /** Never throws: a package lookup that fails only leaves the version blank, the app starts all the same. */
     private fun telemetryConfig(): TelemetryConfig {
-        val info = packageManager.getPackageInfo(packageName, 0)
+        val info = runCatching { packageManager.getPackageInfo(packageName, 0) }.getOrNull()
         return TelemetryConfig(
             sentryDSN = BuildConfig.SENTRY_DSN,
             postHogKey = BuildConfig.POSTHOG_API_KEY,
             postHogHost = BuildConfig.POSTHOG_HOST,
             environment = BuildConfig.ENVIRONMENT.ifEmpty { "production" },
-            version = info.versionName ?: "",
-            build = info.longVersionCode.toString(),
+            version = info?.versionName ?: "",
+            build = info?.longVersionCode?.toString() ?: "0",
             isDebugBuild = BuildConfig.DEBUG,
         )
     }

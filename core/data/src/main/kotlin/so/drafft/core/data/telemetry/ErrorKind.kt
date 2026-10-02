@@ -1,14 +1,20 @@
 package so.drafft.core.data.telemetry
 
+import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.exceptions.RestException
 import java.io.IOException
+import java.security.cert.CertificateException
+import javax.net.ssl.SSLException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.backend.ServerMessage
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.verification.VerificationError
+
+// Ports Drafft/Services/Telemetry/Core/ErrorKind.swift and AppErrorClassifier.swift.
 
 /**
  * What kind of failure an error is, for [Telemetry.unexpected]. Only the [reportable] kinds become
@@ -34,6 +40,8 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
 
     companion object {
         fun of(error: Throwable): ErrorKind {
+            // A timeout is a CancellationException too, but nobody went away: the call took too long.
+            if (error is TimeoutCancellationException) return OFFLINE
             if (error is CancellationException || isCancelledCall(error)) return CANCELLED
             if (ServerMessage.isSignedOut(error)) return SIGNED_OUT
             if (error is ProfileSync.SyncError.Refused) return REFUSED
@@ -51,18 +59,22 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
             }
             if (error is Backend.EmailAlreadyRegistered || error is Backend.PhoneAlreadyRegistered) return REFUSED
             // Supabase Auth's refusals (a wrong password, an expired code): the screen says why.
-            if (error is RestException) {
+            if (error is AuthRestException) {
                 return when {
                     error.statusCode == 429 -> RATE_LIMITED
                     error.statusCode >= 500 -> SERVER
                     else -> REFUSED
                 }
             }
+            // Any other REST error (PostgREST...): the same rules as a response of the backend.
+            if (error is RestException) return http(error.statusCode, error.error)
             if (error is Store.StoreError.Failed) {
                 return if (error.problem == Store.PurchaseProblem.UNCONFIRMED) STORE_UNCONFIRMED else STORE_DECLINED
             }
             if (error is Backend.BackendError.Http) return http(error.status, error.serverMessage)
             if (ServerMessage.code(error) != null) return REFUSED
+            // A certificate or TLS failure reached a server (or something posing as one): not the connection.
+            if (isSecurityFailure(error)) return UNEXPECTED
             if (ServerMessage.isOffline(error)) return OFFLINE
             return UNEXPECTED
         }
@@ -74,10 +86,15 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
             // An expired or revoked token: the session refresh and the sign-out handle it.
             status == 401 -> SIGNED_OUT
             // A code (one word) is a refusal the server meant (`not_found`, `already_swiped`),
-            // whether or not the app has words for it. A sentence is the database failing.
-            ServerMessage.isCode(message) -> REFUSED
+            // whether or not the app has words for it. A sentence is the database failing. Read like the
+            // iPhone does: lowercased, as a short code (`PrivacyGuard.isCode`).
+            PrivacyGuard.isCode(message.lowercase()) -> REFUSED
             else -> CLIENT_CONTRACT
         }
+
+        /** TLS or certificate trouble anywhere in the cause chain. */
+        private fun isSecurityFailure(error: Throwable): Boolean = generateSequence(error) { it.cause }
+            .any { it is SSLException || it is CertificateException }
 
         /** The HTTP client's own way to say a call was cancelled: an IOException, not a CancellationException. */
         private fun isCancelledCall(error: Throwable): Boolean = generateSequence(error) { it.cause }

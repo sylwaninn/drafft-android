@@ -10,6 +10,8 @@ import so.drafft.core.data.AppModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.KeyValueStore
 
+// Ports Drafft/Services/Telemetry/TelemetrySession.swift.
+
 /**
  * Keeps [Telemetry] in step with the account: who is signed in (Supabase Auth's session, the one
  * source), and the few facts dashboards split by (language, drafft tempo, where the person is in the
@@ -25,7 +27,7 @@ class TelemetrySession(
     fun setConsent(value: AnalyticsConsent) {
         if (value == Telemetry.consent) return
         AnalyticsConsent.save(value, defaults)
-        // Applied first: after a refusal not even the refusal goes to PostHog (Sentry's breadcrumbs keep it).
+        // Applied first: after a refusal not even the refusal is sent (nothing is, and no breadcrumb of it either).
         Telemetry.applyConsent(value)
         Telemetry.track(AnalyticsEvent.AnalyticsConsentChanged(value))
     }

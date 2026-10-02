@@ -1,5 +1,7 @@
 package so.drafft.core.data.telemetry
 
+// Ports Drafft/Services/Telemetry/Core/Screen.swift.
+
 /**
  * The screens people see, by a stable id (PostHog's `$screen_name`, Sentry's `screen` tag). Renaming
  * one breaks every chart built on it: add, don't rename.

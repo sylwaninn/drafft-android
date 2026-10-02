@@ -1,14 +1,27 @@
 package so.drafft.core.data.telemetry
 
+import io.github.jan.supabase.auth.exception.AuthRestException
+import io.github.jan.supabase.exceptions.RestException
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.request.get
+import io.ktor.client.statement.HttpResponse
 import java.io.IOException
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.security.cert.CertificateException
 import java.util.logging.Level
 import java.util.logging.Logger
+import javax.net.ssl.SSLHandshakeException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
 import so.drafft.core.data.backend.Backend
@@ -16,6 +29,7 @@ import kotlinx.coroutines.runBlocking
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.platform.InMemoryKeyValueStore
+import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.verification.VerificationError
 
@@ -24,11 +38,13 @@ class TelemetryTest {
         val calls = mutableListOf<String>()
         val events = mutableListOf<Pair<String, Map<String, Any>>>()
         var sending = true
+        // Records whatever it is given, even while disabled: what keeps a refusal quiet is Telemetry's own
+        // guard, and a fake that dropped events itself would hide a missing one.
         override fun capture(name: String, properties: Map<String, Any>) {
-            if (sending) events += name to properties
+            events += name to properties
         }
         override fun screen(name: String, properties: Map<String, Any>) { calls += "screen:$name" }
-        override fun identify(id: String, properties: Map<String, Any>) { calls += "identify:$id" }
+        override fun identify(id: String) { calls += "identify:$id" }
         override fun setPersonProperties(properties: Map<String, Any>) { calls += "person:${properties.keys.sorted()}" }
         override fun register(key: String, value: Any) { calls += "register:$key=$value" }
         override fun reset() { calls += "reset" }
@@ -43,9 +59,11 @@ class TelemetryTest {
         val messages = mutableListOf<String>()
         val reports = mutableListOf<Telemetry.ErrorReport>()
         val logs = mutableListOf<String>()
-        val finished = mutableListOf<Boolean>()
+        val finished = mutableListOf<Telemetry.Outcome>()
+        val spans = mutableListOf<String>()
+        val tags = mutableMapOf<String, String?>()
         override fun setUser(id: String?) { userID = id }
-        override fun setTag(key: String, value: String?) = Unit
+        override fun setTag(key: String, value: String?) { tags[key] = value }
         override fun breadcrumb(crumb: Telemetry.Breadcrumb) { crumbs += crumb }
         override fun capture(error: Throwable, report: Telemetry.ErrorReport) { captured += error to report }
         override fun message(text: String, level: Telemetry.Level, report: Telemetry.ErrorReport) {
@@ -53,9 +71,12 @@ class TelemetryTest {
             reports += report
         }
         override fun log(level: Telemetry.Level, text: String, attributes: Map<String, Any>) { logs += text }
-        override fun startSpan(operation: String, description: String): Telemetry.Span = object : Telemetry.Span {
-            override fun setData(key: String, value: Any) = Unit
-            override fun finish(ok: Boolean) { finished += ok }
+        override fun startSpan(operation: String, description: String): Telemetry.Span {
+            spans += description
+            return object : Telemetry.Span {
+                override fun setData(key: String, value: Any) = Unit
+                override fun finish(outcome: Telemetry.Outcome) { finished += outcome }
+            }
         }
     }
 
@@ -73,6 +94,7 @@ class TelemetryTest {
     @AfterTest
     fun uninstall() {
         Telemetry.uninstall()
+        ScreenTracker.reset()
         PrivacyGuard.strict = false
     }
 
@@ -95,8 +117,46 @@ class TelemetryTest {
         Telemetry.signedIn("a")
         Telemetry.applyConsent(AnalyticsConsent.DENIED)
         assertTrue("reset" in analytics.calls)
+        assertFalse(analytics.sending)
+        // The fake takes what it's given: nothing arrives because Telemetry's own guard stops it.
         Telemetry.track(AnalyticsEvent.LoggedOut())
         assertTrue(analytics.events.isEmpty())
+    }
+
+    @Test
+    fun theSameAccountTwiceIsOneIdentifyAndNoReset() {
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        Telemetry.signedIn("a")
+        Telemetry.signedIn("a")
+        assertEquals(listOf("identify:a"), analytics.calls.filter { it.startsWith("identify") })
+        assertFalse("reset" in analytics.calls)
+    }
+
+    @Test
+    fun switchingDirectlyToAnotherAccountResetsThenIdentifiesIt() {
+        Telemetry.register("app_environment", "production")
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        Telemetry.signedIn("a")
+        Telemetry.signedIn("b")
+        assertEquals("b", crashes.userID)
+        val steps = analytics.calls.filter { it.startsWith("identify") || it == "reset" }
+        assertEquals(listOf("identify:a", "reset", "identify:b"), steps)
+        // The new anonymous id keeps the super properties.
+        assertTrue("register:app_environment=production" in analytics.calls.dropWhile { it != "reset" })
+    }
+
+    @Test
+    fun deniedThenGrantedAgainIdentifiesTheSignedInAccountAfresh() {
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        Telemetry.signedIn("a")
+        Telemetry.applyConsent(AnalyticsConsent.DENIED)
+        Telemetry.track(AnalyticsEvent.LoggedOut())
+        assertTrue(analytics.events.isEmpty())
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        assertTrue(analytics.sending)
+        assertEquals(listOf("identify:a", "reset", "identify:a"), analytics.calls.filter { it.startsWith("identify") || it == "reset" })
+        Telemetry.track(AnalyticsEvent.LoggedOut())
+        assertEquals(listOf("logged_out"), analytics.events.map { it.first })
     }
 
     @Test
@@ -143,10 +203,31 @@ class TelemetryTest {
     }
 
     @Test
-    fun aRefusalStillKeepsBreadcrumbsForCrashReports() {
+    fun aRefusalCarriesNoUsageAnywhere() {
         Telemetry.applyConsent(AnalyticsConsent.DENIED)
         Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.MY_SWIPE))
+        Telemetry.screen(Screen.CHATS)
+        Telemetry.screen(Screen.CHAT)
+        // Not to PostHog, no product or navigation breadcrumb for Sentry either.
         assertTrue(analytics.events.isEmpty())
+        assertTrue(analytics.calls.none { it.startsWith("screen") })
+        assertTrue(crashes.crumbs.none { it.category == "product" || it.category == "navigation" }, crashes.crumbs.toString())
+        // The screen is still known (the tag says where a crash happened), and so is the refusal itself.
+        assertEquals(Screen.CHAT, Telemetry.currentScreen)
+        assertEquals("chat", crashes.tags["screen"])
+        assertEquals(listOf("analytics denied"), crashes.crumbs.map { it.message })
+        // Errors are not usage: they keep their breadcrumbs.
+        Telemetry.unexpected(IOException("offline"), "discover")
+        assertTrue(crashes.crumbs.any { it.category == "error" })
+    }
+
+    @Test
+    fun withoutARefusalProductEventsAndScreensAreBreadcrumbs() {
+        Telemetry.screen(Screen.CHATS)
+        Telemetry.screen(Screen.CHAT)
+        Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.MY_SWIPE))
+        assertEquals(listOf("chats", "chat"), crashes.crumbs.filter { it.category == "navigation" }.map { it.message })
+        assertEquals("chats", crashes.crumbs.last { it.category == "navigation" }.data["from"])
         assertTrue(crashes.crumbs.any { it.message == "match_created" })
     }
 
@@ -318,6 +399,8 @@ class TelemetryTest {
             AnalyticsEvent.ShareTapped("some_code"),
         )
         PrivacyGuard.strict = true
+        // A new event without a sample here would go unchecked.
+        assertEquals(AnalyticsEvent::class.sealedSubclasses.size, all.size, "an event of the catalog has no sample")
         val names = all.map { it.name }
         assertEquals(names.size, names.toSet().size, "two events share a name")
         for (event in all) {
@@ -434,7 +517,7 @@ class TelemetryTest {
         Telemetry.unexpected(Backend.BackendError.Http(400, "column x does not exist"), "discover")
         Telemetry.unexpected(IllegalStateException("bug"), "chat")
         Telemetry.unexpected(Store.StoreError.Failed(Store.PurchaseProblem.UNCONFIRMED), "purchase")
-        assertEquals(listOf("server", "client_contract", "unexpected", "store_unconfirmed"), crashes.captured.map { it.second.extra["kind"] })
+        assertEquals(listOf("server", "client_contract", "unexpected", "store_unconfirmed"), crashes.captured.map { it.second.extra["error_kind"] })
         assertEquals("load_deck", crashes.captured.first().second.action)
     }
 
@@ -505,9 +588,40 @@ class TelemetryTest {
     fun traceFinishesTheSpanAndKeepsTheValue() = runBlocking {
         val value = Telemetry.trace("http.client", "POST rest/v1/rpc/discover") { 42 }
         assertEquals(42, value)
-        assertEquals(listOf(true), crashes.finished)
+        assertEquals(listOf(Telemetry.Outcome.OK), crashes.finished)
         assertFailsWith<IllegalStateException> { Telemetry.trace("media.upload", "profile photo") { error("bug") } }
-        assertEquals(listOf(true, false), crashes.finished)
+        assertEquals(Telemetry.Outcome.FAILED, crashes.finished.last())
+    }
+
+    @Test
+    fun aSpanEndsAsTheOutcomeSaysNotAlwaysAsAnInternalError() = runBlocking {
+        // Cancelled: nobody failed.
+        assertFailsWith<CancellationException> { Telemetry.trace("http.client", "GET a") { throw CancellationException("gone") } }
+        // The server said no (4xx): the request worked.
+        assertFailsWith<Backend.BackendError.Http> { Telemetry.trace("http.client", "GET b") { throw Backend.BackendError.Http(404, "not_found") } }
+        assertFailsWith<Backend.BackendError.Http> { Telemetry.trace("http.client", "GET c") { throw Backend.BackendError.Http(429, "slow down") } }
+        // The server or the network failing is a failed span.
+        assertFailsWith<Backend.BackendError.Http> { Telemetry.trace("http.client", "GET d") { throw Backend.BackendError.Http(503, "upstream") } }
+        assertFailsWith<IOException> { Telemetry.trace("http.client", "GET e") { throw IOException("Unable to resolve host") } }
+        assertEquals(
+            listOf(Telemetry.Outcome.CANCELLED, Telemetry.Outcome.REFUSED, Telemetry.Outcome.REFUSED, Telemetry.Outcome.FAILED, Telemetry.Outcome.FAILED),
+            crashes.finished,
+        )
+    }
+
+    @Test
+    fun aSpansDescriptionLosesItsQueryAndIDs() = runBlocking {
+        Telemetry.trace("http.client", "GET rest/v1/profiles?id=eq.4f2c0e0a-0000-4000-8000-000000000001") { }
+        Telemetry.trace("http.client", "GET rest/v1/profiles/4f2c0e0a-0000-4000-8000-000000000001/media") { }
+        assertEquals(listOf("GET rest/v1/profiles", "GET rest/v1/profiles/[id]/media"), crashes.spans)
+    }
+
+    @Test
+    fun aBrokenEngineNeverBreaksTheOperationItTimes() = runBlocking {
+        Telemetry.crashes = object : Telemetry.CrashReporter by FakeCrashes() {
+            override fun startSpan(operation: String, description: String): Telemetry.Span = error("sdk down")
+        }
+        assertEquals(7, Telemetry.trace("http.client", "GET x") { 7 })
     }
 
     @Test
@@ -540,6 +654,326 @@ class TelemetryTest {
         val report = crashes.reports.single()
         assertEquals("safety", report.area)
         assertEquals("illegal_state_exception", report.extra["exception"])
+    }
+
+    // Values
+
+    @Test
+    fun anotherPersonsIDOrAPhoneNumberIsNotAValue() {
+        val uuid = "4f2c0e0a-0000-4000-8000-000000000001"
+        val out = PrivacyGuard.properties(
+            "x",
+            mapOf(
+                "person" to uuid, "upper" to uuid.uppercase(), "phone" to "0612345678", "short_digits" to "1234567",
+                "stamp" to "1727000000000", "ids" to listOf("ok", uuid),
+                // Fine: below seven digits, digits with other characters, a product id.
+                "six" to "123456", "date" to "2026-10-02", "product" to "so.drafft.app.boost.5", "codes" to listOf("a", "123456"),
+            ),
+        )
+        assertEquals(setOf("six", "date", "product", "codes"), out.keys)
+        // `isCode` stays what Backend errors are read with: any short slug, a UUID included.
+        assertTrue(PrivacyGuard.isCode(uuid))
+        assertFalse(PrivacyGuard.isValue(uuid))
+        assertTrue(PrivacyGuard.isValue("daily_like_limit"))
+    }
+
+    // Errors, round 2
+
+    private fun <T> withResponse(status: Int, block: (HttpResponse) -> T): T = runBlocking {
+        val server = com.sun.net.httpserver.HttpServer.create(InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0)
+        server.createContext("/") { exchange ->
+            exchange.sendResponseHeaders(status, -1)
+            exchange.close()
+        }
+        server.start()
+        val client = HttpClient(OkHttp)
+        try {
+            block(client.get("http://127.0.0.1:${server.address.port}/"))
+        } finally {
+            client.close()
+            server.stop(0)
+        }
+    }
+
+    private fun rest(status: Int, error: String): RestException = withResponse(status) { RestException(error, null, it) }
+
+    private fun auth(status: Int, code: String): RestException = withResponse(status) { AuthRestException(code, "description", it) }
+
+    @Test
+    fun supabaseAuthRefusalsAreRefusalsOtherRestErrorsFollowTheHttpRules() {
+        // Auth: the screen says why.
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(auth(400, "invalid_credentials")))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(auth(401, "session_not_found")))
+        assertEquals(ErrorKind.RATE_LIMITED, ErrorKind.of(auth(429, "over_request_rate_limit")))
+        assertEquals(ErrorKind.SERVER, ErrorKind.of(auth(500, "unexpected_failure")))
+        assertEquals("invalid_credentials", Telemetry.reason(auth(400, "invalid_credentials")))
+        // Anything else (PostgREST...): like a response of the backend.
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(rest(404, "not_found")))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(rest(400, "DAILY_LIKE_LIMIT")))
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.of(rest(409, "duplicate key value violates unique constraint")))
+        assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.of(rest(401, "JWT expired")))
+        assertEquals(ErrorKind.RATE_LIMITED, ErrorKind.of(rest(429, "too_many")))
+        assertEquals(ErrorKind.SERVER, ErrorKind.of(rest(503, "upstream")))
+        assertEquals("server", Telemetry.reason(rest(503, "upstream")))
+    }
+
+    @Test
+    fun theSessionAndTheProfileErrorsAreClassified() {
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(ProfileSync.SyncError.NotLoaded))
+        assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.of(Backend.BackendError.SignedOut))
+        assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.of(Backend.BackendError.Http(400, "unauthenticated")))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(Backend.EmailAlreadyRegistered()))
+    }
+
+    @Test
+    fun httpBoundaries() {
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(499, ""))
+        assertEquals(ErrorKind.SERVER, ErrorKind.http(500, ""))
+        assertEquals(ErrorKind.SERVER, ErrorKind.http(599, "boom"))
+        assertEquals(ErrorKind.SERVER, ErrorKind.http(600, "boom"))
+        // A 401 is the session's business, code or not; 429 is a limit whatever it says.
+        assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.http(401, "not_found"))
+        assertEquals(ErrorKind.RATE_LIMITED, ErrorKind.http(429, "daily_like_limit"))
+        // Read like the iPhone: lowercased, as a short code. A sentence, nothing, or too long is a contract bug.
+        assertEquals(ErrorKind.REFUSED, ErrorKind.http(400, "Daily_Like_Limit"))
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(400, ""))
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(400, "Not found"))
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(400, "a".repeat(81)))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.http(400, "a".repeat(80)))
+    }
+
+    @Test
+    fun tlsAndCertificateFailuresAreNotTheConnection() {
+        assertEquals(ErrorKind.UNEXPECTED, ErrorKind.of(SSLHandshakeException("PKIX path building failed")))
+        assertEquals(ErrorKind.UNEXPECTED, ErrorKind.of(IOException("wrapped", CertificateException("expired"))))
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(java.net.UnknownHostException("api.example.com")))
+        assertTrue(ErrorKind.UNEXPECTED.reportable)
+    }
+
+    @Test
+    fun aTimeoutIsNotACancellation() = runBlocking {
+        val timeout = try {
+            withTimeout(1) { kotlinx.coroutines.delay(1000) }
+            error("no timeout")
+        } catch (e: TimeoutCancellationException) {
+            e
+        }
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(timeout))
+        assertEquals(ErrorKind.CANCELLED, ErrorKind.of(CancellationException("gone")))
+        // Kept as a breadcrumb: it isn't a task that went away.
+        Telemetry.unexpected(timeout, "discover", "load_deck")
+        assertEquals(listOf("discover.load_deck: offline"), crashes.crumbs.map { it.message })
+    }
+
+    @Test
+    fun everyCancelledKindLeavesNoTrace() {
+        Telemetry.unexpected(CancellationException("gone"), "discover")
+        Telemetry.unexpected(IOException("Canceled"), "discover", "swipe")
+        Telemetry.unexpected(IOException("outer", IOException("cancelled")), "chat")
+        assertTrue(crashes.crumbs.isEmpty())
+        assertTrue(crashes.captured.isEmpty())
+    }
+
+    @Test
+    fun theSameFailureIsReportedOncePerFiveMinutes() {
+        var now = 1_000L
+        Telemetry.clock = { now }
+        repeat(3) { Telemetry.unexpected(IllegalStateException("bug"), "chat", "send") }
+        assertEquals(1, crashes.captured.size)
+        // The others stay breadcrumbs.
+        assertEquals(2, crashes.crumbs.count { it.category == "error" })
+        assertEquals(listOf("chat", "send", "unexpected"), crashes.captured.single().second.fingerprint)
+        now += 5 * 60 * 1000L - 1
+        Telemetry.unexpected(IllegalStateException("bug"), "chat", "send")
+        assertEquals(1, crashes.captured.size)
+        now += 1
+        Telemetry.unexpected(IllegalStateException("bug"), "chat", "send")
+        assertEquals(2, crashes.captured.size)
+        // Another action, another kind: their own allowance.
+        Telemetry.unexpected(IllegalStateException("bug"), "chat", "connect")
+        Telemetry.unexpected(Backend.BackendError.Http(503, "upstream"), "chat", "send")
+        assertEquals(4, crashes.captured.size)
+        assertEquals(listOf("chat", "send", "server"), crashes.captured.last().second.fingerprint)
+        // A problem is not an error: never throttled here.
+        repeat(2) { Telemetry.problem("purchase credited late", "purchase") }
+        assertEquals(2, crashes.messages.size)
+    }
+
+    @Test
+    fun theCallersKindExtraSurvives() {
+        Telemetry.unexpected(IllegalStateException("bug"), "chat", "send_media", mapOf("kind" to "photo"))
+        val extra = crashes.captured.single().second.extra
+        assertEquals("photo", extra["kind"])
+        assertEquals("unexpected", extra["error_kind"])
+    }
+
+    @Test
+    fun telemetryNeverThrowsIntoTheApp() {
+        val broken = object : Telemetry.CrashReporter by FakeCrashes() {
+            override fun breadcrumb(crumb: Telemetry.Breadcrumb) = error("sdk down")
+            override fun capture(error: Throwable, report: Telemetry.ErrorReport) = error("sdk down")
+            override fun message(text: String, level: Telemetry.Level, report: Telemetry.ErrorReport) = error("sdk down")
+            override fun log(level: Telemetry.Level, text: String, attributes: Map<String, Any>) = error("sdk down")
+            override fun setUser(id: String?) = error("sdk down")
+            override fun setTag(key: String, value: String?) = error("sdk down")
+        }
+        Telemetry.crashes = broken
+        Telemetry.analytics = object : Telemetry.Analytics by FakeAnalytics() {
+            override fun capture(name: String, properties: Map<String, Any>) = error("sdk down")
+            override fun screen(name: String, properties: Map<String, Any>) = error("sdk down")
+            override fun identify(id: String) = error("sdk down")
+        }
+        Telemetry.track(AnalyticsEvent.LoggedOut())
+        Telemetry.screen(Screen.CHATS)
+        Telemetry.unexpected(IllegalStateException("bug"), "chat")
+        Telemetry.problem("odd", "chat")
+        Telemetry.breadcrumb("ui", "x")
+        Telemetry.log(Telemetry.Level.INFO, "x")
+        Telemetry.register("app_language", "fr")
+        Telemetry.describeAccount(mapOf("is_premium" to true))
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        Telemetry.signedIn("a")
+        Telemetry.flush()
+        // The log handler too.
+        TelemetryLogHandler().apply { level = Level.INFO }.publish(
+            java.util.logging.LogRecord(Level.SEVERE, "x").apply { loggerName = "so.drafft.chat" },
+        )
+    }
+
+    @Test
+    fun strictModeStillThrowsAndUninstallLeavesIt() {
+        PrivacyGuard.strict = true
+        assertFailsWith<IllegalArgumentException> { Telemetry.breadcrumb("ui", "x", data = mapOf("bio" to "hi")) }
+        assertFailsWith<IllegalArgumentException> { Telemetry.log(Telemetry.Level.INFO, "x", mapOf("email" to "a@b.co")) }
+        Telemetry.uninstall()
+        assertFalse(PrivacyGuard.strict)
+    }
+
+    @Test
+    fun accountTagsGoWithTheAccount() {
+        Telemetry.register("is_premium", false)
+        Telemetry.describeAccount(mapOf("is_premium" to true, "language" to "fr"))
+        Telemetry.signedIn("a")
+        assertEquals("true", crashes.tags["is_premium"])
+        assertEquals("fr", crashes.tags["language"])
+        // Another account, or none: what described the last one goes, a super property of the same name comes back.
+        Telemetry.signedIn(null)
+        assertNull(crashes.tags["language"])
+        assertEquals("false", crashes.tags["is_premium"])
+    }
+
+    // The screen on show
+
+    private fun heldScreenPosts(): MutableList<Runnable> {
+        val queue = mutableListOf<Runnable>()
+        ScreenTracker.post = { queue += it }
+        return queue
+    }
+
+    private fun MutableList<Runnable>.settle() {
+        while (isNotEmpty()) removeAt(0).run()
+    }
+
+    private fun screens() = analytics.calls.filter { it.startsWith("screen") }
+
+    @Test
+    fun aTabSwitchPublishesTheNewTabNotTheOldOne() {
+        val queue = heldScreenPosts()
+        ScreenTracker.base(Screen.DISCOVER)
+        val detail = ScreenTracker.enter(Screen.PROFILE_DETAIL)
+        queue.settle()
+        assertEquals(listOf("screen:profile_detail"), screens())
+        // One UI pass: the old tab's screen leaves while the base is still the old tab, then the root sets the new base.
+        ScreenTracker.leave(detail)
+        ScreenTracker.base(Screen.LIKES)
+        assertEquals(1, queue.size, "one publish per pass")
+        queue.settle()
+        assertEquals(listOf("screen:profile_detail", "screen:likes"), screens())
+        assertEquals(Screen.LIKES, Telemetry.currentScreen)
+    }
+
+    @Test
+    fun aScreenLeavingAfterTheBaseChangedPublishesTheNewBase() {
+        val queue = heldScreenPosts()
+        ScreenTracker.base(Screen.DISCOVER)
+        val detail = ScreenTracker.enter(Screen.PROFILE_DETAIL)
+        queue.settle()
+        // The reverse order: the base moves under the open screen, then the screen leaves.
+        ScreenTracker.base(Screen.CHATS)
+        ScreenTracker.leave(detail)
+        queue.settle()
+        assertEquals(listOf("screen:profile_detail", "screen:chats"), screens())
+    }
+
+    @Test
+    fun leavingAnUnknownTokenPublishesNothing() {
+        val queue = heldScreenPosts()
+        ScreenTracker.base(Screen.DISCOVER)
+        queue.settle()
+        ScreenTracker.leave(9999)
+        assertTrue(queue.isEmpty())
+        assertEquals(listOf("screen:discover"), screens())
+    }
+
+    @Test
+    fun aBaseChangeUnderAScreenPublishesNothing() {
+        val queue = heldScreenPosts()
+        ScreenTracker.base(Screen.DISCOVER)
+        val detail = ScreenTracker.enter(Screen.PROFILE_DETAIL)
+        queue.settle()
+        ScreenTracker.base(Screen.LIKES)
+        assertTrue(queue.isEmpty())
+        assertEquals(Screen.PROFILE_DETAIL, ScreenTracker.current)
+        // Back on the new base once the screen goes.
+        ScreenTracker.leave(detail)
+        queue.settle()
+        assertEquals(listOf("screen:profile_detail", "screen:likes"), screens())
+    }
+
+    @Test
+    fun resetForgetsEverythingPending() {
+        val queue = heldScreenPosts()
+        ScreenTracker.base(Screen.CHATS)
+        ScreenTracker.reset()
+        queue.settle()
+        // The pending publish found nothing to say.
+        assertEquals(null, ScreenTracker.current)
+        ScreenTracker.base(Screen.ME)
+        assertEquals(listOf("screen:me"), screens())
+    }
+
+    // The app's own logs
+
+    @Test
+    fun infoIsABreadcrumbFineAndANullMessageAreNothing() {
+        val handler = TelemetryLogHandler().apply { level = Level.INFO }
+        fun record(level: Level, message: String?, logger: String? = "so.drafft.chat") =
+            java.util.logging.LogRecord(level, message).apply { loggerName = logger }
+        handler.publish(record(Level.INFO, "connected"))
+        assertEquals(listOf("connected"), crashes.crumbs.map { it.message })
+        assertEquals(listOf(Telemetry.Level.INFO), crashes.crumbs.map { it.level })
+        assertTrue(crashes.logs.isEmpty())
+        assertTrue(crashes.messages.isEmpty())
+        handler.publish(record(Level.FINE, "detail"))
+        handler.publish(record(Level.WARNING, null))
+        handler.publish(record(Level.WARNING, "no logger", logger = null))
+        handler.publish(record(Level.SEVERE, "not ours", logger = "io.ktor.client"))
+        assertEquals(1, crashes.crumbs.size)
+        assertTrue(crashes.logs.isEmpty())
+        assertTrue(crashes.messages.isEmpty())
+    }
+
+    // Purchases
+
+    @Test
+    fun theStoresSlowAnswerIsExpectedAndARestoredPurchaseIsNeverLate() {
+        assertTrue(PurchaseCredit.isThrottled(Backend.BackendError.Http(429, "slow down")))
+        assertTrue(PurchaseCredit.isThrottled(Backend.BackendError.Http(503, "store slow")))
+        assertFalse(PurchaseCredit.isThrottled(Backend.BackendError.Http(500, "boom")))
+        assertFalse(PurchaseCredit.isThrottled(Backend.BackendError.Http(400, "not_found")))
+        assertTrue(PurchaseCredit.isLate(601, restored = false))
+        assertFalse(PurchaseCredit.isLate(600, restored = false))
+        assertFalse(PurchaseCredit.isLate(86_400, restored = true))
     }
 
     // Config

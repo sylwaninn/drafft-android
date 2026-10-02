@@ -37,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -269,6 +270,11 @@ fun OnboardingView(modifier: Modifier = Modifier) {
     }
     // Each step shown, for the sign-up funnel (the first one of a resumed sign-up says so).
     LaunchedEffect(state.step) { state.stepShown() }
+    // Sign-up over, however it ended (finished, session ended, account deleted, Leave): the funnel starts
+    // over. A rebuild (a language change) keeps the phase, so it keeps the funnel.
+    DisposableEffect(Unit) {
+        onDispose { if (app.phase != AppModel.Phase.ONBOARDING) OnboardingState.forgetFunnel() }
+    }
 }
 
 // MARK: - State
@@ -333,10 +339,13 @@ private class OnboardingState(
     /** The language saved with the progress, for the app to switch to once sign-up shows. */
     var restoredLanguage: AppLanguage? = null
 
-    /** When this sign-up was opened, and the step on screen was shown (monotonic, for durations). */
-    private val openedAt = System.nanoTime()
+    /** When the step on screen was shown (monotonic, for durations). The sign-up's own start is [opened]. */
     private var stepShownAt = System.nanoTime()
     private var resumedStep: Int? = null
+
+    init {
+        OnboardingState.opened()
+    }
 
     fun stepShown() {
         // The state is rebuilt (a language change, the activity recreated) on the step it was on: counted once per arrival.
@@ -645,9 +654,10 @@ private class OnboardingState(
                     photos = photos.size, sports = sports.size, prompts = answeredPrompts.size, hasVoice = voice != null,
                     hasBio = p.bio.isNotEmpty(), hasIcebreaker = icebreaker.isComplete, answeredLifestyle = lifestyle.hasLifestyle,
                     notificationsAllowed = notifications.isAllowed,
-                    minutes = ((System.nanoTime() - openedAt) / 60_000_000_000).toInt(),
+                    minutes = ((System.nanoTime() - OnboardingState.opened()) / 60_000_000_000).toInt(),
                 ),
             )
+            forgetFunnel()
             app.finishOnboarding(p)
         }
     }
@@ -674,8 +684,17 @@ private class OnboardingState(
          */
         var shownStep: Int? = null
 
+        private var openedAt: Long? = null
+
+        /**
+         * When this sign-up was opened (monotonic), kept with [shownStep] so `minutes_this_session` survives
+         * a rebuild: the first call after [forgetFunnel] starts it.
+         */
+        fun opened(): Long = openedAt ?: System.nanoTime().also { openedAt = it }
+
         fun forgetFunnel() {
             shownStep = null
+            openedAt = null
         }
     }
 }
