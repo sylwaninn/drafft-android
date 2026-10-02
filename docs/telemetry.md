@@ -170,8 +170,9 @@ keyed by the same app user id).
 | `POSTHOG_HOST` | `https://eu.i.posthog.com` |
 
 Empty values turn the service off. Production and staging share the Sentry project (the
-`environment` tag separates them); PostHog uses one project per environment so tests never pollute
-real numbers. The app and the build both refuse a non-EU host (anything but exactly
+`environment` tag separates them) and the PostHog project too, with the iPhone app and the website:
+filter every insight, funnel, alert and experiment on `app_environment = production` (local builds send
+nothing: empty key). Staging events count in the same quota. The app and the build both refuse a non-EU host (anything but exactly
 `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`),
 and the build refuses anything shaped like a secret (`sntrys_`, `sntryu_`, `phx_`).
 
