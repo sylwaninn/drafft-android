@@ -15,7 +15,7 @@ Profiles lead with how someone moves, and a match is an invitation to propose a 
 ![Languages](https://img.shields.io/badge/languages-7-2EA44F)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-[Product](#product) · [How it works](#how-it-works) · [Getting started](#getting-started) · [Checks](#checks-and-release) · [Docs](#documentation)
+[Product](#product) | [How it works](#how-it-works) | [Getting started](#getting-started) | [Checks](#checks-and-release) | [Docs](#documentation)
 
 </div>
 
@@ -48,7 +48,7 @@ stays live.
 flowchart LR
   App["Android app<br/>Compose screens,<br/>AppModel, services"]
   App --> Cache[("Local cache<br/>per account, on the phone")]
-  App <--> Supabase["Supabase, drafft-backend<br/>Auth, RPCs,<br/>Edge Functions, Realtime"]
+  App <--> Supabase["Supabase, drafft-backend<br/>Auth, RPCs,<br/>Edge Functions, Realtime,<br/>Storage (selfies)"]
   App --> R2[("Cloudflare R2<br/>uploads, presigned PUT")]
   App --> Worker["media Worker<br/>photos and videos,<br/>signed GET"]
   App <--> Stream["Stream Chat<br/>messages, reactions"]
@@ -61,40 +61,44 @@ flowchart LR
 
 - **Modules.** `core:model` (pure Kotlin: data types, catalog, ThumbHash), `core:data` (AppModel, Supabase, Stream,
   RevenueCat, caches, telemetry), `core:ui` (design system, navigation, images), `app` (screens, root, activity).
-  Each module keeps platform-neutral code in `src/main/kotlin`, which `tools/jvmcheck` compiles and tests on a
-  plain JVM, and Android SDK code in `src/android/kotlin`.
+  Each module keeps platform-neutral code in `src/main/kotlin`, which `tools/jvmcheck` compiles on a plain JVM
+  (running the `core:model` and `core:data` tests), and Android SDK code in `src/android/kotlin`.
 - **Start.** `DrafftApplication` starts Sentry first, then Koin, the language, PostHog and diagnostics.
   `MainActivity` is the only activity. `RootView` shows welcome, sign-up or the five tabs (Discover, Likes,
-  Sessions, Chats, You); each tab is built once, ahead of time, under the splash.
+  Sessions, Chats, You); each tab is built once, ahead of time, under the splash (or under welcome and sign-up).
 - **State.** `AppModel` is one Koin singleton whose properties are Compose state (`mutableStateOf`), changed on
-  the main thread only. Navigation is drafft's own `NavStack`, one per tab and per sheet that pushes screens.
+  the main thread only. Navigation is drafft's own `NavStack`, where screens push others: the Sessions and
+  Chats tabs, Edit profile, Extras and welcome.
 
 ### Backend link
 
-- **Client.** supabase-kt for Auth and Realtime; RPCs, table reads and Edge Functions go through Ktor (OkHttp)
-  with the publishable key and the session's token, refreshed 30 s before it expires. The session is kept in
+- **Client.** supabase-kt for Auth, Realtime and Storage (the selfie upload); RPCs, table reads and Edge
+  Functions go through Ktor (OkHttp) with the publishable key and the session's token, refreshed 30 s before it
+  expires. The session is kept in
   the app's private storage; backups are off.
 - **Errors.** The backend answers a stable code (`hint` for database functions, `code` for Edge Functions);
-  `ServerMessage` turns it into words, never the raw reply. `moderated` opens the hold screen.
+  `ServerMessage` turns it into words, never the raw reply. `moderated` makes the app read the account again,
+  and the hold screen shows if a hold is found.
 - **Edge Functions called.** `media-upload-url`, `stream-token`, `chat-media`, `phone-code`, `purchase-sync`,
   `delete-account`, `support` (Turnstile when signed out), `app-config`.
 
 ### Live updates
 
-The app joins the private Realtime topic `user:<id>`, rejoins with a backoff of 2 to 60 s, and rebuilds the
-channel after 15 s down.
+The app joins the private Realtime topic `user:<id>`. After a failed join it waits longer each time, up to a
+minute; a channel that stays down is rebuilt.
 
 | Event | What the app does |
 |---|---|
 | `like`, `match`, `match_ended` | reads likes or matches again, closes an ended match |
 | `session` | updates the session and its chat card |
 | `media` | applies a photo's moderation verdict |
-| `wallet` | reads the balance again (boosts, super likes, drafft tempo) |
+| `wallet` | reads the balance again (boosts, super likes, drafft tempo), and Likes, which drafft tempo changes |
 | `profile`, `moderation` | reads the account again; a hold covers the app |
 | `session_revoked` | signs out if this device's session ended elsewhere |
 
-On each join and each return to the foreground, it also reads the account, the wallet, sessions and Discover
-again, and resumes any purchase still being credited.
+On each join and each return to the foreground, it also reads the account, the wallet and sessions again,
+re-checks photo verdicts, resumes any purchase still being credited, and reads Discover again when what it shows
+has grown old.
 
 ### Media
 
@@ -111,7 +115,8 @@ again, and resumes any purchase still being credited.
 
 ### Chat
 
-Stream Chat's low-level client, every screen drafft's own, with Stream's offline store. `stream-token` gives the
+Stream Chat's low-level client, every screen drafft's own, with Stream's offline store (flushed at sign-out).
+`stream-token` gives the
 token (asked again whenever Stream needs one). One `messaging` channel per match, named by the match id; the
 list shows the person's channels that aren't frozen. Photos, videos and voice messages are attachments that
 carry a media key, never a link. Session cards, super like notes and replies to an icebreaker or a photo come
@@ -123,13 +128,13 @@ from the backend as messages. Texts written offline wait for the connection.
   (`register_push_token`, platform `android`) and with Stream (push provider `drafft-fcm`).
 - **Senders.** The backend pushes likes, matches, sessions and reminders, photo refusals, account notices and
   the weekly boost; Stream pushes chat messages. Five channels: matches, likes, messages, sessions, account.
-- **Taps.** A tap opens the chat, Discover (a boost) or Sessions. Notification settings (`notify_*`) are saved on
+- **Taps.** A tap opens the chat, Discover (a boost), Sessions or the refused photo. Notification settings (`notify_*`) are saved on
   the profile, which the backend reads before sending.
 
 ### Purchases
 
-RevenueCat on Google Play, logged in with the Supabase user id. Offerings: `default` (drafft tempo), `boosts`,
-`super_likes`; entitlement `drafft_tempo`. Once Google Play confirms, `purchase-sync` credits the purchase on the
+RevenueCat on Google Play, logged in with the Supabase user id. Offerings: the current one (`default`, drafft
+tempo), `boosts`, `super_likes`; entitlement `drafft_tempo`. Once Google Play confirms, `purchase-sync` credits the purchase on the
 server and returns the new balance; until it answers, the app retries with backoff and keeps the purchase
 pending for the account. Nothing is credited on the phone.
 
@@ -141,18 +146,17 @@ providers, whichever answers first, then is blurred to the centre of a cell of a
 
 ### Telemetry
 
-- **Sentry** (EU only, enforced at build): crashes, native crashes, ANRs, unexpected errors and traces (20 % in
-  production). No screenshots, replay, personal data or IP.
-- **PostHog** (EU only): the app's own events and screens, no autocapture or replay. Until the person grants
-  analytics consent, events stay anonymous, under an install id.
+- **Sentry** (EU only, enforced at build): crashes, native crashes, ANRs, unexpected errors and sampled traces.
+  No screenshots, replay, personal data or IP.
+- **PostHog** (EU only): the app's own events and screens, plus PostHog's app lifecycle events; no other
+  autocapture, no replay. There is no consent switch yet, so events stay anonymous, under an install id.
 - **PrivacyGuard** drops what people typed, sensitive answers, locations and other people's ids before anything
   leaves the phone. Events and rules: [docs/telemetry.md](docs/telemetry.md).
 
 ### On the phone
 
-- **Cache.** One folder per account in the no-backup directory: profile, matches, sessions, Discover deck,
-  likes. Shown first, then replaced by the server's answer. Erased at sign-out and account deletion.
-- **Stream's offline store** for chats, flushed at sign-out.
+- **Cache.** One folder per account in the no-backup directory: profile, matches, likes (with drafft tempo),
+  the Discover deck. Shown first, then replaced by the server's answer. Erased at sign-out and account deletion.
 - **Selfie check**, only when moderation asks: CameraX with ML Kit face detection, the photo goes to the backend's
   `verification-selfies` storage, then `submit_selfie`.
 
@@ -188,10 +192,9 @@ scripts/local-backend.sh                       # --device for a phone on the sam
 | `staging` | Supabase branch `staging` | drafft β |
 | `production` | production | drafft |
 
-The flavors share the application id `so.drafft.app`: installing one replaces the other. Each reads
-`config/<flavor>.properties`, public keys only: the build refuses anything shaped like a secret, and a release
-build missing a Supabase or RevenueCat value fails. Push needs each Firebase project's `google-services.json`
-in `app/src/<flavor>/`; without it the app runs with push off. All keys: [docs/configuration.md](docs/configuration.md).
+The flavors share the application id `so.drafft.app`: installing one replaces the other. Each reads its public
+values from `config/<flavor>.properties`; push needs the Firebase project's `google-services.json`. Keys, build
+checks and push setup: [docs/configuration.md](docs/configuration.md).
 
 ## Checks and release
 
@@ -207,7 +210,8 @@ python3 scripts/ci/i18n_lint.py                # 7 languages, placeholders, WORD
 
 | When | CI |
 |---|---|
-| Pull request, merge into `staging` | `app.yml`: the checks above, `assembleLocalDebug`, gitleaks, actionlint, files under 1 MB, public keys only; `pr.yml`: base branch, title, description, commit authors |
+| Pull request | `app.yml`: the checks above, `assembleLocalDebug`, gitleaks, actionlint, media and fonts under 1 MB, public keys only; `pr.yml`: base branch, title, description, commit authors, no AI attribution, a warning for unsigned commits |
+| Merge into `staging` | `app.yml` again |
 | Release (**Actions > release**) | `main` fast-forwards to `staging`, a `vX.Y.Z` tag and a GitHub release; store builds are made by hand from the tag |
 
 ## Localization
@@ -220,7 +224,9 @@ python3 scripts/sync-strings.py ../drafft-ios/Drafft/Resources/Localizable.xcstr
 ```
 
 Sentences about the platform (Google Play, Google account, the phone's settings) have Android wording under
-the same keys in `core/model/src/main/resources/i18n/android/`, read first by `L`.
+the same keys in `core/model/src/main/resources/i18n/android/`, read first by `L`. When such a sentence changes
+in the catalog, update its Android wording too, in the 7 languages: `LocalizationTest` fails while a variant no
+longer matches a catalog key.
 
 ## Documentation
 

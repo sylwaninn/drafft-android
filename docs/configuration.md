@@ -14,8 +14,17 @@ Each flavor has one file of public values, read into `BuildConfig`:
 | `SENTRY_DSN` | Sentry DSN, EU region (crashes, errors, performance). Empty: off |
 | `POSTHOG_API_KEY`, `POSTHOG_HOST` | PostHog project key (`phc_...`) and EU host (product analytics). Empty: off |
 
-Only public keys: the build refuses anything that looks like a secret, and a production or staging URL that
-isn't https. A release build lacking a Supabase or RevenueCat value fails. The local flavor is debug only.
+Checked when Gradle configures the build, before anything compiles:
+
+- only public keys: a value that looks like a secret (`sb_secret_`, `service_role`, a private key, a Sentry auth
+  token, a PostHog personal key) stops the build;
+- `SUPABASE_URL` must be https, except for the local flavor;
+- `POSTHOG_HOST`, when set, must be PostHog's EU cloud (`https://eu.i.posthog.com`), and `SENTRY_DSN`, when set,
+  a DSN of Sentry's EU region (`ingest.de.sentry.io`);
+- a release build lacking `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` or `REVENUECAT_API_KEY` fails.
+
+The local flavor is debug only. A new value goes in the three files and in `flavorFields`
+(`app/build.gradle.kts`).
 
 ## Local backend
 
@@ -25,8 +34,10 @@ same Wi-Fi). Without them the local app stops at launch and says what's missing.
 
 ## Push notifications (FCM)
 
-Put each Firebase project's `google-services.json` in `app/src/<flavor>/`. Without it the app builds and runs;
-push stays off. Stream needs a Firebase push provider named `drafft-fcm`. Setup state of Google Play, Firebase
+Put each Firebase project's `google-services.json` in `app/src/<flavor>/` (gitignored). With no such file
+anywhere, the app builds and runs with push off (`BuildConfig.HAS_PUSH` false). As soon as one exists, the
+Google Services plugin applies to every flavor, so each flavor you build needs its own file. Stream needs a
+Firebase push provider named `drafft-fcm`. Setup state of Google Play, Firebase
 and RevenueCat: [store-setup.md](store-setup.md).
 
 ## Telemetry
