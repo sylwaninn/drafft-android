@@ -65,7 +65,7 @@ class DrafftApplication : Application() {
             sentryDSN = BuildConfig.SENTRY_DSN,
             postHogKey = BuildConfig.POSTHOG_API_KEY,
             postHogHost = BuildConfig.POSTHOG_HOST,
-            environment = BuildConfig.ENVIRONMENT.ifEmpty { "production" },
+            environment = TelemetryConfig.environmentID(BuildConfig.ENVIRONMENT.ifEmpty { "production" }),
             version = info?.versionName ?: "",
             build = info?.longVersionCode?.toString() ?: "0",
             isDebugBuild = BuildConfig.DEBUG,

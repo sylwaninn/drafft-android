@@ -979,6 +979,12 @@ class TelemetryTest {
     // Config
 
     @Test
+    fun anUnknownEnvironmentNeverCountsAsProduction() {
+        for (known in listOf("production", "staging", "local")) assertEquals(known, TelemetryConfig.environmentID(known))
+        for (odd in listOf("", "\$(ENVIRONMENT)", "Production", "prod", "debug")) assertEquals("unknown", TelemetryConfig.environmentID(odd), odd)
+    }
+
+    @Test
     fun onlyEURegionsAreUsed() {
         var config = TelemetryConfig(
             sentryDSN = "https://abc123@o42.ingest.de.sentry.io/7", postHogKey = "phc_x", postHogHost = "https://eu.i.posthog.com",

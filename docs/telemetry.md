@@ -117,7 +117,9 @@ summary as a Sentry log line. PostHog's queue is sent when the app leaves the fr
 
 All events live in `AnalyticsEvent` (one class per event). Names are `object_action`, snake_case, past
 tense. Every event also carries `screen` (the screen on show), and these super properties:
-`app_environment` (`production`, `staging`, `local`), `app_language`, `app_phase` (`welcome`,
+`app_environment` (`production`, `staging`, `local`, or `unknown` for a build whose environment is missing or invalid:
+never production; also stamped on every event on its way out, PostHog's own `$` events included, so the first
+lifecycle events can't miss it), `app_language`, `app_phase` (`welcome`,
 `onboarding`, `main`), `is_premium`. PostHog adds the app version, OS, device model and its lifecycle
 events (`Application Installed`, `Updated`, `Opened`, `Backgrounded`).
 

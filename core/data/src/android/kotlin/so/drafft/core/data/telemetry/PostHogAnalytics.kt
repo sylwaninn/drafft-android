@@ -79,14 +79,17 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
                 // Small batches: a session is short and the app may be killed in the background.
                 flushAt = 10
                 flushIntervalSeconds = 30
-                // The last guard on the way out, whatever called capture.
+                // The last guard on the way out, whatever called capture: the build's environment goes on every
+                // event, PostHog's own `$` ones included and whatever the timing (a registered property can miss
+                // the first lifecycle events), and the properties whose names are forbidden are dropped.
+                val environment = config.environment
                 addBeforeSend(
                     PostHogBeforeSend { event ->
-                        if (event.event.startsWith("$")) return@PostHogBeforeSend event
-                        val properties = event.properties ?: return@PostHogBeforeSend event
-                        if (properties.keys.none { it in PrivacyGuard.forbidden }) return@PostHogBeforeSend event
                         // A copy: the event's own map may not be writable.
-                        event.copy(properties = properties.filterKeys { it !in PrivacyGuard.forbidden }.toMutableMap())
+                        val properties = (event.properties ?: mutableMapOf()).toMutableMap()
+                        properties["app_environment"] = environment
+                        if (!event.event.startsWith("$")) properties.keys.removeAll(PrivacyGuard.forbidden)
+                        event.copy(properties = properties)
                     },
                 )
             }

@@ -14,7 +14,7 @@ data class TelemetryConfig(
     val postHogKey: String,
     /** PostHog's EU cloud (`https://eu.i.posthog.com`): the data stays in the EU, like the backend. */
     val postHogHost: String,
-    /** "production", "staging" or "local". */
+    /** "production", "staging" or "local" ([environmentID] never gives anything else). */
     val environment: String,
     /** "0.1.0" */
     val version: String,
@@ -47,6 +47,12 @@ data class TelemetryConfig(
     val profileSampleRate: Double get() = if (environment == "production") 0.05 else 0.0
 
     companion object {
+        /**
+         * The three environments a build can be. Anything else (a typo, a flavor added later) is "unknown":
+         * a misconfigured build never counts as production in the dashboards.
+         */
+        fun environmentID(raw: String): String = if (raw in setOf("production", "staging", "local")) raw else "unknown"
+
         private val euDSN = Regex("^https://[0-9a-f]+@o[0-9]+\\.ingest\\.de\\.sentry\\.io/[0-9]+$")
 
         /** `https://<key>@o<org>.ingest.de.sentry.io/<project>`: a DSN of Sentry's EU region. */
