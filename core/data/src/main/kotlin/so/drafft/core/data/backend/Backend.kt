@@ -387,8 +387,8 @@ class Backend(
         }
 
         /**
-         * The Supabase client of the app: Auth, with the session kept in [store] across launches,
-         * Realtime and Storage (the selfie upload). An unconfigured build (see [BackendConfig.missing]) gets a
+         * The Supabase client of the app: Auth, with the session kept in [store] across launches, Realtime
+         * and Storage (the selfie upload). An unconfigured build (see [BackendConfig.missing]) gets a
          * placeholder address, so the app can start and say what's missing instead of crashing.
          */
         fun createClient(config: BackendConfig, store: KeyValueStore): SupabaseClient = createSupabaseClient(
