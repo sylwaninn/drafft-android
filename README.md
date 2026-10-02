@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/sticker.png" alt="drafft-android" width="140">
+</p>
+
 # drafft for Android
 
 The Android app of drafft, the dating app for people who train. It is a
