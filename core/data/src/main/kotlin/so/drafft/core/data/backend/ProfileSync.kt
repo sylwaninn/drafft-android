@@ -165,11 +165,11 @@ class ProfileSync(
     /** What to do after [acceptTerms] threw: the code or error never reaches the screen. */
     fun termsFailure(error: Throwable): TermsConsent.Failure {
         if (error is Backend.BackendError.SignedOut) {
-            log.severe("accept_terms without a session")
+            log.warning("accept_terms without a session")
             return TermsConsent.Failure.SignOut
         }
         val code = ServerMessage.code(error)
-        log.severe("accept_terms failed: ${code ?: error}")
+        log.warning("accept_terms failed: ${code ?: error}")
         return TermsConsent.failure(
             code = code,
             offline = error is java.io.IOException,
@@ -293,6 +293,7 @@ class ProfileSync(
             // A backend from before the consent columns (42703, the column doesn't exist): the
             // account is read without them, and the consent stays unknown until it has them.
             if (e.status != 400 || consentColumns.none { it in e.serverMessage }) throw e
+            log.severe("The profile has no consent columns (drafft-backend #48 not deployed): ${e.serverMessage}")
             read(withConsent = false)
         }
         val keys = mediaKeys(data)

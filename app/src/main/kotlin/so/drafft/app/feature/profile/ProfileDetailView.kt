@@ -232,6 +232,7 @@ fun ProfileDetailView(
                             }
                         } else null,
                         sendTitle = L("Like with this answer"),
+                        tracksAnswer = mode != ProfileDetailMode.ME,
                     )
                 }
 

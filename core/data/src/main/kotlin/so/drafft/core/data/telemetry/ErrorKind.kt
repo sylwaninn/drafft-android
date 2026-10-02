@@ -1,10 +1,12 @@
 package so.drafft.core.data.telemetry
 
 import io.github.jan.supabase.exceptions.RestException
+import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.backend.ServerMessage
+import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.verification.VerificationError
 
@@ -32,11 +34,13 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
 
     companion object {
         fun of(error: Throwable): ErrorKind {
-            if (error is CancellationException) return CANCELLED
+            if (error is CancellationException || isCancelledCall(error)) return CANCELLED
             if (ServerMessage.isSignedOut(error)) return SIGNED_OUT
             if (error is ProfileSync.SyncError.Refused) return REFUSED
             if (error is ProfileSync.SyncError.NotLoaded) return REFUSED
-            if (error is Store.StoreError.NotLinked) return OFFLINE
+            if (error is Store.StoreError.NotLinked || error is Store.StoreError.Offline) return OFFLINE
+            if (error is MediaUploadError.TicketExpired) return SIGNED_OUT
+            if (error is MediaUploadError.Http) return http(error.status, "")
             if (error is VerificationError) {
                 return when (error) {
                     VerificationError.Network -> OFFLINE
@@ -57,21 +61,26 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
             if (error is Store.StoreError.Failed) {
                 return if (error.problem == Store.PurchaseProblem.UNCONFIRMED) STORE_UNCONFIRMED else STORE_DECLINED
             }
-            if (error is Backend.BackendError.Http) {
-                return when {
-                    error.status == 429 -> RATE_LIMITED
-                    error.status >= 500 -> SERVER
-                    // An expired or revoked token: the session refresh and the sign-out handle it.
-                    error.status == 401 -> SIGNED_OUT
-                    // A code (one word) is a refusal the server meant (`not_found`, `already_swiped`),
-                    // whether or not the app has words for it. A sentence is the database failing.
-                    ServerMessage.isCode(error.serverMessage) -> REFUSED
-                    else -> CLIENT_CONTRACT
-                }
-            }
+            if (error is Backend.BackendError.Http) return http(error.status, error.serverMessage)
             if (ServerMessage.code(error) != null) return REFUSED
             if (ServerMessage.isOffline(error)) return OFFLINE
             return UNEXPECTED
         }
+
+        /** A response that wasn't 2xx, from its status and the server's code or message. */
+        fun http(status: Int, message: String): ErrorKind = when {
+            status == 429 -> RATE_LIMITED
+            status >= 500 -> SERVER
+            // An expired or revoked token: the session refresh and the sign-out handle it.
+            status == 401 -> SIGNED_OUT
+            // A code (one word) is a refusal the server meant (`not_found`, `already_swiped`),
+            // whether or not the app has words for it. A sentence is the database failing.
+            ServerMessage.isCode(message) -> REFUSED
+            else -> CLIENT_CONTRACT
+        }
+
+        /** The HTTP client's own way to say a call was cancelled: an IOException, not a CancellationException. */
+        private fun isCancelledCall(error: Throwable): Boolean = generateSequence(error) { it.cause }
+            .any { it is IOException && it.message.orEmpty().let { m -> m.equals("canceled", true) || m.equals("cancelled", true) } }
     }
 }

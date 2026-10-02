@@ -58,6 +58,9 @@ import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.Sport
@@ -204,6 +207,7 @@ private fun VoicePill(profile: Profile) {
     PressScaleButton(
         onClick = {
             Haptics.tap()
+            if (!playing) Telemetry.track(AnalyticsEvent.VoiceIntroPlayed(ScreenTracker.currentID))
             audio.toggle(url)
         },
         modifier = Modifier.defaultMinSize(minHeight = 44.dp),

@@ -33,6 +33,9 @@ object ScreenTracker {
 
     val current: Screen? get() = layers.lastOrNull()?.screen ?: base
 
+    /** Where something happens, as a code for an event (`onboarding`, `phone_verification`...). */
+    val currentID: String get() = current?.id ?: "unknown"
+
     private fun publish() {
         val top = layers.lastOrNull()
         val screen = top?.screen ?: base ?: return
@@ -42,6 +45,7 @@ object ScreenTracker {
     /** Unit tests. */
     fun reset() {
         base = null
+        baseProperties = emptyMap()
         layers.clear()
     }
 }

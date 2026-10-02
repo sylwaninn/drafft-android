@@ -9,7 +9,7 @@ and `core/data/src/android/.../telemetry/` (the two SDKs).
 | | Sentry | PostHog |
 |---|---|---|
 | Job | Reliability: crashes (Kotlin and native), ANRs, unexpected errors, slow requests and uploads, app start, frozen frames, the app's own logs | Product: which features are used, funnels (sign-up, first like, first match, first session, purchase), retention, experiments |
-| Region | EU (`*.ingest.de.sentry.io`, enforced by the build) | EU cloud (`https://eu.i.posthog.com`, enforced by the build) |
+| Region | EU (`*.ingest.de.sentry.io`, enforced by the app and the build) | EU cloud (`https://eu.i.posthog.com`, enforced by the app and the build) |
 | Legal basis | Legitimate interest: keeping the service working and safe. Already named in the privacy policy (`/privacy#data`) | Consent for linking events to the account; anonymous audience measurement otherwise (see below) |
 | Who | The account's id (Supabase user id), always | The account's id only with consent (`AnalyticsConsent.GRANTED`); a random install id otherwise |
 | Never | Screenshots, view hierarchy, session replay, IP address, name, email, phone, message content | Autocapture of taps, session replay, surveys, the profile's sensitive answers, anything typed |
@@ -60,8 +60,10 @@ long as the privacy policy says so and people can object.
 
 ## Errors: what alerts and what doesn't
 
-`Telemetry.unexpected(error, area, action)` is called in every `catch` that swallows a failure, and in
-`attempt { }`. It classifies the error (`ErrorKind`):
+`Telemetry.unexpected(error, area, action)` is called in a `catch` that swallows or rethrows a failure
+the app didn't expect. Best-effort upkeep written `attempt { }` (the Swift `try?`: realtime joins, wallet
+and block-list reads that run again) is not reported, unless a call asks for it with its own area and
+action. It classifies the error (`ErrorKind`):
 
 | Kind | Sentry event? | Example |
 |---|---|---|
@@ -76,8 +78,8 @@ long as the privacy policy says so and people can object.
 So an alert in Sentry means something needs a fix. A 4xx with a one-word code (`not_found`,
 `already_swiped`) is a refusal the server meant, even when the app has no words for it; a 401 is the
 session's business. Every non-2xx response is also a Sentry log line (searchable, not an issue).
-`attempt(report = false) { }` keeps connection upkeep (realtime joins) out of Sentry; RevenueCat and
-Stream unreachable count as offline.
+RevenueCat and Stream unreachable count as offline, and a call the HTTP client cancelled is `cancelled`.
+A cancelled task is never a failure: `Telemetry.track` drops any event whose `reason` is `cancelled`.
 
 Performance: every request is a span (`http.client`, `POST rest/v1/rpc/discover`) with its status and
 duration, a child of the running trace (app start, screen load) or a trace of its own. Lone requests are
@@ -85,8 +87,10 @@ the most frequent traces, so production keeps 2% of them and 20% of the others (
 staging and local keep everything. Media uploads (`media.upload`) are timed too. Profiles follow 5% of
 the sampled traces in production (`ProfileLifecycle.TRACE`).
 
-The app's own `java.util.logging` loggers (`so.drafft.*`) reach Sentry through `TelemetryLogHandler`:
-INFO as breadcrumbs, WARNING as logs, SEVERE as events.
+The app's own `java.util.logging` loggers (`so.drafft.*`) reach Sentry through `TelemetryLogHandler`, by
+level: INFO is a breadcrumb (it comes with the next error report), WARNING is also a Sentry log line
+(searchable, never an issue), SEVERE is a Sentry issue (something that should never happen, like a
+backend that isn't deployed). Lower levels stay on the phone.
 
 ## The tracking plan
 
@@ -96,23 +100,26 @@ tense. Every event also carries `screen` (the screen on show), and these super p
 `onboarding`, `main`), `is_premium`. PostHog adds the app version, OS, device model and its lifecycle
 events (`Application Installed`, `Updated`, `Opened`, `Backgrounded`).
 
-Screens (`Screen`, PostHog `$screen`): the tabs, sign-up, the gates (location, terms, hold), and every
-pushed screen and sheet that matters (`profile_detail`, `chat`, `paywall`, `extras`, `edit_profile`...).
-`TrackScreen(Screen.X)` at the top of a composable counts it while it's on show in the current tab.
+Screens (`Screen`, PostHog `$screen`): the tabs, sign-up and the welcome screen (set by `RootView` from
+the phase and the tab; it stays on Discover while the tabs are built invisibly under the splash), the
+gates (location, terms, hold), and every pushed screen and sheet that matters (`profile_detail`, `chat`,
+`paywall`, `extras`, `edit_profile`...). `TrackScreen(Screen.X)` at the top of a composable counts it
+while it's on show in the current tab (not while the tabs are hidden); `TrackPaywall(kind)` also sends
+`paywall_viewed` (with `from_screen`) and `paywall_dismissed` (with `purchased`).
 
 | Area | Events |
 |---|---|
 | Account | `account_created`, `sign_up_failed`, `email_confirmed`, `email_code_resent`, `logged_in`, `log_in_failed`, `password_reset_requested`, `password_reset_completed`, `logged_out`, `session_ended`, `account_deleted`, `account_delete_failed`, `email_changed`, `password_changed`, `data_export_requested`, `terms_accepted`, `analytics_consent_changed`, `account_held` |
 | Sign-up | `onboarding_step_viewed`, `onboarding_step_completed` (with `skipped`, `seconds_on_step`), `onboarding_step_blocked`, `onboarding_resumed`, `onboarding_completed`, `onboarding_failed` |
 | Phone | `phone_code_sent`, `phone_code_failed`, `phone_verified`, `phone_verification_failed` |
-| Discover | `deck_loaded`, `deck_load_failed`, `deck_empty_shown`, `profile_swiped` (`like`, `pass`, `super_like`; from the deck or Likes), `swipe_refused`, `swipe_undone`, `daily_like_limit_reached`, `profile_viewed`, `filters_changed`, `boost_started`, `boost_failed` |
+| Discover | `deck_loaded`, `deck_load_failed`, `deck_empty_shown`, `profile_swiped` (`like`, `pass`, `super_like`; from the deck or Likes), `swipe_refused`, `swipe_undone`, `daily_like_limit_reached`, `profile_viewed`, `filters_changed`, `boost_started`, `boost_failed`, `voice_intro_played` (`where`: the screen, when a tap starts playback, not for chat voice messages), `icebreaker_answered` (once per card, not on the person's own profile) |
 | Likes and matches | `likes_viewed`, `match_created` (`my_swipe`, `their_like`), `match_screen_action`, `unmatched`, `match_ended` |
 | Chat | `chat_opened`, `message_sent` (kind, reply, first message, duration), `message_failed`, `message_retried`, `message_reacted`, `message_deleted`, `chat_muted`, `chat_marked_unread` |
 | Sessions | `session_proposed` (sport, options), `session_countered`, `session_responded`, `session_cancelled`, `session_action_failed`, `session_added_to_calendar` |
 | Purchases | `paywall_viewed` (kind, `from_screen`), `paywall_dismissed`, `products_load_failed`, `purchase_started`, `purchase_completed`, `purchase_cancelled`, `purchase_failed`, `purchase_credited` (`seconds_to_credit`), `purchases_restored`, `restore_failed`, `subscription_manage_opened` |
-| Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_upload_started` (`retry`), `photo_upload_failed`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
+| Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_upload_started` (`retry`), `photo_upload_failed`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `voice_intro_recorded` (`duration_seconds`, `where`), `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
 | Safety | `user_blocked`, `user_unblocked`, `user_reported` (category), `report_failed` |
-| Settings and system | `language_changed`, `permission_requested` (permission, result, during), `notification_setting_changed`, `push_received`, `push_opened`, `legal_doc_opened`, `support_contacted` |
+| Settings and system | `language_changed`, `permission_requested` (permission, result, during; sent when the system asked or the person is blocked, never for a permission already granted), `notification_setting_changed`, `push_received` (only while the app is on screen), `push_opened`, `legal_doc_opened`, `support_contacted`, `share_tapped` (`what`: `photo` or `video`, from the media viewer) |
 
 Revenue is not computed on the phone: turn on RevenueCat's PostHog integration (purchases, renewals,
 cancellations and refunds with their real amounts, under event names like `rc_initial_purchase_event`,
@@ -138,7 +145,7 @@ keyed by the same app user id).
 
 Empty values turn the service off. Production and staging share the Sentry project (the
 `environment` tag separates them); PostHog uses one project per environment so tests never pollute
-real numbers. The build refuses a non-EU host or DSN, and anything shaped like a secret (`sntrys_`,
+real numbers. The app and the build both refuse a non-EU host (anything but exactly `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`), and the build refuses anything shaped like a secret (`sntrys_`,
 `sntryu_`, `phx_`).
 
 ### Readable stack traces (CI secrets)
@@ -177,12 +184,10 @@ the mapping can be uploaded later with `sentry-cli`.
   server-side, never in the app). Sentry keeps events for its retention period (90 days); an erasure
   request within it is handled by deleting the issues and events matching `user.id:<id>`. Data export
   should say that analytics data can be requested too.
-- **Consent screen (drafft-ios first):** a switch in You › Privacy & data ("Share usage analytics",
+- **Consent screen (first, in the iPhone app):** a switch in You › Privacy & data ("Share usage analytics",
   off by default, with one line on what it means), and optionally a one-time question after sign-up.
   Its words go in the iPhone catalog first (WORDING.md), then `TelemetrySession.setConsent` wires it.
   Until then everyone is in anonymous mode.
 - **Google Play Data safety form:** declare "App activity: app interactions", "App info and
   performance: crash logs, diagnostics", "Device or other IDs" (the install id), collected, not shared,
   processed by service providers, encrypted in transit; user ids linked to the account for crash logs.
-- **iPhone app:** the same events and screens with the same names (sentry-cocoa and posthog-ios), so
-  funnels cover both platforms. `Diagnostics.swift` then sends its MetricKit payloads the same way.

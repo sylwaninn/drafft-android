@@ -39,7 +39,6 @@ import so.drafft.core.data.UserChannel
 import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.store.PurchaseCredit
-import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.telemetry.ScreenTracker
 import so.drafft.core.data.telemetry.TelemetrySession
 import so.drafft.core.model.L
@@ -153,21 +152,10 @@ fun RootView(app: AppModel) {
 
     // Who is signed in and what the screen is, for crash reports and product analytics.
     LaunchedEffect(Unit) { telemetry.watch(app) }
-    LaunchedEffect(app.phase, app.tab) {
-        ScreenTracker.base(
-            when (app.phase) {
-                AppModel.Phase.WELCOME -> Screen.WELCOME
-                AppModel.Phase.ONBOARDING -> Screen.ONBOARDING
-                AppModel.Phase.MAIN -> when (app.tab) {
-                    AppModel.Tab.DISCOVER -> Screen.DISCOVER
-                    AppModel.Tab.LIKES -> Screen.LIKES
-                    AppModel.Tab.SESSIONS -> Screen.SESSIONS
-                    AppModel.Tab.CHATS -> Screen.CHATS
-                    AppModel.Tab.ME -> Screen.ME
-                }
-            },
-        )
-    }
+    // The tabs are built invisibly under the splash, the welcome screen and sign-up: the screen on show
+    // stays on Discover until then, so no `$screen` is sent for tabs nobody sees.
+    val baseScreen = TelemetrySession.baseScreen(app, prebuilding = splashShown || !inMain)
+    LaunchedEffect(baseScreen) { ScreenTracker.base(baseScreen) }
     LaunchedEffect(Unit) {
         // Once the welcome screen has drawn and settled.
         delay(800)

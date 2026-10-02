@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -46,7 +47,11 @@ fun flavorConfig(flavor: String): Map<String, String> {
     }
     // Telemetry stays in the EU, like the backend: PostHog's EU cloud, Sentry's EU region (ingest.de.sentry.io).
     val postHogHost = values["POSTHOG_HOST"].orEmpty()
-    if (postHogHost.isNotEmpty() && !postHogHost.startsWith("https://eu.")) {
+    val postHogUri = runCatching { URI(postHogHost) }.getOrNull()
+    val postHogIsEU = postHogUri != null && postHogUri.scheme == "https" && postHogUri.host == "eu.i.posthog.com" &&
+        postHogUri.port == -1 && postHogUri.userInfo == null && (postHogUri.rawPath.isNullOrEmpty() || postHogUri.rawPath == "/") &&
+        postHogUri.rawQuery == null && postHogUri.rawFragment == null
+    if (postHogHost.isNotEmpty() && !postHogIsEU) {
         throw GradleException("POSTHOG_HOST ($flavor) must be PostHog's EU cloud (https://eu.i.posthog.com).")
     }
     val dsn = values["SENTRY_DSN"].orEmpty()

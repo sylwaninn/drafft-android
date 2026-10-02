@@ -64,7 +64,6 @@ import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
-import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftField
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.components.FlowLayout
@@ -107,7 +106,6 @@ fun SupportSheet(
     details: Map<String, String> = emptyMap(),
     modifier: Modifier = Modifier,
 ) {
-    TrackScreen(Screen.SUPPORT)
     val app = LocalAppModel.current
     val backend = koinInject<Backend>()
     val appInfo = koinInject<AppInfo>()
@@ -200,6 +198,7 @@ fun SupportSheet(
 
     AccountSheet(
         title = if (isHelpCenter) L("Help center") else L("Get help"),
+        screen = Screen.SUPPORT,
         actionTitle = if (reference != null) L("Done") else L("Send to support"),
         actionIcon = if (reference != null) "check" else "plain",
         enabled = reference != null ||

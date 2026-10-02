@@ -12,8 +12,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 import so.drafft.core.data.backend.Backend
+import kotlinx.coroutines.runBlocking
+import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.platform.InMemoryKeyValueStore
 import so.drafft.core.data.store.Store
+import so.drafft.core.data.verification.VerificationError
 
 class TelemetryTest {
     private class FakeAnalytics : Telemetry.Analytics {
@@ -37,16 +41,21 @@ class TelemetryTest {
         val captured = mutableListOf<Pair<Throwable, Telemetry.ErrorReport>>()
         val crumbs = mutableListOf<Telemetry.Breadcrumb>()
         val messages = mutableListOf<String>()
+        val reports = mutableListOf<Telemetry.ErrorReport>()
         val logs = mutableListOf<String>()
+        val finished = mutableListOf<Boolean>()
         override fun setUser(id: String?) { userID = id }
         override fun setTag(key: String, value: String?) = Unit
         override fun breadcrumb(crumb: Telemetry.Breadcrumb) { crumbs += crumb }
         override fun capture(error: Throwable, report: Telemetry.ErrorReport) { captured += error to report }
-        override fun message(text: String, level: Telemetry.Level, report: Telemetry.ErrorReport) { messages += text }
+        override fun message(text: String, level: Telemetry.Level, report: Telemetry.ErrorReport) {
+            messages += text
+            reports += report
+        }
         override fun log(level: Telemetry.Level, text: String, attributes: Map<String, Any>) { logs += text }
         override fun startSpan(operation: String, description: String): Telemetry.Span = object : Telemetry.Span {
             override fun setData(key: String, value: Any) = Unit
-            override fun finish(ok: Boolean) = Unit
+            override fun finish(ok: Boolean) { finished += ok }
         }
     }
 
@@ -109,6 +118,28 @@ class TelemetryTest {
         Telemetry.signedIn(null)
         val afterReset = analytics.calls.dropWhile { it != "reset" }
         assertTrue("register:app_environment=production" in afterReset, afterReset.toString())
+    }
+
+    @Test
+    fun personPropertiesDescribedBeforeIdentifyingAreSentOnceIdentified() {
+        // Described first (the model's state settles before the consent and the session are known).
+        Telemetry.describeAccount(mapOf("is_premium" to true, "language" to "fr"))
+        assertFalse(analytics.calls.any { it.startsWith("person") })
+        Telemetry.signedIn("a")
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        assertEquals(listOf("identify:a", "person:[is_premium, language]"), analytics.calls.filter { it.startsWith("identify") || it.startsWith("person") })
+        // Identified: described straight away.
+        Telemetry.describeAccount(mapOf("language" to "en"))
+        assertEquals("person:[language]", analytics.calls.last())
+    }
+
+    @Test
+    fun anotherAccountDoesNotInheritThePreviousOnesProperties() {
+        Telemetry.applyConsent(AnalyticsConsent.GRANTED)
+        Telemetry.signedIn("a")
+        Telemetry.describeAccount(mapOf("is_premium" to true))
+        Telemetry.signedIn("b")
+        assertEquals(listOf("identify:a", "person:[is_premium]", "identify:b"), analytics.calls.filter { it.startsWith("identify") || it.startsWith("person") })
     }
 
     @Test
@@ -296,6 +327,47 @@ class TelemetryTest {
         }
     }
 
+    @Test
+    fun everyEnumValueIsACode() {
+        val values = AnalyticsEvent.SwipeAction.entries.map { it.name } + AnalyticsEvent.MessageKind.entries.map { it.name } +
+            AnalyticsEvent.ProductKind.entries.map { it.name } + AnalyticsEvent.PermissionResult.entries.map { it.name } +
+            AnalyticsEvent.MatchSource.entries.map { it.name } + AnalyticsEvent.Permission.entries.map { it.name } +
+            AnalyticsEvent.SwipeSource.entries.map { it.name } + AnalyticsEvent.SessionResponse.entries.map { it.name } +
+            Screen.entries.map { it.id } + ErrorKind.entries.map { it.id }
+        for (value in values) assertTrue(PrivacyGuard.isCode(value.lowercase()), value)
+    }
+
+    @Test
+    fun aCodeEndsWhereItEnds() {
+        assertTrue(PrivacyGuard.isCode("daily_like_limit"))
+        assertFalse(PrivacyGuard.isCode("daily_like_limit\n"))
+        assertTrue(PrivacyGuard.isCode(VerificationError.EmailUnconfirmed.reason))
+        assertFalse(PrivacyGuard.properties("x", mapOf("reason" to "ok\n")).containsKey("reason"))
+    }
+
+    @Test
+    fun productKindFromTheStoreID() {
+        assertEquals(AnalyticsEvent.ProductKind.BOOST, AnalyticsEvent.ProductKind.of("so.drafft.app.boost.5"))
+        assertEquals(AnalyticsEvent.ProductKind.SUPER_LIKE, AnalyticsEvent.ProductKind.of("so.drafft.app.superlike.3"))
+        assertEquals(AnalyticsEvent.ProductKind.TEMPO, AnalyticsEvent.ProductKind.of("so.drafft.app.tempo.monthly"))
+    }
+
+    @Test
+    fun aSportIsACodeEvenWhenItsIDIsCamelCase() {
+        assertEquals("mountain_biking", so.drafft.core.model.Sport.MOUNTAIN_BIKING.telemetryID)
+        for (sport in so.drafft.core.model.Sport.entries) assertTrue(PrivacyGuard.isCode(sport.telemetryID), sport.id)
+    }
+
+    @Test
+    fun aCancelledTaskIsNotAFailureToCount() {
+        Telemetry.track(AnalyticsEvent.MessageFailed(AnalyticsEvent.MessageKind.TEXT, Telemetry.reason(CancellationException("gone"))))
+        Telemetry.track(AnalyticsEvent.SwipeRefused(AnalyticsEvent.SwipeAction.LIKE, "cancelled"))
+        assertTrue(analytics.events.isEmpty())
+        assertTrue(crashes.crumbs.none { it.category == "product" })
+        Telemetry.track(AnalyticsEvent.MessageFailed(AnalyticsEvent.MessageKind.TEXT, "offline"))
+        assertEquals(listOf("message_failed"), analytics.events.map { it.first })
+    }
+
     // Privacy
 
     @Test
@@ -308,6 +380,16 @@ class TelemetryTest {
     fun typedTextIsDropped() {
         val out = PrivacyGuard.properties("x", mapOf("reason" to "Hello there!", "product_id" to "so.drafft.app.boost.5", "count" to 3))
         assertEquals(mapOf<String, Any>("product_id" to "so.drafft.app.boost.5", "count" to 3), out)
+        // And the drop itself is a log line, so it shows in Sentry (once: no breadcrumb besides).
+        assertEquals(listOf("property dropped: x.reason: value isn't a number, a boolean or a short code"), crashes.logs)
+        assertTrue(crashes.crumbs.isEmpty())
+    }
+
+    @Test
+    fun onlyListsOfCodesPass() {
+        val out = PrivacyGuard.properties("x", mapOf("fields" to listOf("photos", "bio"), "words" to listOf("Hello there"), "numbers" to listOf(1, 2)))
+        assertEquals(mapOf<String, Any>("fields" to listOf("photos", "bio")), out)
+        assertEquals("photos,bio", Telemetry.render(out.getValue("fields")))
     }
 
     @Test
@@ -326,6 +408,7 @@ class TelemetryTest {
             assertFalse(scrubbed.contains(it), "$it in $scrubbed")
         }
         assertTrue(scrubbed.contains("1727000000000"), scrubbed)
+        assertTrue(scrubbed.contains("Bearer [token]"), scrubbed)
     }
 
     @Test
@@ -363,15 +446,136 @@ class TelemetryTest {
     }
 
     @Test
+    fun reasonReadsTheAppsOwnErrors() {
+        assertEquals("email_taken", Telemetry.reason(Backend.EmailAlreadyRegistered()))
+        assertEquals("phone_taken", Telemetry.reason(Backend.PhoneAlreadyRegistered()))
+        assertEquals("photo_required", Telemetry.reason(ProfileSync.SyncError.Refused("PHOTO_REQUIRED")))
+        // A verification error's name, in snake case.
+        assertEquals("too_many_codes", Telemetry.reason(VerificationError.TooManyCodes))
+        assertEquals("wrong_code", Telemetry.reason(VerificationError.WrongCode))
+        assertEquals("not_linked", Telemetry.reason(Store.StoreError.NotLinked))
+        assertEquals("pending", Telemetry.reason(Store.StoreError.Failed(Store.PurchaseProblem.PENDING)))
+        assertEquals("not_charged", Telemetry.reason(Store.StoreError.Failed(Store.PurchaseProblem.NOT_CHARGED)))
+        // Never words: a message-like code, or a too long one, falls back to the kind.
+        assertEquals("refused", Telemetry.reason(ProfileSync.SyncError.Refused("Invalid login credentials")))
+        assertEquals("refused", Telemetry.reason(ProfileSync.SyncError.Refused("a".repeat(61))))
+        // Not a code: the kind says what happened.
+        assertEquals("signed_out", Telemetry.reason(MediaUploadError.TicketExpired))
+        assertEquals("server", Telemetry.reason(MediaUploadError.Http(502)))
+        assertEquals("offline", Telemetry.reason(Store.StoreError.Offline()))
+    }
+
+    @Test
+    fun theAppsOwnErrorsAreClassified() {
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(Store.StoreError.NotLinked))
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(Store.StoreError.Offline(IOException("RevenueCat unreachable"))))
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(VerificationError.Network))
+        assertEquals(ErrorKind.SERVER, ErrorKind.of(VerificationError.SendFailed))
+        assertEquals(ErrorKind.SERVER, ErrorKind.of(VerificationError.CheckUnavailable))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(VerificationError.WrongCode))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(ProfileSync.SyncError.Refused("paused")))
+        assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.of(MediaUploadError.TicketExpired))
+        assertEquals(ErrorKind.SERVER, ErrorKind.of(MediaUploadError.Http(503)))
+        assertEquals(ErrorKind.RATE_LIMITED, ErrorKind.of(MediaUploadError.Http(429)))
+        assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.of(MediaUploadError.Http(400)))
+        assertEquals(ErrorKind.REFUSED, ErrorKind.of(MediaUploadError.Rejected("media_limit")))
+        // A call the HTTP client cancelled says so with an IOException.
+        assertEquals(ErrorKind.CANCELLED, ErrorKind.of(IOException("Canceled")))
+        assertEquals(ErrorKind.OFFLINE, ErrorKind.of(IOException("Unable to resolve host")))
+    }
+
+    @Test
+    fun aRefusalOfTheStoreOrTheNetworkIsNeverAnAlert() {
+        Telemetry.unexpected(Store.StoreError.Offline(), "purchase")
+        Telemetry.unexpected(IOException("Canceled"), "discover")
+        assertTrue(crashes.captured.isEmpty())
+    }
+
+    @Test
+    fun problemsAndLogsAreScrubbed() {
+        Telemetry.log(Telemetry.Level.WARNING, "send failed for maya@example.com")
+        assertEquals(listOf("send failed for [email]"), crashes.logs)
+        Telemetry.problem("purchase credited late for maya@example.com", "purchase", extra = mapOf("seconds_to_credit" to 900))
+        assertEquals(listOf("purchase credited late for [email]"), crashes.messages)
+        // Grouped by the scrubbed words: the fingerprint never holds what the text did.
+        assertEquals(listOf("purchase", "purchase credited late for [email]"), crashes.reports.single().fingerprint)
+    }
+
+    @Test
+    fun traceFinishesTheSpanAndKeepsTheValue() = runBlocking {
+        val value = Telemetry.trace("http.client", "POST rest/v1/rpc/discover") { 42 }
+        assertEquals(42, value)
+        assertEquals(listOf(true), crashes.finished)
+        assertFailsWith<IllegalStateException> { Telemetry.trace("media.upload", "profile photo") { error("bug") } }
+        assertEquals(listOf(true, false), crashes.finished)
+    }
+
+    @Test
     fun appLogsReachSentryScrubbed() {
         TelemetryLogHandler.install()
         TelemetryLogHandler.install()
         assertEquals(1, Logger.getLogger("").handlers.count { it is TelemetryLogHandler })
         Logger.getLogger("so.drafft.chat").log(Level.WARNING, "send failed for maya@example.com")
         assertEquals(listOf("send failed for [email]"), crashes.logs)
+        // A warning is a breadcrumb and a log line, never an issue.
+        assertTrue(crashes.messages.isEmpty())
+        assertEquals(listOf(Telemetry.Level.WARNING), crashes.crumbs.filter { it.category == "log" }.map { it.level })
         Logger.getLogger("io.ktor.client").log(Level.SEVERE, "not ours")
         assertTrue(crashes.messages.isEmpty())
-        Logger.getLogger("safety").log(Level.SEVERE, "BLOCK refused")
-        assertEquals(listOf("BLOCK refused"), crashes.messages)
+    }
+
+    @Test
+    fun aSevereLineIsOneIssueGroupedByItsWords() {
+        TelemetryLogHandler.install()
+        val record = java.util.logging.LogRecord(Level.SEVERE, "BLOCK refused for maya@example.com").apply {
+            loggerName = "so.drafft.safety"
+            thrown = IllegalStateException("what someone typed")
+        }
+        Logger.getLogger("so.drafft.safety").log(record)
+        assertEquals(listOf("BLOCK refused for [email]"), crashes.messages)
+        // Also a log line, but no breadcrumb of its own and never `unexpected` (no second event).
+        assertEquals(listOf("BLOCK refused for [email]"), crashes.logs)
+        assertTrue(crashes.crumbs.none { it.category == "log" })
+        assertTrue(crashes.captured.isEmpty())
+        val report = crashes.reports.single()
+        assertEquals("safety", report.area)
+        assertEquals("illegal_state_exception", report.extra["exception"])
+    }
+
+    // Config
+
+    @Test
+    fun onlyEURegionsAreUsed() {
+        var config = TelemetryConfig(
+            sentryDSN = "https://abc123@o42.ingest.de.sentry.io/7", postHogKey = "phc_x", postHogHost = "https://eu.i.posthog.com",
+            environment = "production", version = "1.0", build = "3", isDebugBuild = false,
+        )
+        assertTrue(config.hasSentry)
+        assertTrue(config.hasPostHog)
+        assertEquals("so.drafft.app@1.0+3", config.release)
+        config = config.copy(sentryDSN = "https://abc123@o42.ingest.us.sentry.io/7", postHogHost = "https://us.i.posthog.com")
+        assertFalse(config.hasSentry)
+        assertFalse(config.hasPostHog)
+        // Look-alikes: the host has to be exactly PostHog's EU cloud, the DSN exactly Sentry's EU ingest.
+        for (host in listOf("https://eu.i.posthog.com.example.org", "https://eu.evil.com", "https://eu.i.posthog.com@evil.com", "http://eu.i.posthog.com", "eu.i.posthog.com", "https://eu.i.posthog.com:8443", "https://eu.i.posthog.com/x", "https://eu.i.posthog.com?a=b", "https://us.i.posthog.com", "")) {
+            assertFalse(config.copy(postHogHost = host).hasPostHog, host)
+        }
+        for (dsn in listOf("https://abc123@o42.ingest.de.sentry.io.evil.com/7", "https://abc123@evil.com/o42.ingest.de.sentry.io/7", "https://abc123@o42.ingest.de.sentry.io/7\n", "https://abc123@o42.ingest.sentry.io/7")) {
+            assertFalse(config.copy(sentryDSN = dsn).hasSentry, dsn)
+        }
+        assertTrue(config.copy(postHogHost = "https://eu.i.posthog.com/").hasPostHog)
+        config = config.copy(sentryDSN = "", postHogKey = "")
+        assertFalse(config.hasSentry)
+        assertFalse(config.hasPostHog)
+    }
+
+    @Test
+    fun productionSamplesStagingKeepsEverything() {
+        val production = TelemetryConfig("", "", "", "production", "", "", false)
+        val staging = production.copy(environment = "staging")
+        assertEquals(0.02, production.requestSampleRate)
+        assertEquals(0.2, production.tracesSampleRate)
+        assertEquals(1.0, staging.requestSampleRate)
+        assertEquals(1.0, staging.tracesSampleRate)
     }
 }

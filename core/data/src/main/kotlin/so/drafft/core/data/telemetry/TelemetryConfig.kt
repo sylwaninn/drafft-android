@@ -1,5 +1,7 @@
 package so.drafft.core.data.telemetry
 
+import java.net.URI
+
 /**
  * The build's telemetry keys (config/<flavor>.properties, through BuildConfig). Both are public by
  * design: a Sentry DSN only lets an app send events, a PostHog project key only lets it capture.
@@ -21,8 +23,11 @@ data class TelemetryConfig(
     /** Sentry's release name, the one the build uploads its mapping files under. */
     val release: String get() = "so.drafft.app@$version+$build"
 
-    val hasSentry: Boolean get() = sentryDSN.isNotBlank()
-    val hasPostHog: Boolean get() = postHogKey.isNotBlank() && postHogHost.startsWith("https://")
+    /** Off without a DSN, and with a DSN outside Sentry's EU region (the data stays in the EU). */
+    val hasSentry: Boolean get() = isEUDSN(sentryDSN)
+
+    /** Off without a key, and with a host other than PostHog's EU cloud. */
+    val hasPostHog: Boolean get() = postHogKey.isNotBlank() && isEUHost(postHogHost)
 
     /**
      * Share of traces kept (performance): every one in staging and local, where traffic is small and
@@ -38,4 +43,22 @@ data class TelemetryConfig(
 
     /** Share of traced sessions profiled (the code paths behind a slow trace). */
     val profileSampleRate: Double get() = if (environment == "production") 0.05 else 0.0
+
+    companion object {
+        private val euDSN = Regex("^https://[0-9a-f]+@o[0-9]+\\.ingest\\.de\\.sentry\\.io/[0-9]+$")
+
+        /** `https://<key>@o<org>.ingest.de.sentry.io/<project>`: a DSN of Sentry's EU region. */
+        fun isEUDSN(dsn: String): Boolean = euDSN.matches(dsn)
+
+        /**
+         * `https://eu.i.posthog.com`, by its parsed host (not a prefix: `https://eu.evil.com` or
+         * `https://eu.i.posthog.com@evil.com` are not PostHog's EU cloud). No user, port, path (but a lone
+         * `/`), query or fragment.
+         */
+        fun isEUHost(host: String): Boolean = runCatching {
+            val uri = URI(host)
+            uri.scheme == "https" && uri.host == "eu.i.posthog.com" && uri.userInfo == null && uri.port == -1 &&
+                (uri.rawPath.isNullOrEmpty() || uri.rawPath == "/") && uri.rawQuery == null && uri.rawFragment == null
+        }.getOrDefault(false)
+    }
 }

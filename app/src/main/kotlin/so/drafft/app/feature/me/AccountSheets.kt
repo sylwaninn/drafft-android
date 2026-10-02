@@ -126,11 +126,13 @@ fun AccountSheet(
     helpTopic: String? = null,
     finished: Boolean = false,
     hasChanges: Boolean = false,
+    /** What it counts as in telemetry: a sheet built on this one (report, support) names itself. */
+    screen: Screen = Screen.ACCOUNT,
     action: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    TrackScreen(Screen.ACCOUNT)
+    TrackScreen(screen)
     InteractiveDismissDisabled(hasChanges)
     val dismiss = LocalSheetDismiss.current
     var confirmDiscard by remember { mutableStateOf(false) }

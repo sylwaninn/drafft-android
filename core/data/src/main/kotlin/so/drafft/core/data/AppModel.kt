@@ -684,7 +684,12 @@ class AppModel(
         } catch (e: Exception) {
             // Refused by Auth (session revoked, user gone): ended. Offline or a server hiccup: the
             // saved session is the best we know.
-            if (Backend.refusesSession(e) && session == sessionID) endSession() else Telemetry.unexpected(e, "account", "load_account")
+            if (Backend.refusesSession(e) && session == sessionID) {
+                endSession()
+            } else {
+                Telemetry.unexpected(e, "account", "load_account")
+                accountLog.warning("The account couldn't be read: $e")
+            }
         }
     }
 
@@ -911,6 +916,7 @@ class AppModel(
             } catch (e: Exception) {
                 if (session != sessionID) return@async null
                 Telemetry.unexpected(e, "account", "refresh")
+                accountLog.warning("The account couldn't be read: $e")
                 if (profileLoad != ProfileLoad.LOADED) {
                     profileLoadFailure = ServerMessage.text(e, offline = L("Check your connection and try again."))
                     profileLoad = ProfileLoad.FAILED
@@ -1684,7 +1690,7 @@ class AppModel(
     /** Sends an invite in a chat (`chatID` is the match's id). */
     fun proposeSession(proposal: SessionProposal, chatID: String) {
         Haptics.tap()
-        Telemetry.track(AnalyticsEvent.SessionProposed(sport = proposal.sport.id, options = proposal.options.size))
+        Telemetry.track(AnalyticsEvent.SessionProposed(sport = proposal.sport.telemetryID, options = proposal.options.size))
         chat.showPending(proposal, chatID)
         scope.launch {
             if (sessionStore.propose(proposal, chatID)) return@launch
@@ -2018,7 +2024,8 @@ class AppModel(
     }
 
     companion object {
-        private val safetyLog = java.util.logging.Logger.getLogger("safety")
+        private val safetyLog = java.util.logging.Logger.getLogger("so.drafft.safety")
+        private val accountLog = java.util.logging.Logger.getLogger("so.drafft.account")
 
         /** The language picked last, read at launch before the first screen (`DrafftApplication`). */
         const val LANGUAGE_KEY = "appLanguage"

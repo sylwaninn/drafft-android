@@ -30,6 +30,24 @@ class TelemetrySession(
         Telemetry.track(AnalyticsEvent.AnalyticsConsentChanged(value))
     }
 
+    companion object {
+        /**
+         * The screen under any sheet or pushed screen: welcome, sign-up, or the current tab. While the
+         * tabs are walked invisibly ([prebuilding]) it stays on Discover: nobody sees the others.
+         */
+        fun baseScreen(app: AppModel, prebuilding: Boolean = false): Screen = when (app.phase) {
+            AppModel.Phase.WELCOME -> Screen.WELCOME
+            AppModel.Phase.ONBOARDING -> Screen.ONBOARDING
+            AppModel.Phase.MAIN -> if (prebuilding) Screen.DISCOVER else when (app.tab) {
+                AppModel.Tab.DISCOVER -> Screen.DISCOVER
+                AppModel.Tab.LIKES -> Screen.LIKES
+                AppModel.Tab.SESSIONS -> Screen.SESSIONS
+                AppModel.Tab.CHATS -> Screen.CHATS
+                AppModel.Tab.ME -> Screen.ME
+            }
+        }
+    }
+
     suspend fun watch(app: AppModel) = coroutineScope {
         launch {
             backend.client.auth.sessionStatus.collect { status ->
@@ -43,17 +61,17 @@ class TelemetrySession(
                 }
             }
         }
+        // What every event and error report carries about the app's state, and the person's facts again
+        // when the language, drafft tempo or the phase changes.
         launch {
-            snapshotFlow { app.language.code }.distinctUntilChanged().collect { Telemetry.register("app_language", it) }
-        }
-        launch {
-            snapshotFlow { app.phase }.distinctUntilChanged().collect { Telemetry.register("app_phase", it.name.lowercase()) }
-        }
-        launch {
-            snapshotFlow { app.premiumUntil != null && app.isPremium }.distinctUntilChanged().collect { premium ->
-                Telemetry.register("is_premium", premium)
-                Telemetry.describeAccount(mapOf("is_premium" to premium, "language" to app.language.code))
-            }
+            snapshotFlow { Triple(app.language.code, app.premiumUntil != null && app.isPremium, app.phase) }
+                .distinctUntilChanged()
+                .collect { (language, premium, phase) ->
+                    Telemetry.register("app_language", language)
+                    Telemetry.register("app_phase", phase.name.lowercase())
+                    Telemetry.register("is_premium", premium)
+                    Telemetry.describeAccount(mapOf("is_premium" to premium, "language" to language))
+                }
         }
     }
 }

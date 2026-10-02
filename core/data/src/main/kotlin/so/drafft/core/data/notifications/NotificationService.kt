@@ -16,6 +16,7 @@ import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.chat.ChatService
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.platform.AppInfo
+import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.platform.LocalNotifications
 import so.drafft.core.data.platform.PermissionStatus
@@ -42,6 +43,7 @@ class NotificationService(
     private val appInfo: AppInfo,
     private val sessions: SessionStore,
     private val photoModeration: PhotoModeration,
+    private val lifecycle: AppLifecycle,
     /** The chat service, resolved when a token arrives (it registers the same token with Stream). */
     private val chat: () -> ChatService?,
     private val scope: CoroutineScope,
@@ -355,7 +357,9 @@ class NotificationService(
      */
     suspend fun willPresent(info: Map<String, String>): Boolean {
         val kind = info["kind"]
-        Telemetry.track(AnalyticsEvent.PushReceived(pushKind(info), inForeground = true))
+        // The iPhone's `willPresent` only runs in the foreground; here the service also runs for a push
+        // that arrives while the app is in the background, which isn't counted.
+        if (lifecycle.isActive()) Telemetry.track(AnalyticsEvent.PushReceived(pushKind(info), inForeground = true))
         // A refused photo while the app is open: its own banner says it, not the system's (shown once,
         // whether the push or the live `media` event comes first).
         if (kind == "photo_refused") {

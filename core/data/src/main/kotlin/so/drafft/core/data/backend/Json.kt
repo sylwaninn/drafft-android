@@ -83,15 +83,21 @@ fun ByteArray.jsonArray(): JsonArray =
  * Swift's `try?` for suspending work: the value, or null if it threw. Cancellation still propagates,
  * so a cancelled coroutine never carries on as if the call had merely failed.
  *
- * Quiet for the person, not for the team: a failure that isn't offline or an explained refusal goes
- * to Sentry, unless [report] is false (connection upkeep whose failures are part of normal life).
+ * Quiet, like the iPhone's `try?` at the same places: connection upkeep and reads that run again
+ * (a wallet, a block list) don't need an alert. A call whose failure would be a bug passes
+ * [report] with its own [area] and [action], and goes to Sentry unless it's offline or a refusal.
  */
-suspend inline fun <T> attempt(report: Boolean = true, crossinline block: suspend () -> T): T? = try {
+suspend inline fun <T> attempt(
+    report: Boolean = false,
+    area: String = "backend",
+    action: String = "attempt",
+    crossinline block: suspend () -> T,
+): T? = try {
     block()
 } catch (e: CancellationException) {
     throw e
 } catch (e: Exception) {
-    if (report) so.drafft.core.data.telemetry.Telemetry.unexpected(e, area = "backend", action = "attempt")
+    if (report) so.drafft.core.data.telemetry.Telemetry.unexpected(e, area, action)
     null
 }
 

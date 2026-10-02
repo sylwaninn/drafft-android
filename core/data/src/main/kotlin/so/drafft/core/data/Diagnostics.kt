@@ -5,6 +5,7 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.DiagnosticsSource
+import so.drafft.core.data.telemetry.Telemetry
 
 // Ports Drafft/Services/Diagnostics.swift. The iPhone reads MetricKit; Android reports why past runs
 // ended (crashes, ANRs, low memory: `ApplicationExitInfo`), through [DiagnosticsSource].
@@ -15,7 +16,7 @@ import so.drafft.core.data.platform.DiagnosticsSource
  * They're written to the device log (tag `so.drafft.app`, category `metrics`) and kept as JSON files
  * in the app's files/Diagnostics (the last 30), readable with Android Studio's Device Explorer or a
  * bug report. The log line also reaches Sentry (`TelemetryLogHandler`): a problem as a log, any other
- * exit as a breadcrumb. Crashes and ANRs reach Sentry on their own, so a problem is a warning here,
+ * exit as a breadcrumb and a log line. Crashes and ANRs reach Sentry on their own, so a problem is a warning here,
  * not a second error.
  */
 class Diagnostics(
@@ -28,6 +29,8 @@ class Diagnostics(
     fun start() {
         source.start { kind, json, summary, isProblem ->
             log.log(if (isProblem) Level.WARNING else Level.INFO, summary)
+            // A problem is already a Sentry log (WARNING); the rest is one too, searchable by release.
+            if (!isProblem) Telemetry.log(Telemetry.Level.INFO, summary, mapOf("logger" to "metrics"))
             keep(json, kind)
         }
     }

@@ -148,7 +148,7 @@ class UserChannel(
             }
             return stayed || joined.get()
         } finally {
-            withContext(NonCancellable) { attempt(report = false) { client.realtime.removeChannel(channel) } }
+            withContext(NonCancellable) { attempt { client.realtime.removeChannel(channel) } }
         }
     }
 
@@ -158,8 +158,8 @@ class UserChannel(
      * reconnecting) ends this one. False if it never joined.
      */
     private suspend fun stayJoined(channel: RealtimeChannel, realtime: Realtime): Boolean {
-        // A join that fails is retried by the caller with a backoff: a breadcrumb, not an alert.
-        withTimeoutOrNull(JOIN_TIMEOUT) { attempt(report = false) { channel.subscribe(blockUntilSubscribed = true) } } ?: return false
+        // A join that fails is retried by the caller with a backoff: nothing to alert.
+        withTimeoutOrNull(JOIN_TIMEOUT) { attempt { channel.subscribe(blockUntilSubscribed = true) } } ?: return false
         var downSince: TimeSource.Monotonic.ValueTimeMark? = null
         while (currentCoroutineContext().isActive) {
             delay(5.seconds)

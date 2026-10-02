@@ -168,6 +168,8 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
     var showPaywall by remember { mutableStateOf(false) }
     val lifted = remember { Animatable(if (reduceMotion) 1f else 0f) }
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
+    // Google Play confirmed a purchase here: what `paywall_dismissed` says (the receipt waits for the server).
+    var bought by remember { mutableStateOf(false) }
     InteractiveDismissDisabled(purchasing || receipt != null)
     /** Set by the confirmation's "Boost now": launch once it has closed. */
     var boostAfterReceipt by remember { mutableStateOf(false) }
@@ -196,7 +198,7 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
             ExtrasSheet.Tab.LIKES -> AnalyticsEvent.ProductKind.TEMPO
         },
         screen = Screen.EXTRAS,
-    ) { receipt != null }
+    ) { bought }
     LaunchedEffect(Unit) {
         if (!reduceMotion) {
             delay(100)
@@ -230,6 +232,7 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
                 val transactionID = try {
                     val outcome = store.purchase(chosen.pkg)
                     if (outcome !is Store.Outcome.Purchased) return@launch
+                    bought = true
                     outcome.transactionID
                 } catch (e: CancellationException) {
                     throw e

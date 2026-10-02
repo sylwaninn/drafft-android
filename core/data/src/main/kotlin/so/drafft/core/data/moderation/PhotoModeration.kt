@@ -268,7 +268,7 @@ class PhotoModeration(
     fun submit(path: String) {
         if (states[slot(path)] != null) return
         states[slot(path)] = State.Uploading
-        Telemetry.track(AnalyticsEvent.PhotoUploadStarted(where = ScreenTracker.current?.id ?: "unknown", retry = path in attempted))
+        Telemetry.track(AnalyticsEvent.PhotoUploadStarted(where = ScreenTracker.currentID, retry = path in attempted))
         attempted += path
         scope.launch {
             try {

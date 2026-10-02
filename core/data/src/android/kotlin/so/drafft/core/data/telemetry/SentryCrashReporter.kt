@@ -54,7 +54,7 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
         Sentry.captureException(error) { scope ->
             scope.setTag("area", report.area)
             report.action?.let { scope.setTag("action", it) }
-            report.extra.forEach { (k, v) -> scope.setExtra(k, v.toString()) }
+            report.extra.forEach { (k, v) -> scope.setExtra(k, Telemetry.render(v)) }
             report.fingerprint?.let { scope.fingerprint = it }
         }
     }
@@ -63,7 +63,7 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
         Sentry.captureMessage(text, level.sentry) { scope ->
             scope.setTag("area", report.area)
             report.action?.let { scope.setTag("action", it) }
-            report.extra.forEach { (k, v) -> scope.setExtra(k, v.toString()) }
+            report.extra.forEach { (k, v) -> scope.setExtra(k, Telemetry.render(v)) }
             report.fingerprint?.let { scope.fingerprint = it }
         }
     }
@@ -105,7 +105,11 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
                 options.isDebug = false
 
                 // Privacy: nothing that shows people, their messages or where they are. Default PII
-                // (IP address, user details) stays off, Sentry's default; scrubbed() makes sure.
+                // (IP address, user details) is off, said out loud; scrubbed() makes sure.
+                options.isSendDefaultPii = false
+                // No session replay (it would record what's on screen), whatever a dependency enables.
+                options.sessionReplay.sessionSampleRate = 0.0
+                options.sessionReplay.onErrorSampleRate = 0.0
                 options.isAttachScreenshot = false
                 options.isAttachViewHierarchy = false
                 options.isEnableUserInteractionBreadcrumbs = false
@@ -161,6 +165,7 @@ class SentryCrashReporter private constructor() : Telemetry.CrashReporter {
             event.user?.let { u ->
                 u.email = null
                 u.username = null
+                u.name = null
                 u.ipAddress = null
                 u.geo = null
             }

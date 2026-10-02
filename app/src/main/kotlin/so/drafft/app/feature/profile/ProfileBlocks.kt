@@ -53,6 +53,9 @@ import org.koin.compose.koinInject
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.ProfilePrompt
@@ -136,6 +139,7 @@ fun VoiceBlock(profile: Profile, modifier: Modifier = Modifier) {
                     onClick = {
                         if (url != null) {
                             Haptics.tap()
+                            if (!playing) Telemetry.track(AnalyticsEvent.VoiceIntroPlayed(ScreenTracker.currentID))
                             audio.toggle(url)
                         }
                     },

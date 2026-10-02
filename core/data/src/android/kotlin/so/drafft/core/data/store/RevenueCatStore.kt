@@ -173,20 +173,26 @@ class RevenueCatStore(
             // Google Play's order id (GPA.…): the reference support asks for, like the App Store's transaction id.
             Store.Outcome.Purchased(result.customerInfo.toInfo(), result.storeTransaction.orderId)
         } catch (e: PurchasesTransactionException) {
-            if (e.userCancelled) Store.Outcome.Cancelled else throw Store.StoreError.Failed(problem(e.code), e)
+            if (e.userCancelled) Store.Outcome.Cancelled else throw failure(e)
         } catch (e: PurchasesException) {
-            if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
-                Store.Outcome.Cancelled
-            } else {
-                throw Store.StoreError.Failed(problem(e.code), e)
-            }
+            if (e.code == PurchasesErrorCode.PurchaseCancelledError) Store.Outcome.Cancelled else throw failure(e)
         }
     }
 
-    /** RevenueCat unreachable (offline) is a breadcrumb; anything else is reported. */
+    /** RevenueCat unreachable: the phone's connection, not a purchase that went wrong (the iPhone's `offlineConnectionError` has no Android code). */
+    private fun isOffline(code: PurchasesErrorCode) = code == PurchasesErrorCode.NetworkError
+
+    /** What a failed purchase throws: offline stays offline, anything else is the store's own outcome. */
+    private fun failure(e: PurchasesException): Store.StoreError =
+        if (isOffline(e.code)) Store.StoreError.Offline(e) else Store.StoreError.Failed(problem(e.code), e)
+
+    /** RevenueCat unreachable (offline) is a breadcrumb; a cancel is nothing; anything else is reported. */
     private fun report(e: Exception, action: String) {
-        if ((e as? PurchasesException)?.code == PurchasesErrorCode.NetworkError) {
+        val code = (e as? PurchasesException)?.code
+        if (code != null && isOffline(code)) {
             Telemetry.breadcrumb("purchase", "$action offline", Telemetry.Level.WARNING)
+        } else if (code == PurchasesErrorCode.PurchaseCancelledError) {
+            return
         } else {
             Telemetry.unexpected(e, "purchase", action)
         }

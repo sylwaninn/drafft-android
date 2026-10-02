@@ -10,7 +10,7 @@ import com.posthog.android.PostHogAndroidConfig
 /**
  * [Telemetry.Analytics] on PostHog, EU cloud. Only what [AnalyticsEvent] and [Screen] describe, plus
  * PostHog's own app lifecycle events (installed, updated, opened, backgrounded). No autocapture of
- * taps, no session replay, no surveys: those would record what's on screen, people included.
+ * taps or exceptions, no session replay, no surveys: those would record what's on screen, people included.
  *
  * Person profiles exist only for identified accounts ([AnalyticsConsent.GRANTED]); anonymous events
  * stay anonymous events.
@@ -68,6 +68,10 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
                 optOut = optedOut
                 // No feature flags yet: each preload is a billed request. Turn on with the first experiment.
                 preloadFeatureFlags = false
+                sendFeatureFlagEvent = false
+                // Errors go to Sentry, with its own scrubbing: none of PostHog's exception autocapture.
+                errorTrackingConfig.autoCapture = false
+                errorTrackingConfig.captureNativeCrashes = false
                 releaseIdentifier = config.release
                 debug = config.isDebugBuild && config.environment == "local"
                 // Small batches: a session is short and the app may be killed in the background.

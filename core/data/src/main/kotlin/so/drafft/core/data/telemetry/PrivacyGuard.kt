@@ -11,15 +11,13 @@ package so.drafft.core.data.telemetry
  * - Free text that must go (a log line, an error message) is [scrub]bed of emails, phone numbers,
  *   ids, tokens and exact coordinates.
  *
- * A dropped property is logged (and so reaches Sentry's logs); in unit tests it throws ([strict]), so
- * the mistake shows where it's made.
+ * A dropped property is logged (and so reaches Sentry's logs, through [Telemetry.log] directly: not
+ * a second time as a breadcrumb); in unit tests it throws ([strict]), so the mistake shows where it's made.
  */
 object PrivacyGuard {
     /** Set by unit tests: a forbidden property is a bug to fix, not to hide. */
     @Volatile
     var strict = false
-
-    private val log = java.util.logging.Logger.getLogger("so.drafft.telemetry")
 
     /** Never sent, whatever the event: the person's identity, sensitive data, content, location. */
     val forbidden: Set<String> = setOf(
@@ -58,7 +56,7 @@ object PrivacyGuard {
             } else if (strict) {
                 throw IllegalArgumentException("$event.$key: $problem")
             } else {
-                log.warning("$event.$key dropped: $problem")
+                Telemetry.log(Telemetry.Level.WARNING, "property dropped: $event.$key: $problem")
             }
         }
         return out
@@ -73,7 +71,9 @@ object PrivacyGuard {
         is Float -> value.toDouble().takeIf { it.isFinite() }
         is Enum<*> -> value.name.lowercase()
         is CharSequence -> value.toString().takeIf(slug::matches)
-        is Collection<*> -> value.mapNotNull { it?.let(::allowed) }.takeIf { it.size == value.size && it.size <= 20 }
+        // Lists of codes only (like the iPhone's [String]): a list of anything else could carry words.
+        is Collection<*> -> value.takeIf { list -> list.size <= 20 && list.all { it is CharSequence && slug.matches(it) } }
+            ?.map { it.toString() }
         else -> null
     }
 

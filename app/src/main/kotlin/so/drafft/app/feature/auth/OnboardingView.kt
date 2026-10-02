@@ -208,6 +208,8 @@ enum class OnboardingStep {
         }
 }
 
+private val consentLog = java.util.logging.Logger.getLogger("so.drafft.consent")
+
 /**
  * Sign-up flow. One step at a time, moved only by the buttons (no swipe between steps).
  * Nothing is pre-selected: every answer is the person's own. Optional steps keep Continue
@@ -337,6 +339,9 @@ private class OnboardingState(
     private var resumedStep: Int? = null
 
     fun stepShown() {
+        // The state is rebuilt (a language change, the activity recreated) on the step it was on: counted once per arrival.
+        if (step == OnboardingState.shownStep) return
+        OnboardingState.shownStep = step
         stepShownAt = System.nanoTime()
         val resumed = resumedStep == step
         resumedStep = null
@@ -552,7 +557,8 @@ private class OnboardingState(
         forward = true
         // Clamped: a saved step from an older, longer flow must not index past the steps.
         step = (languageSwitchStep ?: target).coerceIn(0, steps.size - 1)
-        if (languageSwitchStep == null) {
+        // Not when the state is only rebuilt on the step already shown (see shownStep).
+        if (languageSwitchStep == null && OnboardingState.shownStep != step) {
             resumedStep = step
             Telemetry.track(AnalyticsEvent.OnboardingResumed(current.telemetryID, step))
         }
@@ -610,10 +616,11 @@ private class OnboardingState(
             } catch (e: ProfileSync.SyncError.Refused) {
                 finishing = false
                 Haptics.warning()
-                Telemetry.track(AnalyticsEvent.OnboardingFailed(e.code.lowercase()))
+                Telemetry.track(AnalyticsEvent.OnboardingFailed(Telemetry.reason(e)))
                 if (e.code == "terms_required") {
                     // The server has no consent on record (the one noted on this phone was lost there):
                     // back to the rules step, unticked, to record it again.
+                    consentLog.severe("complete_onboarding: terms_required although the sign-up recorded them")
                     recordedTerms = null
                     consent = ConsentDraft()
                     consentError = ServerMessage.text(forCode = "terms_required")
@@ -659,6 +666,17 @@ private class OnboardingState(
          * it back on the same step, where the iPhone simply redraws in place.
          */
         var languageSwitchStep: Int? = null
+
+        /**
+         * The step last counted as shown (`onboarding_step_viewed`), kept across the state's rebuilds like
+         * the iPhone's `OnboardingFunnel`, which outlives its view's redraws: a step, and a resume on it,
+         * is counted once per arrival. Leaving sign-up on purpose starts over ([forgetFunnel]).
+         */
+        var shownStep: Int? = null
+
+        fun forgetFunnel() {
+            shownStep = null
+        }
     }
 }
 
@@ -680,6 +698,7 @@ private fun Header(state: OnboardingState) {
         leave = {
             // Leaving on purpose starts over: nothing is kept.
             state.store.clear()
+            OnboardingState.forgetFunnel()
             state.app.signOut()
         },
     )

@@ -62,7 +62,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import so.drafft.core.data.media.MediaURL
+import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.Conversation
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
@@ -419,7 +421,10 @@ private fun TopChrome(items: List<MediaItem>, index: Int, onClose: () -> Unit) {
         }
         Spacer(Modifier.weight(1f))
         if (shareable != null) {
-            ChromeButton("upload-minimalistic", L("Share")) { share(shareable) }
+            ChromeButton("upload-minimalistic", L("Share")) {
+                Telemetry.track(AnalyticsEvent.ShareTapped(if (shareable is ShareItem.Video) "video" else "photo"))
+                share(shareable)
+            }
         } else {
             Spacer(Modifier.size(44.dp))
         }

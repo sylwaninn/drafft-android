@@ -53,6 +53,9 @@ sealed class VerificationError(val code: String) : Exception(code) {
     data object UnsupportedLine : VerificationError("unsupportedLine") { private fun readResolve(): Any = UnsupportedLine }
     data object CheckUnavailable : VerificationError("checkUnavailable") { private fun readResolve(): Any = CheckUnavailable }
 
+    /** The case's name as an event property: `tooManyCodes` becomes `too_many_codes`. */
+    val reason: String get() = code.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
+
     /** The words under the number field. */
     override val message: String
         get() = when (this) {
@@ -467,6 +470,8 @@ class PhoneVerificationModel(
             if (e == VerificationError.WrongCode) {
                 wrongCode()
             } else {
+                // SendFailed and CheckUnavailable are the server failing: ErrorKind tells what needs a fix.
+                Telemetry.unexpected(e, "phone", "verify")
                 // Not the code's fault (offline, a server error): no try used up, the same code can go again.
                 error = if (e == VerificationError.Network) e.message else L("Something went wrong. Try again in a moment.")
                 needsHelp = e != VerificationError.Network
@@ -481,10 +486,7 @@ class PhoneVerificationModel(
     }
 
     /** Where the check runs (`onboarding`, `phone_verification`), for analytics. */
-    private val during: String get() = ScreenTracker.current?.id ?: "unknown"
-
-    private val VerificationError.reason: String
-        get() = this.code.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
+    private val during: String get() = ScreenTracker.currentID
 
     /** A wrong code uses up a try; the last one locks the step. */
     private fun wrongCode() {

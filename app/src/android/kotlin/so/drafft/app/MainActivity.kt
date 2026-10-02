@@ -51,7 +51,13 @@ class MainActivity : ComponentActivity() {
     private val askLocation = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
         trackPermission(
             listOf(Manifest.permission.ACCESS_COARSE_LOCATION),
-            if (granted.values.any { it }) AnalyticsEvent.PermissionResult.GRANTED else AnalyticsEvent.PermissionResult.DENIED,
+            when {
+                granted.values.any { it } -> AnalyticsEvent.PermissionResult.GRANTED
+                // No rationale after a refusal: Android won't show the prompt again, only Settings can.
+                !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION) ->
+                    AnalyticsEvent.PermissionResult.BLOCKED
+                else -> AnalyticsEvent.PermissionResult.DENIED
+            },
         )
         location.onPermissionResult()
     }
@@ -101,7 +107,7 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun prompt(permissions: List<String>): PermissionPrompter.Result {
         if (permissions.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }) {
-            trackPermission(permissions, AnalyticsEvent.PermissionResult.ALREADY_GRANTED)
+            // Not asked: nothing to count (`already_granted` stays in the enum, unused).
             return PermissionPrompter.Result.GRANTED
         }
         pendingPrompt?.cancel()
@@ -134,9 +140,10 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.CAMERA -> AnalyticsEvent.Permission.CAMERA
             Manifest.permission.RECORD_AUDIO -> AnalyticsEvent.Permission.MICROPHONE
             Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR -> AnalyticsEvent.Permission.CALENDAR
-            else -> AnalyticsEvent.Permission.PHOTOS
+            // The photo picker needs no permission: nothing else is asked from here.
+            else -> return
         }
-        Telemetry.track(AnalyticsEvent.PermissionRequested(permission, result, during = ScreenTracker.current?.id ?: "unknown"))
+        Telemetry.track(AnalyticsEvent.PermissionRequested(permission, result, during = ScreenTracker.currentID))
     }
 
     override fun onResume() {

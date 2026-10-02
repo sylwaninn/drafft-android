@@ -48,7 +48,6 @@ import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
-import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.CheckDisc
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.SheetBlock
@@ -72,7 +71,6 @@ fun ReportSheet(
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TrackScreen(Screen.REPORT)
     val p = DS.palette
     val dismiss = LocalSheetDismiss.current
     val safety = koinInject<Safety>()
@@ -117,6 +115,7 @@ fun ReportSheet(
 
     AccountSheet(
         title = L("Report or block"),
+        screen = Screen.REPORT,
         actionTitle = L("Report and block"),
         actionIcon = "flag",
         destructive = true,

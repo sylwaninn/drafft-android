@@ -120,6 +120,8 @@ import so.drafft.core.ui.theme.semibold
 /** Google Play's page for the account's subscriptions (the App Store's `apps.apple.com/account/subscriptions`). */
 private const val PLAY_SUBSCRIPTIONS_URL = "https://play.google.com/store/account/subscriptions"
 
+private val storeLog = java.util.logging.Logger.getLogger("so.drafft.store")
+
 private data class Perk(val icon: String, val title: String, val detail: String)
 
 /**
@@ -152,11 +154,13 @@ fun PaywallView(
     var notice by remember { mutableStateOf<String?>(null) }
     val uriHandler = LocalUriHandler.current
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
+    // Google Play confirmed a purchase here: what `paywall_dismissed` says (the receipt waits for the server).
+    var bought by remember { mutableStateOf(false) }
     InteractiveDismissDisabled(purchasing || receipt != null)
     val scroll = rememberScrollState()
 
     LaunchedEffect(Unit) { store.load() }
-    TrackPaywall(AnalyticsEvent.ProductKind.TEMPO) { receipt != null }
+    TrackPaywall(AnalyticsEvent.ProductKind.TEMPO) { bought }
     // The iPhone turns off the swipe-down while a purchase runs; here system back waits too.
     BackHandler(enabled = purchasing || receipt != null) {}
 
@@ -210,6 +214,7 @@ fun PaywallView(
                 when (val outcome = store.purchase(pkg)) {
                     Store.Outcome.Cancelled -> Unit
                     is Store.Outcome.Purchased -> {
+                        bought = true
                         // Confirmed by Google Play: the server is asked to turn drafft tempo on at once
                         // (it also credits the first weekly boost); slow, a banner at the top takes over.
                         // Nothing is unlocked on the device's word alone.
@@ -217,13 +222,13 @@ fun PaywallView(
                         val sub = store.subscription(outcome.info)
                             ?: TempoSubscription(plan = picked, billing = picked.billing(price))
                         app.subscription = sub
-                        val bought = PurchaseCredit.Pending(
+                        val pending = PurchaseCredit.Pending(
                             transactionID = outcome.transactionID,
                             productID = pkg.storeProduct.productIdentifier,
                             date = System.currentTimeMillis(),
                             target = PurchaseCredit.Pending.Target.Tempo,
                         )
-                        if (!credit.confirmed(bought, app)) return@launch
+                        if (!credit.confirmed(pending, app)) return@launch
                         receipt = PurchaseReceipt(PurchaseReceipt.Item.Tempo(sub))
                     }
                 }
@@ -750,8 +755,11 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
                 apply(store.customerInfo())
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                storeLog.warning("Subscription refresh failed: $e")
             }
+        } else {
+            storeLog.info("Subscription refresh skipped: RevenueCat isn't reporting for the linked account")
         }
         app.loadWallet()
     }
