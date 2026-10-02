@@ -16,7 +16,8 @@ Requirements: Android Studio (AGP 8.13), JDK 17+, Android SDK 36.
 
 The three flavors mirror the iPhone schemes (`Drafft`, `Drafft Staging`, `Drafft Local`). They share
 the application id `so.drafft.app`, so installing one replaces the other; the launcher name tells
-them apart. Only public keys live in the build (Supabase publishable keys, RevenueCat and Turnstile keys).
+them apart. Only public keys live in the build (Supabase publishable keys, RevenueCat and Turnstile
+keys, the Sentry DSN, the PostHog project key).
 
 ### Environment values (`config/<flavor>.properties`, committed)
 
@@ -30,6 +31,8 @@ Like the iPhone's `Config/*.xcconfig`, each flavor has one file of public values
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile public site key |
 | `SMS_CODE_LIFETIME` | Auth's SMS OTP expiry, in seconds |
 | `APP_DISPLAY_NAME` | Launcher name |
+| `SENTRY_DSN` | Sentry DSN, EU region (crashes, errors, performance). Empty: off |
+| `POSTHOG_API_KEY`, `POSTHOG_HOST` | PostHog project key (`phc_...`) and EU host (product analytics). Empty: off |
 
 Only public keys: the build refuses anything that looks like a secret, and a production or staging
 URL that isn't https. A release build lacking a Supabase or RevenueCat value fails. The local flavor
@@ -39,6 +42,12 @@ The local Supabase's URL and key depend on the machine: `scripts/local-backend.s
 drafft-backend's running Supabase to `local.private.properties` (gitignored, like the iPhone's
 `Local.private.xcconfig`; `--device` for a phone on the same Wi-Fi). Without them the local app stops
 at launch and says what's missing.
+
+### Telemetry (Sentry, PostHog)
+
+Crash reporting and product analytics, their privacy rules and the tracking plan:
+[docs/telemetry.md](docs/telemetry.md). Release builds upload their R8 mapping to Sentry when
+`SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are set (CI secrets).
 
 ### Git hooks
 

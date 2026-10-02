@@ -37,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -121,6 +122,8 @@ import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.LocationProvider
 import so.drafft.core.data.platform.PermissionStatus
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.data.verification.FaceCheck
 import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.model.AppLanguage
@@ -180,8 +183,13 @@ enum class OnboardingStep {
 
     val rawValue: Int get() = ordinal
 
+    /** The step's id in analytics (`show_me`), the same on the iPhone. */
+    val telemetryID: String get() = name.lowercase()
+
     enum class Chapter(val rawValue: String) {
         ACCOUNT("Account"), YOU("About you"), SPORTS("Sports"), PROFILE("Profile");
+
+        val telemetryID: String get() = name.lowercase()
 
         val title: String
             get() = when (this) {
@@ -200,6 +208,8 @@ enum class OnboardingStep {
             PHOTOS, BIO, VOICE, PROMPTS, ICEBREAKER, NOTIFICATIONS -> Chapter.PROFILE
         }
 }
+
+private val consentLog = java.util.logging.Logger.getLogger("so.drafft.consent")
 
 /**
  * Sign-up flow. One step at a time, moved only by the buttons (no swipe between steps).
@@ -257,6 +267,13 @@ fun OnboardingView(modifier: Modifier = Modifier) {
     }
     LaunchedEffect(phone) {
         snapshotFlow { phone.stage }.drop(1).collect { if (it == PhoneVerificationModel.Stage.VERIFIED) state.save() }
+    }
+    // Each step shown, for the sign-up funnel (the first one of a resumed sign-up says so).
+    LaunchedEffect(state.step) { state.stepShown() }
+    // Sign-up over, however it ended (finished, session ended, account deleted, Leave): the funnel starts
+    // over. A rebuild (a language change) keeps the phase, so it keeps the funnel.
+    DisposableEffect(Unit) {
+        onDispose { if (app.phase != AppModel.Phase.ONBOARDING) OnboardingState.forgetFunnel() }
     }
 }
 
@@ -321,6 +338,29 @@ private class OnboardingState(
 
     /** The language saved with the progress, for the app to switch to once sign-up shows. */
     var restoredLanguage: AppLanguage? = null
+
+    /** When the step on screen was shown (monotonic, for durations). The sign-up's own start is [opened]. */
+    private var stepShownAt = System.nanoTime()
+    private var resumedStep: Int? = null
+
+    init {
+        OnboardingState.opened()
+    }
+
+    fun stepShown() {
+        // The state is rebuilt (a language change, the activity recreated) on the step it was on: counted once per arrival.
+        if (step == OnboardingState.shownStep) return
+        OnboardingState.shownStep = step
+        stepShownAt = System.nanoTime()
+        val resumed = resumedStep == step
+        resumedStep = null
+        Telemetry.track(AnalyticsEvent.OnboardingStepViewed(current.telemetryID, current.chapter.telemetryID, step, resumed))
+    }
+
+    private fun stepCompleted(skipped: Boolean) {
+        val seconds = ((System.nanoTime() - stepShownAt) / 1_000_000_000).toInt()
+        Telemetry.track(AnalyticsEvent.OnboardingStepCompleted(current.telemetryID, current.chapter.telemetryID, step, skipped, seconds))
+    }
 
     val steps = OnboardingStep.entries
     val current: OnboardingStep get() = steps[step]
@@ -416,10 +456,13 @@ private class OnboardingState(
             recordConsent()
             return
         }
+        // Continue on a complete step, Skip on an optional one left empty.
         if (step >= steps.size - 1) {
+            stepCompleted(skipped = !complete(current))
             finish()
             return
         }
+        stepCompleted(skipped = !complete(current))
         if (steps[step + 1].chapter != current.chapter) Haptics.success() else Haptics.tap()
         go(step + 1)
     }
@@ -431,6 +474,7 @@ private class OnboardingState(
         scope.launch {
             try {
                 profileSync.acceptTerms()
+                Telemetry.track(AnalyticsEvent.TermsAccepted(TermsConsent.VERSION, during = "sign_up"))
                 recordedTerms = TermsConsent.VERSION
                 recordingConsent = false
                 advance()
@@ -440,6 +484,8 @@ private class OnboardingState(
             } catch (e: Exception) {
                 Haptics.warning()
                 recordingConsent = false
+                Telemetry.track(AnalyticsEvent.OnboardingStepBlocked(current.telemetryID, Telemetry.reason(e)))
+                Telemetry.unexpected(e, "onboarding", "accept_terms")
                 when (val f = profileSync.termsFailure(e)) {
                     TermsConsent.Failure.SignOut -> app.endSession()
                     is TermsConsent.Failure.Message -> consentError = f.text
@@ -520,6 +566,11 @@ private class OnboardingState(
         forward = true
         // Clamped: a saved step from an older, longer flow must not index past the steps.
         step = (languageSwitchStep ?: target).coerceIn(0, steps.size - 1)
+        // Not when the state is only rebuilt on the step already shown (see shownStep).
+        if (languageSwitchStep == null && OnboardingState.shownStep != step) {
+            resumedStep = step
+            Telemetry.track(AnalyticsEvent.OnboardingResumed(current.telemetryID, step))
+        }
         languageSwitchStep = null
     }
 
@@ -574,9 +625,11 @@ private class OnboardingState(
             } catch (e: ProfileSync.SyncError.Refused) {
                 finishing = false
                 Haptics.warning()
+                Telemetry.track(AnalyticsEvent.OnboardingFailed(Telemetry.reason(e)))
                 if (e.code == "terms_required") {
                     // The server has no consent on record (the one noted on this phone was lost there):
                     // back to the rules step, unticked, to record it again.
+                    consentLog.severe("complete_onboarding: terms_required although the sign-up recorded them")
                     recordedTerms = null
                     consent = ConsentDraft()
                     consentError = ServerMessage.text(forCode = "terms_required")
@@ -587,12 +640,24 @@ private class OnboardingState(
                 return@launch
             } catch (e: Exception) {
                 Haptics.warning()
+                Telemetry.track(AnalyticsEvent.OnboardingFailed(Telemetry.reason(e)))
+                Telemetry.unexpected(e, "onboarding", "finish")
                 finishError = profileSaveFailure(e, photosCheck)
                 finishing = false
                 return@launch
             }
             finishing = false
             Haptics.success()
+            // Counts and yes/no only: never the answers themselves (gender, who to meet, lifestyle).
+            Telemetry.track(
+                AnalyticsEvent.OnboardingCompleted(
+                    photos = photos.size, sports = sports.size, prompts = answeredPrompts.size, hasVoice = voice != null,
+                    hasBio = p.bio.isNotEmpty(), hasIcebreaker = icebreaker.isComplete, answeredLifestyle = lifestyle.hasLifestyle,
+                    notificationsAllowed = notifications.isAllowed,
+                    minutes = ((System.nanoTime() - OnboardingState.opened()) / 60_000_000_000).toInt(),
+                ),
+            )
+            forgetFunnel()
             app.finishOnboarding(p)
         }
     }
@@ -611,6 +676,26 @@ private class OnboardingState(
          * it back on the same step, where the iPhone simply redraws in place.
          */
         var languageSwitchStep: Int? = null
+
+        /**
+         * The step last counted as shown (`onboarding_step_viewed`), kept across the state's rebuilds like
+         * the iPhone's `OnboardingFunnel`, which outlives its view's redraws: a step, and a resume on it,
+         * is counted once per arrival. Leaving sign-up on purpose starts over ([forgetFunnel]).
+         */
+        var shownStep: Int? = null
+
+        private var openedAt: Long? = null
+
+        /**
+         * When this sign-up was opened (monotonic), kept with [shownStep] so `minutes_this_session` survives
+         * a rebuild: the first call after [forgetFunnel] starts it.
+         */
+        fun opened(): Long = openedAt ?: System.nanoTime().also { openedAt = it }
+
+        fun forgetFunnel() {
+            shownStep = null
+            openedAt = null
+        }
     }
 }
 
@@ -632,6 +717,7 @@ private fun Header(state: OnboardingState) {
         leave = {
             // Leaving on purpose starts over: nothing is kept.
             state.store.clear()
+            OnboardingState.forgetFunnel()
             state.app.signOut()
         },
     )

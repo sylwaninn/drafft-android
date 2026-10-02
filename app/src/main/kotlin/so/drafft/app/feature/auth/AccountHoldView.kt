@@ -51,8 +51,10 @@ import kotlinx.coroutines.delay
 import so.drafft.app.feature.verification.SelfieCaptureView
 import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.core.data.AccountHold
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftButtonKind
@@ -300,6 +302,7 @@ internal fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean):
  */
 @Composable
 fun HoldLayer(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.ACCOUNT_HOLD)
     val app = LocalAppModel.current
     val hold = app.moderation.hold
     val focusManager = LocalFocusManager.current

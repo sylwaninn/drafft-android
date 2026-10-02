@@ -54,8 +54,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.IntOffset
 import so.drafft.core.data.AppModel
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.Avatar
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.Photo
@@ -82,6 +84,7 @@ fun MatchView(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreen(Screen.MATCH)
     val reduceMotion = LocalReduceMotion.current
     var arrived by remember { mutableStateOf(reduceMotion) }
     var trails by remember { mutableStateOf(reduceMotion) }

@@ -34,6 +34,8 @@ import kotlinx.coroutines.launch
 import so.drafft.app.feature.me.PaywallView
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.LikeAge
 import so.drafft.core.model.Profile
@@ -45,6 +47,7 @@ import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateView
 import so.drafft.core.ui.components.ListLoadFailureView
 import so.drafft.core.ui.components.LocalTabBarInset
+import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.TabHeader
 import so.drafft.core.ui.components.TabTitle
@@ -78,6 +81,11 @@ fun LikesTabView(modifier: Modifier = Modifier) {
 
     // Live afterwards through the `like` and `wallet` events and each reconnection (`UserChannel`).
     LaunchedEffect(Unit) { app.loadLikes() }
+    // Each time the tab is shown: how many likes waited, and whether they could be seen.
+    val onScreen = LocalTabIsCurrent.current
+    LaunchedEffect(onScreen) {
+        if (onScreen) Telemetry.track(AnalyticsEvent.LikesViewed(count = app.likedMeCount, premium = app.isPremium))
+    }
 
     BoxWithConstraints(modifier.fillMaxSize().background(DS.palette.canvasSoft)) {
         val pageHeight = maxHeight

@@ -27,10 +27,14 @@ import org.koin.compose.koinInject
 import so.drafft.app.feature.me.DeleteAccountSheet
 import so.drafft.core.data.backend.ProfileSync
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.ConsentDraft
 import so.drafft.core.model.L
 import so.drafft.core.model.TermsConsent
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.BottomBar
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftSheet
@@ -53,6 +57,7 @@ import so.drafft.core.ui.theme.semibold
  */
 @Composable
 fun TermsConsentView(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.TERMS_CONSENT)
     val app = LocalAppModel.current
     val profileSync = koinInject<ProfileSync>()
     val scope = rememberCoroutineScope()
@@ -68,12 +73,14 @@ fun TermsConsentView(modifier: Modifier = Modifier) {
         scope.launch {
             try {
                 profileSync.acceptTerms()
+                Telemetry.track(AnalyticsEvent.TermsAccepted(TermsConsent.VERSION, during = "gate"))
                 Haptics.success()
                 app.termsConsent = TermsConsent.Gate.ACCEPTED
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Haptics.warning()
+                Telemetry.unexpected(e, "account", "accept_terms")
                 when (val f = profileSync.termsFailure(e)) {
                     TermsConsent.Failure.SignOut -> app.endSession()
                     is TermsConsent.Failure.Message -> failure = f.text

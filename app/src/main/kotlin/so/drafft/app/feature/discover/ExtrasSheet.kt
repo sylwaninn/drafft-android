@@ -1,5 +1,8 @@
 package so.drafft.app.feature.discover
 
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.ui.TrackPaywall
 import so.drafft.core.ui.components.InteractiveDismissDisabled
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -165,6 +168,8 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
     var showPaywall by remember { mutableStateOf(false) }
     val lifted = remember { Animatable(if (reduceMotion) 1f else 0f) }
     var receipt by remember { mutableStateOf<PurchaseReceipt?>(null) }
+    // Google Play confirmed a purchase here: what `paywall_dismissed` says (the receipt waits for the server).
+    var bought by remember { mutableStateOf(false) }
     InteractiveDismissDisabled(purchasing || receipt != null)
     /** Set by the confirmation's "Boost now": launch once it has closed. */
     var boostAfterReceipt by remember { mutableStateOf(false) }
@@ -186,6 +191,14 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
     val opensOnLaunch = tab == ExtrasSheet.Tab.BOOST && (app.boosts > 0 || app.isBoosting())
 
     LaunchedEffect(Unit) { store.load() }
+    TrackPaywall(
+        when (tab) {
+            ExtrasSheet.Tab.BOOST -> AnalyticsEvent.ProductKind.BOOST
+            ExtrasSheet.Tab.SUPER_LIKE -> AnalyticsEvent.ProductKind.SUPER_LIKE
+            ExtrasSheet.Tab.LIKES -> AnalyticsEvent.ProductKind.TEMPO
+        },
+        screen = Screen.EXTRAS,
+    ) { bought }
     LaunchedEffect(Unit) {
         if (!reduceMotion) {
             delay(100)
@@ -219,6 +232,7 @@ fun ExtrasSheet(tab: ExtrasSheet.Tab, modifier: Modifier = Modifier) {
                 val transactionID = try {
                     val outcome = store.purchase(chosen.pkg)
                     if (outcome !is Store.Outcome.Purchased) return@launch
+                    bought = true
                     outcome.transactionID
                 } catch (e: CancellationException) {
                     throw e

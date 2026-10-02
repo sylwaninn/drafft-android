@@ -158,6 +158,7 @@ class UserChannel(
      * reconnecting) ends this one. False if it never joined.
      */
     private suspend fun stayJoined(channel: RealtimeChannel, realtime: Realtime): Boolean {
+        // A join that fails is retried by the caller with a backoff: nothing to alert.
         withTimeoutOrNull(JOIN_TIMEOUT) { attempt { channel.subscribe(blockUntilSubscribed = true) } } ?: return false
         var downSince: TimeSource.Monotonic.ValueTimeMark? = null
         while (currentCoroutineContext().isActive) {

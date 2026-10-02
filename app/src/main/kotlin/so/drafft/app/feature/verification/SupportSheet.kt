@@ -59,6 +59,9 @@ import so.drafft.core.data.backend.parseJsonOrNull
 import so.drafft.core.data.backend.toJsonElement
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftField
@@ -153,12 +156,15 @@ fun SupportSheet(
             }
             val data = backend.publicFunction("support", body.toJsonElement() as JsonObject)
             val answer = data.parseJsonOrNull().asObject
+            // The topic is a sentence in the person's language: only where it was asked from goes.
+            Telemetry.track(AnalyticsEvent.SupportContacted(if (isHelpCenter) "help_center" else "in_context", signedIn))
             Haptics.success()
             reference = answer?.get("reference").asString ?: ""
         } catch (e: CancellationException) {
             throw e
         } catch (e: Backend.BackendError.Http) {
             Haptics.warning()
+            Telemetry.unexpected(e, "support", "send")
             when {
                 e.serverMessage.contains("captcha_not_configured") ->
                     error = L("Support can't take messages this way right now. Try again later.")
@@ -171,6 +177,7 @@ fun SupportSheet(
             }
         } catch (e: Exception) {
             Haptics.warning()
+            Telemetry.unexpected(e, "support", "send")
             error = ServerMessage.text(e, offline = L("Your message couldn't be sent. Check your connection and try again."))
         } finally {
             // Single use: whatever the answer, the next send needs a fresh token.
@@ -191,6 +198,7 @@ fun SupportSheet(
 
     AccountSheet(
         title = if (isHelpCenter) L("Help center") else L("Get help"),
+        screen = Screen.SUPPORT,
         actionTitle = if (reference != null) L("Done") else L("Send to support"),
         actionIcon = if (reference != null) "check" else "plain",
         enabled = reference != null ||

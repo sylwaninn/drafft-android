@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import org.koin.compose.getKoin
 import org.koin.core.parameter.parametersOf
 import so.drafft.app.feature.me.AccountSheet
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
@@ -58,6 +59,7 @@ fun ChangePhoneSheet(modifier: Modifier = Modifier) {
 
     AccountSheet(
         title = L("Phone number"),
+        screen = Screen.PHONE_VERIFICATION,
         actionTitle = if (model.stage == PhoneVerificationModel.Stage.VERIFIED) L("Done") else model.primaryTitle,
         enabled = model.primaryEnabled,
         loading = model.busy,

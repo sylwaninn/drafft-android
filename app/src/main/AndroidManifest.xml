@@ -83,5 +83,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="messages" />
+        <!-- Sentry starts from DrafftApplication with the build's DSN and the app's privacy settings
+             (SentryCrashReporter), not from its own provider with defaults. -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
     </application>
 </manifest>

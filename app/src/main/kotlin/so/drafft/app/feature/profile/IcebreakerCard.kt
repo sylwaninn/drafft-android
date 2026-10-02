@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.Icebreaker
 import so.drafft.core.model.L
 import so.drafft.core.model.MessageContent
@@ -76,6 +79,8 @@ fun IcebreakerCard(
     /** Called with the opener to send (quote + reply). */
     onSend: ((MessageContent) -> Unit)? = null,
     sendTitle: String = L("Send as opener"),
+    /** False on the person's own profile: trying their own icebreaker says nothing about the app's use. */
+    tracksAnswer: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var guess by rememberSaveable(profile.id) { mutableStateOf<Int?>(null) }
@@ -83,9 +88,16 @@ fun IcebreakerCard(
     var take by rememberSaveable(profile.id) { mutableStateOf<Boolean?>(null) }
     var choice by rememberSaveable(profile.id) { mutableStateOf<Int?>(null) }
     var sent by rememberSaveable(profile.id) { mutableStateOf(false) }
+    // `icebreaker_answered` goes once per card.
+    var answered by rememberSaveable(profile.id) { mutableStateOf(false) }
     val p = DS.palette
     val icebreaker = profile.icebreaker
     val opener = opener(icebreaker, guess, revealed, take, choice)
+    LaunchedEffect(opener != null) {
+        if (opener == null || !tracksAnswer || answered) return@LaunchedEffect
+        answered = true
+        Telemetry.track(AnalyticsEvent.IcebreakerAnswered())
+    }
 
     NightBlock(modifier.fillMaxWidth()) {
         // The kind's sign, oversized behind the top corner and cut by the block's edge: a faint

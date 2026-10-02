@@ -92,5 +92,8 @@ interface ChatService {
 
         /** Stream's push provider for this app's FCM credentials (the iPhone's are `drafft-apn(-dev)`). */
         const val PUSH_PROVIDER = "drafft-fcm"
+
+        /** Messages (and chats) read at a time: a chat opens on its latest page. */
+        const val PAGE = 30
     }
 }

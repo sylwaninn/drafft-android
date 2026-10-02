@@ -35,6 +35,9 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.PrivacyGuard
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.L
 
@@ -145,7 +148,10 @@ class Backend(
      * email is typed in (`confirmSignUp`). `language` starts the profile in it, so the confirmation
      * email (backend auth-email) is already in that language.
      */
-    suspend fun signUp(email: String, password: String, language: AppLanguage): SignUpResult {
+    suspend fun signUp(email: String, password: String, language: AppLanguage): SignUpResult = tracked(
+        done = { AnalyticsEvent.AccountCreated(AnalyticsEvent.AuthMethod.EMAIL) },
+        failed = { AnalyticsEvent.SignUpFailed(Telemetry.reason(it)) },
+    ) {
         val user = identityChecked {
             client.auth.signUpWith(Email) {
                 this.email = email
@@ -157,10 +163,13 @@ class Backend(
         // An address that already has an account: Supabase doesn't say so (that would tell who's signed up),
         // it answers like a new sign-up with no identity and sends nothing. The app says it plainly.
         if (session == null && user?.identities?.isEmpty() == true) throw EmailAlreadyRegistered()
-        return if (session == null) SignUpResult.CONFIRM_EMAIL else SignUpResult.SIGNED_IN
+        if (session == null) SignUpResult.CONFIRM_EMAIL else SignUpResult.SIGNED_IN
     }
 
-    suspend fun signIn(email: String, password: String) {
+    suspend fun signIn(email: String, password: String) = tracked(
+        done = { AnalyticsEvent.LoggedIn(AnalyticsEvent.AuthMethod.EMAIL) },
+        failed = { AnalyticsEvent.LogInFailed(Telemetry.reason(it)) },
+    ) {
         client.auth.signInWith(Email) {
             this.email = email
             this.password = password
@@ -168,11 +177,11 @@ class Backend(
     }
 
     /** The 6-digit code from the sign-up email: the account is confirmed and signed in. */
-    suspend fun confirmSignUp(email: String, code: String) {
+    suspend fun confirmSignUp(email: String, code: String) = tracked(done = { AnalyticsEvent.EmailConfirmed() }) {
         client.auth.verifyEmailOtp(type = OtpType.Email.SIGNUP, email = email, token = code)
     }
 
-    suspend fun resendConfirmation(to: String) {
+    suspend fun resendConfirmation(to: String) = tracked(done = { AnalyticsEvent.EmailCodeResent() }) {
         client.auth.resendEmail(OtpType.Email.SIGNUP, to)
     }
 
@@ -180,7 +189,7 @@ class Backend(
      * Emails a 6-digit code to reset the password (backend auth-email, recovery). Auth answers the same
      * whether or not the address has an account.
      */
-    suspend fun sendPasswordReset(to: String) {
+    suspend fun sendPasswordReset(to: String) = tracked(done = { AnalyticsEvent.PasswordResetRequested() }) {
         client.auth.resetPasswordForEmail(to)
     }
 
@@ -195,7 +204,7 @@ class Backend(
     }
 
     /** The code from `updateEmail`: the address switches once it checks out. */
-    suspend fun confirmEmailChange(email: String, code: String) {
+    suspend fun confirmEmailChange(email: String, code: String) = tracked(done = { AnalyticsEvent.EmailChanged() }) {
         identityChecked { client.auth.verifyEmailOtp(type = OtpType.Email.EMAIL_CHANGE, email = email, token = code) }
     }
 
@@ -205,16 +214,38 @@ class Backend(
     }
 
     /** After a password reset code (the code proved it's them). */
-    suspend fun updatePassword(password: String) {
+    suspend fun updatePassword(password: String) = tracked(done = { AnalyticsEvent.PasswordResetCompleted() }) {
         client.auth.updateUser { this.password = password }
     }
 
     /** A new password, with the code from `sendReauthenticationCode`. */
-    suspend fun updatePassword(password: String, code: String) {
+    suspend fun updatePassword(password: String, code: String) = tracked(done = { AnalyticsEvent.PasswordChanged() }) {
         client.auth.updateUser {
             this.password = password
             nonce = code
         }
+    }
+
+    /**
+     * An account action, counted: [done] once it went through, [failed] (if any) when it didn't. An
+     * error that isn't a refusal the screen explains goes to Sentry.
+     */
+    private suspend fun <T> tracked(
+        done: () -> AnalyticsEvent,
+        failed: ((Throwable) -> AnalyticsEvent)? = null,
+        block: suspend () -> T,
+    ): T {
+        val value = try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            failed?.let { Telemetry.track(it(e)) }
+            Telemetry.unexpected(e, "auth")
+            throw e
+        }
+        Telemetry.track(done())
+        return value
     }
 
     /**
@@ -289,29 +320,48 @@ class Backend(
         json: JsonElement?,
         requiresSession: Boolean = true,
     ): ByteArray {
-        val bearer = if (requiresSession || hasSession()) accessToken() else null
-        val response = http.request(config.url.trimEnd('/') + "/" + path) {
-            this.method = method
-            header("apikey", config.publishableKey)
-            if (bearer != null) header(HttpHeaders.Authorization, "Bearer $bearer")
-            // Content-Type goes with the body (Ktor sets it from the content).
-            setBody(TextContent(json?.toString() ?: "", ContentType.Application.Json))
-        }
-        val status = response.status.value
-        val data = response.readRawBytes()
-        if (status !in 200..299) {
-            val body = data.parseJsonOrNull().asObject
-            // PostgREST sends `"hint": null` when there's no code: skip it, not stop at it.
-            val message = listOf("hint", "msg", "message", "code").firstNotNullOfOrNull { body?.get(it).asString }
-            // On hold (moderation): a database function's hint or an edge function's 403 `moderated`.
-            if (body?.get("hint").asString == "moderated" || (status == 403 && body?.get("code").asString == "moderated")) {
-                post(Event.ACCOUNT_HELD_BY_SERVER)
-            } else if (saysPaused(status, body)) {
-                post(Event.PROFILE_PAUSED_BY_SERVER)
+        // Named without the query (ids, filters): `POST rest/v1/rpc/discover`.
+        val label = "${method.value} ${PrivacyGuard.path(path)}"
+        return Telemetry.trace("http.client", label) { span ->
+            val started = System.nanoTime()
+            val bearer = if (requiresSession || hasSession()) accessToken() else null
+            val response = http.request(config.url.trimEnd('/') + "/" + path) {
+                this.method = method
+                header("apikey", config.publishableKey)
+                if (bearer != null) header(HttpHeaders.Authorization, "Bearer $bearer")
+                // Content-Type goes with the body (Ktor sets it from the content).
+                setBody(TextContent(json?.toString() ?: "", ContentType.Application.Json))
             }
-            throw BackendError.Http(status, message ?: data.copyOf(minOf(data.size, 200)).decodeToString())
+            val status = response.status.value
+            val data = response.readRawBytes()
+            val millis = (System.nanoTime() - started) / 1_000_000
+            span.setData("http.response.status_code", status)
+            val ok = status in 200..299
+            Telemetry.breadcrumb(
+                "http", label, if (ok) Telemetry.Level.INFO else Telemetry.Level.WARNING,
+                mapOf("status_code" to status, "duration_ms" to millis),
+            )
+            if (!ok) {
+                val body = data.parseJsonOrNull().asObject
+                // PostgREST sends `"hint": null` when there's no code: skip it, not stop at it.
+                val message = listOf("hint", "msg", "message", "code").firstNotNullOfOrNull { body?.get(it).asString }
+                // On hold (moderation): a database function's hint or an edge function's 403 `moderated`.
+                if (body?.get("hint").asString == "moderated" || (status == 403 && body?.get("code").asString == "moderated")) {
+                    post(Event.ACCOUNT_HELD_BY_SERVER)
+                } else if (saysPaused(status, body)) {
+                    post(Event.PROFILE_PAUSED_BY_SERVER)
+                }
+                val error = BackendError.Http(status, message ?: data.copyOf(minOf(data.size, 200)).decodeToString())
+                // Every refusal is searchable in Sentry's logs; the callers decide what is an issue.
+                Telemetry.log(
+                    if (status >= 500) Telemetry.Level.ERROR else Telemetry.Level.WARNING,
+                    "$label failed: $status",
+                    mapOf("status_code" to status, "reason" to Telemetry.reason(error), "duration_ms" to millis),
+                )
+                throw error
+            }
+            data
         }
-        return data
     }
 
     companion object {

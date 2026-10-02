@@ -1,10 +1,13 @@
 package so.drafft.core.data.backend
 
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.Icebreaker
 import so.drafft.core.model.Profile
 import so.drafft.core.model.Vitals
@@ -19,10 +22,20 @@ class Safety(private val backend: Backend) {
      */
     suspend fun report(person: Profile, reason: String, details: String) {
         if (uuidOrNull(person.id) == null) return
-        backend.rpc(
-            "report_user",
-            jsonOf("p_target" to person.id, "p_reason" to reason, "p_details" to details.trim().take(1000)),
-        )
+        try {
+            backend.rpc(
+                "report_user",
+                jsonOf("p_target" to person.id, "p_reason" to reason, "p_details" to details.trim().take(1000)),
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.ReportFailed(Telemetry.reason(e)))
+            Telemetry.unexpected(e, "safety", "report")
+            throw e
+        }
+        // The category only: the details are the person's own words, for the safety team alone.
+        Telemetry.track(AnalyticsEvent.UserReported(reason.lowercase()))
     }
 
     /** `block_user` / `unblock_user`. Both are idempotent: sending one again is harmless. */

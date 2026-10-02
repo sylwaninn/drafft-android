@@ -32,8 +32,10 @@ import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.app.feature.verification.rememberEmailCodeModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftField
 import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.theme.DS
@@ -48,6 +50,7 @@ import so.drafft.core.ui.theme.Motion
  */
 @Composable
 fun ResetPasswordView(email: String, modifier: Modifier = Modifier) {
+    TrackScreen(Screen.PASSWORD_RESET)
     val app = LocalAppModel.current
     val backend = koinInject<Backend>()
     val scope = rememberCoroutineScope()
