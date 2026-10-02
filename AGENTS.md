@@ -6,31 +6,114 @@ disagree, the iPhone app is right: read its source before changing behaviour her
 
 - Product: [PRODUCT.md](PRODUCT.md). Design rules: [DESIGN.md](DESIGN.md) (binding, including the
   "Drafft app rules" section). Wording: [WORDING.md](WORDING.md) (binding for any text people see).
-  DESIGN.md and WORDING.md are synced copies of drafft-ios's: never edit them here. Change them in
-  drafft-ios, then run the workspace's `scripts/sync-docs.sh`. They're written for the iPhone:
+  DESIGN.md and WORDING.md are shared with drafft-ios (the reference): see "Shared docs" before
+  changing them. They're written for the iPhone:
   "Android forms of the iPhone rules" below says how each iOS term applies here.
-- The iPhone sources live at `../drafft-ios/Drafft/`. Each Kotlin file says which Swift file it ports.
+- The iPhone sources: `Drafft/` in drafft-ios (next to this checkout locally; on the web,
+  `gh repo clone sylwaninn/drafft-ios` into a temporary folder). Each Kotlin file says which Swift file it ports.
 - Backend: the `drafft-backend` repository (Supabase), shared with the iPhone app.
 
 ## User-facing text: WORDING.md first (priority rule)
 
 Before writing or changing any text people see (UI strings in any of the 7 languages, CTAs, errors,
 empty states, push, email, paywall, Play Store listing, screenshots, marketing), read and apply
-[WORDING.md](WORDING.md), then run its review checklist (section 10). The `wording` skill (workspace
-`.claude/skills/wording/`) walks through it. Never write "plan" in any sense or language, and never
+[WORDING.md](WORDING.md), then run its review checklist (section 10). The `wording` skill (`.claude/skills/wording/`) walks through it. Never write "plan" in any sense or language, and never
 present a match as turning into something. App strings come from the iPhone catalog (see "Text" below):
 a new or changed string is written there first. The only text written here is the Android wording of the
 iPhone's platform sentences (`core/model/src/main/resources/i18n/android/`).
 
-## Workspace rules
+## Working with the user
 
-This repository lives in the drafft workspace (the parent folder, see `../AGENTS.md`), which holds what
-every repository shares: commit and GitHub rules (`../.claude/rules/`), the `create-pr` and `wording`
-skills (`../.claude/skills/`), and the Claude Code settings and git guard (`../.claude/`). Start agents
-there. In short: work on a branch, one-line commits `type(scope): description` without any
-Co-Authored-By, a pull request into `staging`, verify first. The git hooks in `.agents/git-hooks/`
-enforce it for agents and humans (`git config core.hooksPath .agents/git-hooks`, set by the
-workspace's `scripts/bootstrap.sh`).
+- **Rules live in this repository, never in an agent's memory.** A rule the user gives (design, copy,
+  product, way of working) goes into the document it belongs to, in the same change: DESIGN.md,
+  PRODUCT.md, this file, or WORDING.md (in drafft-ios, its source). Never save it to Claude Code's auto
+  memory: a cloud session, another machine or another agent would never see it.
+- **Industry-grade solutions.** Every fix or feature takes the robust, secure, scalable solution the
+  industry already uses (proven libraries and patterns: idempotency keys, retries with backoff,
+  dead-letter queues and redrive, circuit breakers, stale-while-revalidate), never a quick patch.
+  Challenge it before presenting it: name the pattern, its failure modes and how they are covered.
+- **Design calls are yours.** On design and build tasks, decide the structure, the call to action and the
+  wording (within WORDING.md) and say what you chose in the summary, instead of a round of questions.
+  Lean modern: rich motion and micro-interactions.
+- **Never check screens yourself**: no screenshots, no visual review by a subagent.
+  Build, install and launch the app on the emulator (`installLocalDebug`), then hand over.
+  The user checks the result themselves.
+- **On the user's phone, launch only on their go.** Install, then launch or relaunch only once the user
+  says "ok" or "prêt": they set the phone up first.
+- **Always live** (PRODUCT.md principle 7): any server state the person can see listens to the account's
+  Realtime channel and is read again on foreground and reconnect. Never a relaunch or a pull to refresh.
+- **Reviews run in depth, never trimmed.** A review (`/pr-review-toolkit:review-pr`, a pull request
+  audit) uses every applicable specialist agent on each pull request (code-reviewer,
+  silent-failure-hunter, pr-test-analyzer, comment-analyzer, type-design-analyzer, then code-simplifier).
+  Batch by repository if needed; never drop an aspect to save agents.
+- **Don't wait for CI or deploys.** Start the run, look at its status once if useful, report and move on.
+  Never block on `gh run watch`.
+
+## Repository rules
+
+Everything an agent needs is in this repository: this file, the docs it links, and `.claude/` (settings,
+git guard, skills). Claude Code loads the same files on this machine and on the web.
+
+### Branches and commits
+
+- Never commit on `main` and `staging`. Branch from a fresh `origin/staging` (`git fetch origin` first), named
+  `feat/`, `fix/`, `chore/`, `docs/` or `hotfix/` + a short kebab-case name.
+- Commit messages: `type(scope): description`, one line, no body, no trailers. Types: feat, fix, docs,
+  style, refactor, test, chore. Scope (required): the area touched: `chat`, `discover`, `profile`, `ui`, `data`, `model`, `i18n`, `ci`, or `android` for build and platform-wide changes. The description is lowercase,
+  imperative, starts with a verb and has no final period. Example: `feat(chat): add voice message replies`.
+- Commits are authored by the user only: never a `Co-Authored-By` or any AI attribution line
+  (`.claude/settings.json` turns Claude Code's off; the `commit-msg` hook and CI refuse them).
+- One logical change per commit; every commit passes verify. Never `--no-verify`.
+- Enforcement: the git hooks in `.agents/git-hooks/` (`git config core.hooksPath .agents/git-hooks`,
+  which `.claude/settings.json` runs at the start of every session) and, for Claude Code,
+  `.claude/hooks/guard-git.py` (commits and pushes to `main` and `staging`, deleting them, `--no-verify`). If a hook
+  refuses, change the approach; never work around it.
+
+### Pull requests and releases
+
+- Open them with the `create-pr` skill (`.claude/skills/create-pr/`), into `staging`. Title in
+  conventional commit format, English, 70 characters at most (it becomes the squash commit and feeds
+  the release version: `type!:` major, any `feat` minor, else patch). Every section of the body filled,
+  no AI attribution. Squash-merge.
+- Never merge a pull request whose checks are red or still running, never with admin rights.
+- A merge into `staging` runs CI only. A release (Actions > release, started by hand on GitHub) fast-forwards `main` to `staging`, tags `vX.Y.Z` and publishes a GitHub release; store builds are made by hand from that tag.
+- Agents never start a release or a deploy unless the user asks for it in the current request, and
+  never tag by hand.
+
+### Secrets
+
+Never open, print, copy, search or summarize `.env*` files (`.env.example` is safe), `.dev.vars`
+(`.dev.vars.example` is safe), keys, `google-services.json` or anything in `~/Secrets/`, by any means.
+Run the CLI that consumes them without showing them, and only when the user asks: it writes to a remote
+project. Never write, regenerate or overwrite a user's `.env.local`. `.claude/settings.json` denies the
+reads.
+
+### Environments
+
+Apps an agent installs or launches always target the local Supabase. Never build, install, deploy or run
+mutations against staging or production unless the user asks for that environment in the current
+request. Compile-only checks are the exception.
+
+### Work that spans repositories
+
+A product feature usually runs backend, then iOS, then Android (then the website for legal or marketing
+copy): one session and one pull request per repository, backend first since the apps call its RPCs and
+functions. iOS is the reference; Android ports it with the same names, behaviour and strings. The first
+pull request states the contract (RPCs, payloads, event names) and the next ones link it. Another
+repository is read on GitHub (`gh repo clone sylwaninn/<repo>` into a temporary folder), never edited
+from here, except the shared docs below when the user agrees.
+
+### Shared docs
+
+`WORDING.md` (in drafft-ios, drafft-android, drafft-backend and drafft-web) and `DESIGN.md` (in drafft-ios
+and drafft-android) are one document kept identical in each repository; drafft-ios holds the reference.
+**After changing either one here, ask the user whether the change goes to the other repositories' copies.**
+If yes, make the identical change in each, one pull request per repository (`gh repo clone
+sylwaninn/<repo>` into a temporary folder, a branch from its base, the `create-pr` skill), and link the
+pull requests to each other. Locally, drafft-ios's `scripts/sync-shared.sh` writes the copies from
+drafft-ios, and `--check` lists those that differ.
+
+### This repository
 
 `staging` (the default branch) takes every pull request; `main` is production and only moves through
 the release workflow (Actions > release: staging's new commits onto `main`, a `vX.Y.Z` tag and a GitHub
@@ -179,6 +262,11 @@ UPPER_SNAKE (`case superLike` → `SUPER_LIKE`), with the Swift raw value kept a
 
 A SwiftUI `View` becomes a `@Composable fun` with the same name and the same parameters in the same
 order, then `modifier: Modifier = Modifier`. A view model class keeps its name.
+
+**Behaviour and wording follow the iPhone; the look may adapt.** Features, flows and copy stay aligned
+with iOS. Where the platform works differently (iOS backdrop variable blur against Compose's
+self-blur, footer layouts), adapt the look on Android rather than porting it literally. A fix that is
+a real improvement for both apps goes into both repositories.
 
 Keep the iPhone code's comments when they explain why: they carry the product decisions. Don't add
 comments that say what the code plainly does.

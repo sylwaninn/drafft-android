@@ -64,6 +64,7 @@ Put each Firebase project's `google-services.json` in `app/src/<flavor>/`. Witho
 and runs; push stays off. Server side, two things are needed:
 - the backend's `register_push_token` and push sender must accept FCM tokens (the iPhone sends APNs);
 - Stream needs a Firebase push provider named `drafft-fcm`.
+- Setup state of Google Play, Firebase and RevenueCat: [docs/store-setup.md](docs/store-setup.md).
 
 ## Checks that run anywhere (no Android SDK)
 
