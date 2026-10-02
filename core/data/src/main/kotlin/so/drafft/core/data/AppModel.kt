@@ -56,6 +56,7 @@ import so.drafft.core.data.chat.ChatService
 import so.drafft.core.data.location.LocationOnce
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.notifications.NotificationService
+import so.drafft.core.data.notifications.PushRoute
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
@@ -486,6 +487,27 @@ class AppModel(
         tab = Tab.CHATS
         chatRequest = id
         latestRequest = LatestRequest(chatID = id)
+    }
+
+    /** A tapped notification's place, once the tabs are on screen (`MainTabs`, from `NotificationService.pendingRoute`). */
+    fun open(route: PushRoute) {
+        when (route) {
+            is PushRoute.Chat -> {
+                openChat(route.chatID)
+                // A match newer than the list (it just happened): read now, and the chat fills in when it lands.
+                if (conversation(route.chatID) == null) scope.launch { loadMatches() }
+            }
+            PushRoute.Likes -> showTab(Tab.LIKES)
+            PushRoute.Sessions -> showTab(Tab.SESSIONS)
+            PushRoute.Discover -> showTab(Tab.DISCOVER)
+            is PushRoute.PhotoRefusal -> photoModeration.openRefusal(route.mediaID)
+        }
+    }
+
+    private fun showTab(target: Tab) {
+        matchScreen = null
+        banner = null
+        tab = target
     }
 
     // Chat
@@ -1154,7 +1176,8 @@ class AppModel(
         if (matchScreen?.id == first.profile.id) return
         Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.THEIR_LIKE))
         Haptics.success()
-        if (lifecycle.isActive()) banner = MatchBanner(profile = first.profile)
+        // Not over its own chat (opened from the match's push before the list had it).
+        if (lifecycle.isActive() && openChatID != first.id) banner = MatchBanner(profile = first.profile)
         // In the background, the server's push says it.
     }
 

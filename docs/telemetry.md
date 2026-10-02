@@ -142,7 +142,7 @@ while it's on show in the current tab (not while the tabs are hidden); `TrackPay
 | Purchases | `paywall_viewed` (kind, `from_screen`), `paywall_dismissed`, `products_load_failed`, `purchase_started`, `purchase_completed`, `purchase_cancelled`, `purchase_failed`, `purchase_credited` (`seconds_to_credit`), `purchases_restored`, `restore_failed`, `subscription_manage_opened` |
 | Own profile | `profile_edited` (`fields`), `profile_edit_failed`, `photo_upload_started` (`retry`), `photo_upload_failed`, `photo_removed`, `photo_moderated` (`approved`, `refused`, `in_review`), `photo_review_requested`, `voice_intro_recorded` (`duration_seconds`, `where`), `profile_paused`, `selfie_verification_started`, `selfie_verification_submitted`, `selfie_verification_failed` |
 | Safety | `user_blocked`, `user_unblocked`, `user_reported` (category), `report_failed` |
-| Settings and system | `language_changed`, `permission_requested` (permission, result, during; sent when the system asked or the person is blocked, never for a permission already granted), `notification_setting_changed`, `push_received` (only while the app is on screen, so `in_foreground` is always true), `push_opened`, `legal_doc_opened`, `support_contacted`, `share_tapped` (`what`: `photo` or `video`, from the media viewer) |
+| Settings and system | `language_changed`, `permission_requested` (permission, result, during; sent when the system asked or the person is blocked, never for a permission already granted), `notification_setting_changed`, `push_received` (only while the app is on screen, so `in_foreground` is always true), `push_opened` (`kind`: the push's code, `new_message` for chat, `local` for the app's own, `session` for a session proposed or answered, else `unknown`; `routed`: the tap opened the push's own place, false when it fell back to Discover), `legal_doc_opened`, `support_contacted`, `share_tapped` (`what`: `photo` or `video`, from the media viewer) |
 
 Events fire when the person acts (the screen answers at once, the server confirms after), and a
 `*_failed` event follows when it didn't work: success counts are the events minus their failures.
@@ -163,6 +163,7 @@ Keep this list true: a new flow that costs money, accounts or safety adds its li
 | Sentry | `area:purchase` issues, to a dedicated channel; the "purchase credited late" message | Money is involved |
 | PostHog | `purchase_failed`, `sign_up_failed`, `log_in_failed` trend up (`app_environment = production`) | Funnel breaks that raise no exception |
 | PostHog | `onboarding_completed` per day falls (`app_environment = production`) | Sign-up is broken or traffic fell |
+| PostHog | `push_opened` with `routed = false` above 5% of `push_opened`, by `kind` (`app_environment = production`) | A push whose tap no longer opens its place (a payload missing its id, a new kind) |
 
 Set in Sentry's and PostHog's interfaces (or through the PostHog MCP); alerts and insights always filter on
 production.

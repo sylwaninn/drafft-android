@@ -31,8 +31,7 @@ import so.drafft.core.model.Localization
  * Notifications: permission, the per-type preferences, and the push plumbing (the FCM token). Session
  * reminders are the server's pushes (`session.reminder`, following `notify_session_*`): checked against
  * the session when they're sent, so a cancelled or changed one never reminds anyone. Tapping a
- * notification opens its chat ([openChatID]), Discover for the weekly boost ([openBoost]), or the
- * Sessions tab ([openSessions]); screens read those and reset them once handled.
+ * notification leaves its place in [pendingRoute] ([PushTap]), which the tabs take once they're on screen.
  */
 class NotificationService(
     private val backend: Backend,
@@ -53,14 +52,16 @@ class NotificationService(
     var deviceToken: String? by mutableStateOf(null)
         private set
 
-    /** A chat to open, set when a notification is tapped. */
-    var openChatID: String? by mutableStateOf(null)
+    /**
+     * Where the last tapped notification leads, until the tabs are on screen to open it ([takeRoute]).
+     * A tap at launch waits here through the splash, the session check and sign-in; a later tap
+     * replaces it.
+     */
+    var pendingRoute: PushRoute? by mutableStateOf(null)
+        private set
 
-    /** Set when the weekly-boost notification is tapped: Discover opens, where the boost is used. */
-    var openBoost: Boolean by mutableStateOf(false)
-
-    /** Set when a session's cancellation without a chat is tapped: the Sessions tab opens. */
-    var openSessions: Boolean by mutableStateOf(false)
+    /** The route waiting, cleared: each tap opens its place once. */
+    fun takeRoute(): PushRoute? = pendingRoute.also { pendingRoute = null }
 
     // Preferences. Saved on the profile (the server's pushes follow them, and they come back on a new
     // device) and on the phone (right at launch, offline too). See `applyServer`.
@@ -341,7 +342,7 @@ class NotificationService(
                 body = body,
                 channel = channel,
                 threadID = chatID,
-                info = mapOf("chatID" to chatID),
+                info = localInfo(kind, chatID),
                 photo = photo,
             ),
         )
@@ -357,7 +358,7 @@ class NotificationService(
         val kind = info["kind"]
         // The service also runs for a push that arrives while the app is in the background, which isn't
         // counted.
-        if (lifecycle.isActive()) Telemetry.track(AnalyticsEvent.PushReceived(pushKind(info), inForeground = true))
+        if (lifecycle.isActive()) Telemetry.track(AnalyticsEvent.PushReceived(PushTap.kind(info), inForeground = true))
         // A refused photo while the app is open: its own banner says it, not the system's (shown once,
         // whether the push or the live `media` event comes first).
         if (kind == "photo_refused") {
@@ -385,7 +386,7 @@ class NotificationService(
                 title = title,
                 body = body,
                 channel = channel(info),
-                threadID = chatID(info),
+                threadID = PushTap.chatID(info),
                 info = info,
             ),
         )
@@ -393,45 +394,24 @@ class NotificationService(
 
     /** A notification was tapped (from `MainActivity`, with the notification's data). */
     fun didReceive(info: Map<String, String>) {
-        val kind = info["kind"]
-        Telemetry.track(AnalyticsEvent.PushOpened(pushKind(info)))
-        if (kind == "photo_refused") {
-            info["media"]?.let { photoModeration.openRefusal(mediaID = it) }
-            return
+        val tap = PushTap.parse(info)
+        Telemetry.track(AnalyticsEvent.PushOpened(tap.kind, routed = tap.routed))
+        // The session changed: the cards follow, whichever screen opens.
+        if (tap.kind == "session_cancelled") scope.launch { sessions.refresh() }
+        when (val route = tap.route) {
+            // Its own sheet, above whatever phase the app is in.
+            is PushRoute.PhotoRefusal -> photoModeration.openRefusal(mediaID = route.mediaID)
+            else -> pendingRoute = route
         }
-        // Opening the app is enough: it shows the screen of the account's current state.
-        if (kind == "moderation") return
-        if (kind == "weekly_boost") {
-            openBoost = true
-            return
-        }
-        val chatID = chatID(info)
-        if (kind == "session_cancelled") {
-            // Cancelled with its match (no chat any more): the Sessions tab, read again.
-            scope.launch { sessions.refresh() }
-            if (chatID == null) {
-                openSessions = true
-                return
-            }
-        }
-        openChatID = chatID
     }
 
-    /** The push's kind as a code (`new_message` for Stream's chat pushes, `local` for the app's own). */
-    private fun pushKind(info: Map<String, String>): String = when {
-        info["kind"] != null -> info.getValue("kind").lowercase()
-        info["sender"] == "stream.chat" -> "new_message"
-        info["chatID"] != null -> "local"
-        else -> "unknown"
+    /** The app's own notification's data: its chat, and the kind when it isn't a message (a tap on a like opens Likes). */
+    private fun localInfo(kind: NotificationText.Kind, chatID: String): Map<String, String> = when (kind) {
+        NotificationText.Kind.Like -> mapOf("kind" to "like", "chatID" to chatID)
+        NotificationText.Kind.SuperLike -> mapOf("kind" to "super_like", "chatID" to chatID)
+        NotificationText.Kind.Match -> mapOf("kind" to "match", "chatID" to chatID)
+        else -> mapOf("chatID" to chatID)
     }
-
-    /**
-     * Server pushes name the match (its chat); the app's own name the chat. Stream's message pushes
-     * (`sender: stream.chat`) name the channel, whose id is the match's.
-     */
-    private fun chatID(info: Map<String, String>): String? =
-        info["chatID"] ?: info["match"]?.lowercase()
-            ?: info["channel_id"]?.takeIf { info["sender"] == "stream.chat" }?.lowercase()
 
     private fun channel(info: Map<String, String>): LocalNotifications.Channel = when (info["kind"]) {
         "match" -> LocalNotifications.Channel.MATCHES

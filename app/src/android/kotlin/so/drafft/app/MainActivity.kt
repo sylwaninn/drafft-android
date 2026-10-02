@@ -72,7 +72,8 @@ class MainActivity : ComponentActivity() {
         // System permissions (notifications, camera, microphone, calendar) are asked from here, the
         // activity on screen; the services only see the answer.
         PermissionPrompter.engine = PermissionPrompter.Engine { permissions -> prompt(permissions) }
-        notifications.handleNotificationTap(intent)
+        // Not when the activity is recreated (after the process was let go): its intent is the old one.
+        if (savedInstanceState == null) notifications.handleNotificationTap(intent)
         location.requester = {
             askLocation.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION))
         }

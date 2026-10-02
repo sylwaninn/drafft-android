@@ -392,7 +392,7 @@ class TelemetryTest {
             AnalyticsEvent.LanguageChanged("some_code", "some_code"),
             AnalyticsEvent.PermissionRequested(AnalyticsEvent.Permission.entries.first(), AnalyticsEvent.PermissionResult.entries.first(), "some_code"),
             AnalyticsEvent.NotificationSettingChanged("some_code", true),
-            AnalyticsEvent.PushOpened("some_code"),
+            AnalyticsEvent.PushOpened("some_code", routed = true),
             AnalyticsEvent.PushReceived("some_code", true),
             AnalyticsEvent.LegalDocOpened("some_code"),
             AnalyticsEvent.SupportContacted("some_code", true),

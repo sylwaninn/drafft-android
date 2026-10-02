@@ -242,7 +242,9 @@ sealed class AnalyticsEvent(val name: String, vararg props: Pair<String, Any?>) 
     class NotificationSettingChanged(setting: String, enabled: Boolean) :
         AnalyticsEvent("notification_setting_changed", "setting" to setting, "enabled" to enabled)
 
-    class PushOpened(kind: String) : AnalyticsEvent("push_opened", "kind" to kind)
+    /** [routed]: the tap opened the push's own place (false: Discover, for want of a known kind or of its id). */
+    class PushOpened(kind: String, routed: Boolean) :
+        AnalyticsEvent("push_opened", "kind" to kind, "routed" to routed)
     class PushReceived(kind: String, inForeground: Boolean) :
         AnalyticsEvent("push_received", "kind" to kind, "in_foreground" to inForeground)
 
