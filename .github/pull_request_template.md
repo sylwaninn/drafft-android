@@ -23,8 +23,8 @@ Delete these comments and any section that doesn't apply.
 - [ ] `./gradlew -p tools/jvmcheck compileKotlin test`
 - [ ] `python3 scripts/check-strings.py`
 - [ ] `python3 scripts/ci/design_lint.py` and `python3 scripts/ci/i18n_lint.py`
-- [ ] `./gradlew assembleLocalDebug`
-- [ ] Run on the local backend (`installLocalDebug`), steps:
+- [ ] `./gradlew assembleStagingDebug`
+- [ ] Run on staging (`installStagingDebug`), steps:
   1.
 
 ## Screenshots

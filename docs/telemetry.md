@@ -16,7 +16,7 @@ and `core/data/src/android/.../telemetry/` (the two SDKs).
 
 The app talks to neither SDK directly: everything goes through `Telemetry` (an object with pluggable
 engines, like `Haptics`), which applies `PrivacyGuard` and the person's consent first. Without keys
-(local builds, unit tests) every call does nothing. `Telemetry` never throws into the app: an engine
+(builds without keys, unit tests) every call does nothing. `Telemetry` never throws into the app: an engine
 that fails, or a bug in it, is logged on the phone only and swallowed (unit tests, in strict mode, get
 the exception back).
 
@@ -99,7 +99,7 @@ extra (`error_kind`), next to the caller's own extras. A cancelled task is never
 Performance: every request is a span (`http.client`, `POST rest/v1/rpc/discover`) with its status and
 duration, a child of the running trace (app start, screen load) or a trace of its own. Lone requests are
 the most frequent traces, so production keeps 2% of them and 20% of the others (app starts, uploads);
-staging and local keep everything. Media uploads (`media.upload`) are timed too. A span ends as its
+staging keeps everything. Media uploads (`media.upload`) are timed too. A span ends as its
 outcome says: cancelled is not a failure, a 4xx the server meant takes the response's status (not found,
 resource exhausted...), only an exception or a 5xx is an internal error. Ids in a span's name are
 scrubbed. Profiles follow 5% of the sampled traces in production (`ProfileLifecycle.TRACE`).
@@ -117,7 +117,7 @@ summary as a Sentry log line. PostHog's queue is sent when the app leaves the fr
 
 All events live in `AnalyticsEvent` (one class per event). Names are `object_action`, snake_case, past
 tense. Every event also carries `screen` (the screen on show), and these super properties:
-`app_environment` (`production`, `staging`, `local`, or `unknown` for a build whose environment is missing or invalid:
+`app_environment` (`production`, `staging`, or `unknown` for a build whose environment is missing or invalid:
 never production; also stamped on every event on its way out, PostHog's own `$` events included, so the first
 lifecycle events can't miss it), `app_language`, `app_phase` (`welcome`,
 `onboarding`, `main`), `is_premium`. PostHog adds the app version, OS, device model and its lifecycle
@@ -189,8 +189,7 @@ production.
 
 Empty values turn the service off. Production and staging share the Sentry project (the
 `environment` tag separates them) and the PostHog project too, with drafft-ios and the website:
-filter every insight, funnel, alert and experiment on `app_environment = production` (local builds send
-nothing: empty key). Staging events count in the same quota. The app and the build both refuse a non-EU host (anything but exactly
+filter every insight, funnel, alert and experiment on `app_environment = production`. Staging events count in the same quota. The app and the build both refuse a non-EU host (anything but exactly
 `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`),
 and the build refuses anything shaped like a secret (`sntrys_`, `sntryu_`, `phx_`).
 

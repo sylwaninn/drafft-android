@@ -18,19 +18,12 @@ Checked when Gradle configures the build, before anything compiles:
 
 - only public keys: a value that looks like a secret (`sb_secret_`, `service_role`, a private key, a Sentry auth
   token, a PostHog personal key) stops the build;
-- `SUPABASE_URL` must be https, except for the local flavor;
+- `SUPABASE_URL` must be https;
 - `POSTHOG_HOST`, when set, must be PostHog's EU cloud (`https://eu.i.posthog.com`), and `SENTRY_DSN`, when set,
   a DSN of Sentry's EU region (`ingest.de.sentry.io`);
 - a release build lacking `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` or `REVENUECAT_API_KEY` fails.
 
-The local flavor is debug only. A new value goes in the three files and in `flavorFields`
-(`app/build.gradle.kts`).
-
-## Local backend
-
-The local Supabase's URL and key depend on the machine: `scripts/local-backend.sh` writes them from
-drafft-backend's running Supabase to `local.private.properties` (gitignored; `--device` for a phone on the
-same Wi-Fi). Without them the local app stops at launch and says what's missing.
+A new value goes in the two files and in `flavorFields` (`app/build.gradle.kts`).
 
 ## Push notifications (FCM)
 
