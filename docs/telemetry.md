@@ -96,6 +96,12 @@ minutes, the rest are breadcrumbs, so a retry loop can't flood; the error's kind
 extra (`error_kind`), next to the caller's own extras. A cancelled task is never a failure:
 `Telemetry.track` drops any event whose `reason` is `cancelled`.
 
+Device attestation (area `integrity`, `PlayDeviceIntegrity`) reports only the Play Integrity errors that need
+a fix: a project number Google refuses, the daily quota (`TOO_MANY_REQUESTS`), a request hash too long, an app
+uid mismatch, an internal error (action `token`, with the SDK's `error_code`); and a failed `device-check` call
+(action `device_check`, classified like any request). Offline, no Play services or an outdated Play Store stay
+silent: a phone has them all the time.
+
 Performance: every request is a span (`http.client`, `POST rest/v1/rpc/discover`) with its status and
 duration, a child of the running trace (app start, screen load) or a trace of its own. Lone requests are
 the most frequent traces, so production keeps 2% of them and 20% of the others (app starts, uploads);
