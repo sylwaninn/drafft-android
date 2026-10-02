@@ -68,7 +68,6 @@ import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.SheetNavBar
 import so.drafft.core.ui.components.SportPicker
 import so.drafft.core.ui.components.TextLinkButton
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
@@ -109,9 +108,6 @@ fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
                         app.filters = draft
                         dismiss()
                     },
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .draftTrail(RoundedCornerShape(DS.Radius.xl), step = androidx.compose.ui.unit.DpOffset((-6).dp, 0.dp)),
                 )
                 TextLinkButton(
                     L("Clear filters"),

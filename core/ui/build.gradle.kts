@@ -1,4 +1,4 @@
-// The design system (DESIGN.md): tokens, type, surfaces, components, the drafting motif,
+// The design system (DESIGN.md): tokens, type, surfaces, components,
 // progressive blur edges, navigation primitives and the bundled photos and fonts.
 plugins {
     alias(libs.plugins.android.library)

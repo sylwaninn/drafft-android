@@ -38,7 +38,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.L
@@ -51,7 +50,6 @@ import so.drafft.core.ui.components.GlassCircleButton
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetNavBar
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.glass
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
@@ -109,9 +107,6 @@ fun PromptPickerSheet(
                         onPick(picked)
                         dismiss()
                     },
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
                     enabled = selection != null && selection != current,
                 )
                 Text(

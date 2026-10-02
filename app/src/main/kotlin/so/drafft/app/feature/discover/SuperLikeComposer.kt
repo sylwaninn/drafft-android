@@ -68,7 +68,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -81,7 +80,6 @@ import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SuperLikeMark
 import so.drafft.core.ui.components.VerticalEdge
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.components.progressiveBlur
 import so.drafft.core.ui.theme.DS
@@ -289,8 +287,6 @@ private fun SendButton(hasMessage: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(DS.Radius.xl)
     Box(
         Modifier
-            .padding(start = 12.dp)
-            .draftTrail(shape, color = negative, step = DpOffset((-6).dp, 0.dp))
             .fillMaxWidth()
             .pressScale(onClick, scale = 0.97f)
             .defaultMinSize(minHeight = 52.dp)

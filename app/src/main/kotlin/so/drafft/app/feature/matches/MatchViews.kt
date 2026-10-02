@@ -73,7 +73,7 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-/** Full-screen match moment: two portraits slide into drafting formation, one tucked behind the other. */
+/** Full-screen match moment: two portraits slide in, one tucked behind the other. */
 @Composable
 fun MatchView(
     profile: Profile,
@@ -85,21 +85,14 @@ fun MatchView(
     TrackScreen(Screen.MATCH)
     val reduceMotion = LocalReduceMotion.current
     var arrived by remember { mutableStateOf(reduceMotion) }
-    var trails by remember { mutableStateOf(reduceMotion) }
     LaunchedEffect(Unit) {
         arrived = true
-        trails = true
     }
     // Reduce Motion: everything already in place.
     val arrival by animateFloatAsState(
         if (arrived) 1f else 0f,
         if (reduceMotion) tween(0) else Motion.springOf(0.4, 0.75f),
         label = "arrival",
-    )
-    val trail by animateFloatAsState(
-        if (trails) 1f else 0f,
-        if (reduceMotion) tween(0) else tween(500, delayMillis = 150, easing = Motion.EaseOut),
-        label = "trails",
     )
     val shared = remember(profile, me) {
         profile.sports.map { it.sport }.firstOrNull { s -> me.sports.any { it.sport == s } }
@@ -122,7 +115,7 @@ fun MatchView(
             ) {
                 Spacer(Modifier.heightIn(min = DS.Space.lg).weight(1f))
 
-                Formation(profile, me, { arrival }, { trail }, Modifier.fillMaxWidth().height(300.dp))
+                Formation(profile, me, { arrival }, Modifier.fillMaxWidth().height(300.dp))
 
                 Column(
                     Modifier.graphicsLayer {
@@ -170,7 +163,6 @@ private fun Formation(
     profile: Profile,
     me: Profile,
     arrival: () -> Float,
-    trail: () -> Float,
     modifier: Modifier = Modifier,
 ) {
     val p = DS.palette
@@ -185,20 +177,6 @@ private fun Formation(
         bounce.animateTo(1f, Motion.bouncy())
     }
     Box(modifier.clearAndSetSemantics { contentDescription = label }, contentAlignment = Alignment.Center) {
-        // Ghost trails behind the lead card: the drafting motif.
-        for (i in 1..3) {
-            Box(
-                Modifier
-                    .graphicsLayer {
-                        translationX = (-40f - i * 26f * trail()) * density
-                        translationY = -10f * density
-                        rotationZ = -6f
-                    }
-                    .size(170.dp, 230.dp)
-                    .background(p.accentOnNight.copy(alpha = 0.22f / i), RoundedCornerShape(DS.Radius.xl)),
-            )
-        }
-
         Portrait(me.portrait, rotation = -6f, x = { -260f + (260f - 48f) * arrival() }, y = -10.dp)
         Portrait(profile.portrait, rotation = 7f, x = { 260f - (260f - 56f) * arrival() }, y = 24.dp)
 

@@ -354,7 +354,7 @@ fun LikeTile(profile: Profile, now: Instant, onOpen: () -> Unit, onLike: () -> U
     }
 }
 
-/** The red disc of a super like, with its drafting heart. */
+/** The red disc of a super like, with its heart. */
 @Composable
 private fun SuperLikeDisc(modifier: Modifier = Modifier) {
     Box(
@@ -364,7 +364,7 @@ private fun SuperLikeDisc(modifier: Modifier = Modifier) {
             .clearAndSetSemantics { },
         contentAlignment = Alignment.Center,
     ) {
-        SuperLikeMark(Modifier.padding(end = 6.dp), size = 11.dp, color = Color.White)
+        SuperLikeMark(size = 11.dp, color = Color.White)
     }
 }
 

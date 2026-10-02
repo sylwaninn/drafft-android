@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -588,7 +587,7 @@ private fun Badge(tab: ExtrasSheet.Tab) {
                 .background(p.negative, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            SuperLikeMark(Modifier.offset(x = (-3).dp), size = 13.dp, color = Color.White)
+            SuperLikeMark(size = 13.dp, color = Color.White)
         }
         ExtrasSheet.Tab.BOOST, ExtrasSheet.Tab.LIKES -> {
             // Likes stay green whatever the brand accent.

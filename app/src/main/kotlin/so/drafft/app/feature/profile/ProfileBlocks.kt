@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -68,7 +67,6 @@ import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.draftBlock
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
@@ -119,7 +117,7 @@ fun ProfileSectionCard(
 
 // MARK: - Voice
 
-/** Night block: big lime play button with drafting trail, full-width waveform, playback speed. */
+/** Night block: big lime play button, full-width waveform, playback speed. */
 @Composable
 fun VoiceBlock(profile: Profile, modifier: Modifier = Modifier) {
     val audio = koinInject<AudioPlayback>()
@@ -142,8 +140,6 @@ fun VoiceBlock(profile: Profile, modifier: Modifier = Modifier) {
                         }
                     },
                     modifier = Modifier
-                        .padding(start = 20.dp)
-                        .draftTrail(CircleShape, step = DpOffset((-10).dp, 0.dp))
                         .size(64.dp)
                         .background(p.accentOnNight, CircleShape),
                     contentDescription = if (playing) L("Pause voice intro") else L("Play %s's voice intro", profile.name),
@@ -384,7 +380,7 @@ private fun vitalsItems(profile: Profile, showDistance: Boolean, showsPlace: Boo
 @Composable
 fun PromptCard(prompt: ProfilePrompt, onLike: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val p = DS.palette
-    // Heart sits in the layout (not an overlay) so the text always keeps a gap from it and its trail.
+    // Heart sits in the layout (not an overlay) so the text always keeps a gap from it.
     Row(
         modifier
             .fillMaxWidth()
@@ -398,15 +394,14 @@ fun PromptCard(prompt: ProfilePrompt, onLike: (() -> Unit)? = null, modifier: Mo
             Text(prompt.answer, style = displayBold(26f), color = p.ink)
         }
         if (onLike != null) {
-            // Room for the trail.
-            LikeHeartButton(label = L("Like this answer"), action = onLike, modifier = Modifier.padding(start = 14.dp))
+            LikeHeartButton(label = L("Like this answer"), action = onLike)
         }
     }
 }
 
 // MARK: - Likes
 
-/** Green like heart with the drafting trail (liking stays green whatever the brand accent). */
+/** Green like heart (liking stays green whatever the brand accent). */
 @Composable
 fun LikeHeartButton(
     label: String = L("Like"),
@@ -421,7 +416,6 @@ fun LikeHeartButton(
             action()
         },
         modifier = modifier
-            .draftTrail(CircleShape, color = p.like, step = DpOffset(-size * 0.14f, 0.dp))
             .size(size)
             .background(p.like, CircleShape),
         contentDescription = label,

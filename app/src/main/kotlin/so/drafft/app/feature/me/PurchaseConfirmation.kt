@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -30,7 +29,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.util.UUID
 import kotlinx.coroutines.delay
@@ -43,7 +41,6 @@ import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SparkPlus
 import so.drafft.core.ui.components.SuperLikeMark
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
@@ -135,9 +132,6 @@ fun PurchaseConfirmation(
                     Haptics.tap()
                     primary()
                 },
-                modifier = Modifier
-                    .padding(start = 12.dp)
-                    .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
             )
 
             if (secondaryTitle != null) {
@@ -175,13 +169,9 @@ fun PurchaseConfirmation(
 @Composable
 private fun Mark(item: PurchaseReceipt.Item, modifier: Modifier = Modifier) {
     val p = DS.palette
-    val disc = Modifier
-        .padding(start = 18.dp)
     when (item) {
         is PurchaseReceipt.Item.Tempo -> Box(
             modifier
-                .then(disc)
-                .draftTrail(CircleShape, step = DpOffset((-9).dp, 0.dp))
                 .size(72.dp)
                 .background(p.lime, CircleShape)
                 .clearAndSetSemantics { },
@@ -191,8 +181,6 @@ private fun Mark(item: PurchaseReceipt.Item, modifier: Modifier = Modifier) {
         }
         is PurchaseReceipt.Item.Boosts -> Box(
             modifier
-                .then(disc)
-                .draftTrail(CircleShape, step = DpOffset((-9).dp, 0.dp))
                 .size(72.dp)
                 .background(p.lime, CircleShape)
                 .clearAndSetSemantics { },
@@ -202,14 +190,12 @@ private fun Mark(item: PurchaseReceipt.Item, modifier: Modifier = Modifier) {
         }
         is PurchaseReceipt.Item.SuperLikes -> Box(
             modifier
-                .then(disc)
-                .draftTrail(CircleShape, color = p.negative, step = DpOffset((-9).dp, 0.dp))
                 .size(72.dp)
                 .background(p.negative, CircleShape)
                 .clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
-            SuperLikeMark(Modifier.offset(x = (-5).dp), size = 26.dp, color = Color.White)
+            SuperLikeMark(size = 26.dp, color = Color.White)
         }
     }
 }

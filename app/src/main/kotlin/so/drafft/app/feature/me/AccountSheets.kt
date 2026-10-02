@@ -54,7 +54,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
@@ -93,7 +92,6 @@ import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SheetBlock
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
@@ -156,13 +154,6 @@ fun AccountSheet(
                     destructive = destructive,
                     enabled = enabled && !loading,
                     onClick = action,
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .draftTrail(
-                            RoundedCornerShape(DS.Radius.xl),
-                            color = if (destructive) p.negative else p.lime,
-                            step = DpOffset((-6).dp, 0.dp),
-                        ),
                 ) {
                     when {
                         loading -> ButtonSpinner(if (destructive) Color.White else p.onLime)

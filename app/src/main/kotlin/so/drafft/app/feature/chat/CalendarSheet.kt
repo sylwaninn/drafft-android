@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import so.drafft.core.data.AppModel
@@ -33,7 +32,6 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.PressScaleButton
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
@@ -123,8 +121,6 @@ fun CalendarButton(
         else -> DrafftButton(
             onClick = ::open,
             modifier = modifier
-                .padding(start = 12.dp)
-                .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp))
                 .then(a11y),
         ) {
             DrafftIcon("calendar-add", size = 20.dp, tint = LocalContentColor.current)

@@ -37,7 +37,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
@@ -62,7 +61,6 @@ import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.TabHeader
 import so.drafft.core.ui.components.TabTitle
 import so.drafft.core.ui.components.TopBar
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.trackingScrollOffset
 import so.drafft.core.ui.navigation.LocalNavStack
 import so.drafft.core.ui.components.HidesTabBar
@@ -250,10 +248,7 @@ private fun NextUp(item: Item, onOpen: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
                 DrafftButton(
                     onClick = onOpen,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 12.dp)
-                        .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
+                    modifier = Modifier.weight(1f),
                 ) {
                     DrafftIcon("chat-round-line", size = 20.dp, tint = LocalContentColor.current)
                     Text(L("Open chat"), maxLines = 2, overflow = TextOverflow.Clip)
