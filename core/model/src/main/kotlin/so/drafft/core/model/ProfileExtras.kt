@@ -137,7 +137,7 @@ data class Vitals(
 /** A themed set of prompt questions. Add categories or questions here; the picker scales with them. */
 data class PromptCategory(
     val id: String,
-    /** SF Symbol name (see `DrafftIcon`). */
+    /** Icon name (see `DrafftIcon`). */
     val icon: String,
     /** English library text: the stable identity of each question. Show [ProfilePrompt.text]. */
     val questions: List<String>,

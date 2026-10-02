@@ -1,7 +1,5 @@
 package so.drafft.core.data.telemetry
 
-// Ports Drafft/Services/Telemetry/Core/ScreenTracker.swift.
-
 /**
  * Which screen is on show, for [Telemetry.screen]. The root sets the [base] (welcome, sign-up, the
  * current tab); a pushed screen, a sheet or a cover [enter]s on top while it's on screen and [leave]s

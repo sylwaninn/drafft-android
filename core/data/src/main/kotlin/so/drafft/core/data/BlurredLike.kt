@@ -13,10 +13,8 @@ import so.drafft.core.model.ThumbHash
 import so.drafft.core.model.newestFirst
 import java.time.Instant
 
-// Ports Drafft/Services/AppModel+BlurredLikes.swift.
-
 /**
- * One like on the free plan: what the server gives without drafft tempo (`liked_me`, backend
+ * One like on a free account: what the server gives without drafft tempo (`liked_me`, backend
  * 20260928000231), an opaque handle, whether it was a super like, when, a ThumbHash of the first
  * photo and, when the backend has made one, a signed link to a blurred copy of that photo
  * (`blurUrl`). Nobody's id, name or sharp photo reaches the phone: the blur is the server's, not a

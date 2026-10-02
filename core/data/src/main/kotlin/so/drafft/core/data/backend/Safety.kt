@@ -12,8 +12,6 @@ import so.drafft.core.model.Icebreaker
 import so.drafft.core.model.Profile
 import so.drafft.core.model.Vitals
 
-// Ports Drafft/Services/Backend/Safety.swift.
-
 /** Reports and blocks, on the server. Profiles from the demo data (not server ids) stay on the device. */
 class Safety(private val backend: Backend) {
     /**

@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 // The Android side of the chat's media pieces in [PlatformUi]: the photo and video picker, the system
-// camera (Drafft/Features/Chat/CameraCapture.swift), a video's length and poster, and the share sheet.
+// camera, a video's length and poster, and the share sheet.
 
 /** Where camera captures and picked videos are kept (declared in res/xml/file_paths.xml). */
 private fun capturesDir(context: Context): File = File(context.cacheDir, "captures").apply { mkdirs() }
@@ -156,7 +156,7 @@ internal suspend fun readVideoInfo(url: String): VideoInfo? = withContext(Dispat
         val millis = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
         val frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
         val thumb = frame?.let { bitmap ->
-            // At most 600 px, like `maximumSize` on the iPhone's image generator.
+            // The poster frame, at most 600 px on its long side: enough for a chat bubble.
             val scale = minOf(1f, 600f / max(bitmap.width, bitmap.height))
             val sized = if (scale < 1f) {
                 Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)

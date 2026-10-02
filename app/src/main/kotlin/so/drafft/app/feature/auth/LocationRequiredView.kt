@@ -60,8 +60,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/LocationRequiredView.swift.
-
 /**
  * Blocking screen when drafft can't use the location: it shows people near you, so it can't be used
  * without it. Precise or approximate doesn't matter; "while using the app" is enough. No close button:
@@ -115,7 +113,7 @@ fun LocationRequiredView(modifier: Modifier = Modifier) {
                     ) {
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         Box(Modifier.fillMaxWidth().rise(appeared, 0, reduceMotion)) {
-                            // (200 - 54) / 2: the sign sits in the middle of its 200 pt map.
+                            // (200 - 54) / 2: the sign sits in the middle of its 200 dp map.
                             EmptyStateIllustration(
                                 EmptyStateArt(symbol = "map-point-remove"),
                                 Modifier.offset(x = (-73).dp),

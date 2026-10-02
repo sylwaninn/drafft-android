@@ -17,7 +17,7 @@ import java.io.IOException
 import kotlin.math.log10
 import kotlin.math.max
 
-/** Ports the AVFoundation side of Drafft/Services/Audio.swift: MediaPlayer, MediaRecorder, files. */
+/** The platform side of audio: MediaPlayer, MediaRecorder, files. */
 class AndroidAudioEngine(context: Context) : AudioEngine {
     private val context = context.applicationContext
 

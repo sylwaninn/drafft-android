@@ -3,7 +3,7 @@ package so.drafft.core.data.media
 import kotlin.test.assertEquals
 import org.junit.Test
 
-// The sized links of Drafft/Services/Media/Images.swift: the widths asked of the media Worker
+// The sized photo links: the widths asked of the media Worker
 // (cloudflare/media-worker in drafft-backend), and the cache key that keeps one copy per width.
 class PhotoSizesTest {
     private val base = "https://media.getdrafft.com"

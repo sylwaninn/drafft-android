@@ -12,7 +12,6 @@ import so.drafft.core.data.backend.Backend
  * The silent moderation check of a photo or video sent in a chat, once it's on the media bucket: the
  * backend's chat-media function judges it (Rekognition; a video by its poster). Nothing changes on
  * screen; a flagged one is recorded server-side (media_flags).
- * Ports Drafft/Services/Backend/ChatMediaCheck.swift.
  */
 class ChatMediaCheck(private val backend: Backend) {
     private val log = Logger.getLogger("so.drafft.chat-media")

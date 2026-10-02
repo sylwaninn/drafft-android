@@ -97,15 +97,13 @@ import so.drafft.core.ui.theme.semibold
 import java.text.BreakIterator
 import androidx.compose.ui.res.painterResource
 
-// Port of Drafft/DesignSystem/Components.swift.
-
 /**
- * The box an SF Symbol set at [fontSize] points takes: Material glyphs sit in a square with a small
- * margin, so the box is a bit larger than the type size to draw the glyph at the same visual size.
+ * The box for an icon sized to sit beside text at [fontSize]: the drawables keep a margin around the
+ * glyph, so the box is 1.2× the type size to make the glyph look as large as the text.
  */
 internal fun symbolBox(fontSize: Float): Dp = (fontSize * 1.2f).dp
 
-/** A size in dp as a font size that ignores the font scale, like `.system(size:)` on iOS. */
+/** A size in dp as a font size that ignores the font scale. */
 @Composable
 internal fun Dp.fixedSp(): TextUnit = with(LocalDensity.current) { this@fixedSp.toSp() }
 
@@ -193,7 +191,7 @@ fun DrafftButton(
 
 /**
  * `PressScaleStyle`: shrinks while pressed, no ripple. The whole laid-out frame takes the touch.
- * Without that only drawn pixels do: a glyph in a 68 pt frame, or a glass circle, answered only when
+ * Without that only drawn pixels do: a glyph in a 68 dp frame, or a glass circle, answered only when
  * the finger landed on the symbol itself.
  */
 @Composable
@@ -238,7 +236,7 @@ fun PressScaleButton(
 }
 
 /**
- * `TextLinkStyle`, for text actions ("Clear filters", "Forgot?", "Resend code"): the full 44 pt
+ * `TextLinkStyle`, for text actions ("Clear filters", "Forgot?", "Resend code"): the full 44 dp
  * row takes the touch, not just the letters, and the label dims while pressed.
  * Disabled: mute grey at full strength (6:1 on light and dark sheets), not a faded accent, so it
  * stays readable while clearly out of play. The label takes its colour from `LocalContentColor`.
@@ -334,7 +332,7 @@ fun SportChip(
 // MARK: - Text field
 
 /**
- * The one field pattern: label above (subheadline semibold), the lifted-white bordered box (52 pt,
+ * The one field pattern: label above (subheadline semibold), the lifted-white bordered box (52 dp,
  * radius md), the error under it. The whole box, padding included, focuses the field. Inside a
  * `FocusScrollView` it scrolls itself clear of the keyboard when focused.
  */
@@ -602,7 +600,7 @@ fun SportsLine(
 
 // MARK: - Checkbox
 
-/** A checkbox is the one selection mark too: a large [CheckDisc] in a 44 pt target. */
+/** A checkbox is the one selection mark too: a large [CheckDisc] in a 44 dp target. */
 @Composable
 fun DrafftCheckbox(isOn: Boolean, modifier: Modifier = Modifier) {
     Box(modifier.size(44.dp), contentAlignment = Alignment.Center) {
@@ -648,7 +646,7 @@ fun CheckDisc(
 /**
  * A changing label: its digits roll while the wording stays the same; when the words change
  * ("Any" to "3 selected", "Resend in 0:05" to "Resend code") the old and new labels cross-fade in
- * place instead, so a longer old label never slides out of its block. (`rollingDigits` on iOS.)
+ * place instead, so a longer old label never slides out of its block.
  * [rollsDigits] false: the digits change in place, nothing moves each tick (a countdown); only a
  * change of wording cross-fades.
  */
@@ -685,7 +683,7 @@ fun RollingText(
 /** The words without the numbers, to tell a count change from a wording change. */
 val String.wording: String get() = filter { !it.isDigit() }
 
-/** How many characters a person sees (grapheme clusters), like Swift's `String.count`. */
+/** How many characters a person sees (grapheme clusters). */
 val String.characterCount: Int
     get() {
         if (all { it.code < 0x300 }) return length

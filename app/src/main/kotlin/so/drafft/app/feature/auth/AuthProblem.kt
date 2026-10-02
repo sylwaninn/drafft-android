@@ -7,8 +7,6 @@ import java.io.IOException
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.model.L
 
-// Port of Drafft/Features/Auth/AuthProblem.swift.
-
 /** What went wrong with an account call, in words people can act on. */
 enum class AuthProblem {
     WRONG_CREDENTIALS, EMAIL_NOT_CONFIRMED, EMAIL_TAKEN, INVALID_EMAIL, WEAK_PASSWORD, TOO_MANY_EMAILS, TOO_MANY_TRIES, SAME_PASSWORD,
@@ -30,14 +28,14 @@ enum class AuthProblem {
         }
 
     companion object {
-        /** The Swift `AuthProblem(error)`. */
+        /** The problem an [error] stands for. */
         operator fun invoke(error: Throwable): AuthProblem = from(error)
 
         fun from(error: Throwable): AuthProblem = when {
             error is Backend.EmailAlreadyRegistered -> EMAIL_TAKEN
             error is AuthRestException && error.error == "email_address_invalid" -> INVALID_EMAIL
             error is AuthRestException -> from(error.errorCode)
-            // The iPhone's URLError: no connection, a timeout, the server unreachable.
+            // A network error: no connection, a timeout, the server unreachable.
             error is HttpRequestException || generateSequence(error) { it.cause }.any { it is IOException } -> OFFLINE
             else -> OTHER
         }

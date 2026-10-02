@@ -76,8 +76,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/AccountHoldView.swift.
-
 /**
  * The whole app while the account is on hold: why, what it means, and the only ways out (a selfie
  * when one is asked, support, log out). No close button. A check that clears lets the person straight
@@ -154,7 +152,7 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         // The empty screens' sign, its outline lined up with the text.
                         Box(Modifier.fillMaxWidth().rise(appeared, 1, reduceMotion)) {
-                            // (200 - 54) / 2: the sign sits in the middle of its 200 pt map.
+                            // (200 - 54) / 2: the sign sits in the middle of its 200 dp map.
                             EmptyStateIllustration(art, Modifier.offset(x = (-73).dp), tint = tint)
                         }
                         Column(
@@ -296,9 +294,9 @@ internal fun Modifier.rise(appeared: Boolean, step: Int, reduceMotion: Boolean):
 // MARK: - Window
 
 /**
- * The hold screen over everything the app shows (the iPhone gives it its own window, above sheets,
- * covers, the keyboard and banners): the root places it on top. It covers the app the moment the
- * hold arrives and lifts the same way; whatever was being typed gives way.
+ * The hold screen over everything the app shows (sheets, covers, the keyboard and banners): the root
+ * places it on top. It covers the app the moment the hold arrives and lifts the same way; whatever was
+ * being typed gives way.
  */
 @Composable
 fun HoldLayer(modifier: Modifier = Modifier) {

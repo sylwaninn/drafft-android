@@ -8,8 +8,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * ThumbHash encoder and decoder (https://evanw.github.io/thumbhash/), ported from the reference
- * implementation (Drafft/Services/Media/ThumbHash.swift). ~25 bytes per image, stored with each photo:
+ * ThumbHash encoder and decoder (https://evanw.github.io/thumbhash/), following the reference
+ * implementation. ~25 bytes per image, stored with each photo:
  * the app draws a blurred preview from it instantly, before a single byte of the real image has arrived.
  *
  * Pure Kotlin: pixels are RGBA bytes (unsigned, as in the reference). Drawing a bitmap into those bytes
@@ -19,7 +19,10 @@ object ThumbHash {
     /** A decoded preview: at most 32 × 32 px, straight (not premultiplied) RGBA. */
     class Image(val width: Int, val height: Int, val rgba: ByteArray)
 
-    /** Straight port of `rgbaToThumbHash`. Photos are opaque, so premultiplied input is equivalent. */
+    /**
+     * Follows the reference implementation's `rgbaToThumbHash`. Photos are opaque, so premultiplied
+     * input is equivalent.
+     */
     fun encode(width: Int, height: Int, rgba: ByteArray): ByteArray {
         val w = width
         val h = height
@@ -160,7 +163,7 @@ object ThumbHash {
     }
 
     // Kept in one piece like the reference, so it can be compared line by line.
-    /** Straight port of `thumbHashToRGBA` (straight, not premultiplied, alpha). */
+    /** Follows the reference implementation's `thumbHashToRGBA` (straight, not premultiplied, alpha). */
     fun decode(hash: ByteArray): Image? {
         if (hash.size < 5) return null
         val ratio = approximateAspectRatio(hash) ?: return null
@@ -271,6 +274,6 @@ object ThumbHash {
 
     private fun ByteArray.u(index: Int): Int = this[index].toInt() and 0xFF
 
-    /** Swift's `rounded()`: half away from zero (Kotlin's `round` is half to even). */
+    /** Rounds half away from zero (Kotlin's `round` is half to even). */
     private fun Double.roundAway(): Int = (if (this < 0) -Math.round(-this) else Math.round(this)).toInt()
 }

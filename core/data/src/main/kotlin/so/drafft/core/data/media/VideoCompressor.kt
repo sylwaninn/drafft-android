@@ -1,7 +1,7 @@
 package so.drafft.core.data.media
 
-// Ports Drafft/Services/Media/VideoCompressor.swift (the transcoding is Android's: Media3 Transformer in
-// `AndroidVideoCompressor`, installed as [VideoCompressor.engine] at launch).
+// The transcoding is the platform's: Media3 Transformer in `AndroidVideoCompressor`, installed as
+// [VideoCompressor.engine] at launch.
 
 /** A video ready to upload: an MP4 file on disk, plus its poster frame (a prepared photo). */
 class PreparedVideo(

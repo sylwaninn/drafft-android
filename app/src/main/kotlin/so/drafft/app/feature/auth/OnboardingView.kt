@@ -169,8 +169,6 @@ import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/OnboardingView.swift (FlowLayout lives in core:ui).
-
 /**
  * One question per step, grouped in four chapters shown in the stepper: secure the
  * account, say who you are, how you move, then what people see.
@@ -183,7 +181,7 @@ enum class OnboardingStep {
 
     val rawValue: Int get() = ordinal
 
-    /** The step's id in analytics (`show_me`), the same on the iPhone. */
+    /** The step's id in analytics (`show_me`). */
     val telemetryID: String get() = name.lowercase()
 
     enum class Chapter(val rawValue: String) {
@@ -279,7 +277,7 @@ fun OnboardingView(modifier: Modifier = Modifier) {
 
 // MARK: - State
 
-/** Everything sign-up holds while it runs (the Swift view's `@State`), and what it does with it. */
+/** Everything sign-up holds while it runs, and what it does with it. */
 @Stable
 private class OnboardingState(
     val app: AppModel,
@@ -671,16 +669,16 @@ private class OnboardingState(
         val oldestBirthday: Instant get() = ZonedDateTime.now().minusYears(100).toInstant()
 
         /**
-         * The step a language change was made on. On Android the whole app is rebuilt in a newly picked
-         * language (the root is keyed on it), so sign-up restores from its saved progress: this brings
-         * it back on the same step, where the iPhone simply redraws in place.
+         * The step a language change was made on. A newly picked language redraws the texts in place
+         * (`LanguageObservation`); should sign-up's state be rebuilt anyway, this brings it back on the
+         * same step.
          */
         var languageSwitchStep: Int? = null
 
         /**
-         * The step last counted as shown (`onboarding_step_viewed`), kept across the state's rebuilds like
-         * the iPhone's `OnboardingFunnel`, which outlives its view's redraws: a step, and a resume on it,
-         * is counted once per arrival. Leaving sign-up on purpose starts over ([forgetFunnel]).
+         * The step last counted as shown (`onboarding_step_viewed`), kept across the state's rebuilds: a
+         * step, and a resume on it, is counted once per arrival. Leaving sign-up on purpose starts over
+         * ([forgetFunnel]).
          */
         var shownStep: Int? = null
 
@@ -956,7 +954,7 @@ private fun RulesStep(state: OnboardingState) {
     ConsentChecks(draft = state.consent, onDraftChange = { state.consent = it; state.consentError = null })
 }
 
-/** Reaches [amount] past the leading edge (SwiftUI's negative leading padding). */
+/** Reaches [amount] past the leading edge (a negative leading padding). */
 internal fun Modifier.leadingOutset(amount: Dp): Modifier = layout { measurable, constraints ->
     val extra = amount.roundToPx()
     val wide = if (constraints.hasBoundedWidth) constraints.copy(maxWidth = constraints.maxWidth + extra, minWidth = constraints.minWidth) else constraints
@@ -975,8 +973,8 @@ private fun LanguageStep(state: OnboardingState) {
             ChoiceRow(title = l.displayName, isOn = state.language == l) {
                 Haptics.select()
                 state.language = l
-                // The whole app redraws in the new language (the root is keyed on it): kept first so
-                // sign-up comes back on this step with this choice.
+                // The texts redraw in the new language in place (`LanguageObservation`). Saved first, so
+                // sign-up would come back on this step with this choice if its state were rebuilt.
                 state.save()
                 OnboardingState.languageSwitchStep = state.step
                 // The rest of sign-up switches to it straight away, one frame after the row so the

@@ -95,8 +95,6 @@ import so.drafft.core.ui.theme.semibold
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-// Port of Drafft/Features/Discover/SuperLikeComposer.swift.
-
 /**
  * Super like confirmation, shown in place over the deck like the profile's like composer: their
  * photo lifts forward on a dimmed background with a reminder of what a super like does, an
@@ -159,8 +157,8 @@ fun SuperLikeComposer(
 
     val statusTop = WindowInsets.statusBars.getTop(density)
     Box(modifier.fillMaxSize()) {
-        // The dimmed page. (iOS lays an ultra-thin material under the night tint; a window here can't
-        // blur what's behind it, so the tint alone dims it a step further.)
+        // The dimmed page. A window here can't blur what's behind it, so two tints dim it instead: 18 % black,
+        // then the night colour at 50 %.
         Box(
             Modifier
                 .fillMaxSize()

@@ -734,7 +734,7 @@ class TelemetryTest {
         // A 401 is the session's business, code or not; 429 is a limit whatever it says.
         assertEquals(ErrorKind.SIGNED_OUT, ErrorKind.http(401, "not_found"))
         assertEquals(ErrorKind.RATE_LIMITED, ErrorKind.http(429, "daily_like_limit"))
-        // Read like the iPhone: lowercased, as a short code. A sentence, nothing, or too long is a contract bug.
+        // Read lowercased, as a short code. A sentence, nothing, or too long is a contract bug.
         assertEquals(ErrorKind.REFUSED, ErrorKind.http(400, "Daily_Like_Limit"))
         assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(400, ""))
         assertEquals(ErrorKind.CLIENT_CONTRACT, ErrorKind.http(400, "Not found"))

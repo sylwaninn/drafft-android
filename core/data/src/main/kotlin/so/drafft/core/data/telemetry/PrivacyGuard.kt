@@ -1,7 +1,5 @@
 package so.drafft.core.data.telemetry
 
-// Ports Drafft/Services/Telemetry/Core/PrivacyGuard.swift.
-
 /**
  * The last check before anything goes to Sentry or PostHog. drafft holds sensitive data (gender, who
  * someone wants to meet, lifestyle answers: they can reveal orientation, health or beliefs, GDPR
@@ -79,7 +77,7 @@ object PrivacyGuard {
         is Float -> value.toDouble().takeIf { it.isFinite() }
         is Enum<*> -> value.name.lowercase()
         is CharSequence -> value.toString().takeIf(::isValue)
-        // Lists of codes only (like the iPhone's [String]): a list of anything else could carry words.
+        // Lists of codes only: a list of anything else could carry words.
         is Collection<*> -> value.takeIf { list -> list.size <= 20 && list.all { it is CharSequence && isValue(it.toString()) } }
             ?.map { it.toString() }
         else -> null

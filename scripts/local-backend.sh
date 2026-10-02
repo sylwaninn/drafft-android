@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Points the local flavor at the local Supabase of drafft-backend (`supabase start` there first).
 # Writes local.private.properties (gitignored) with its URL and publishable key, read over
-# config/local.properties by app/build.gradle.kts. Prints nothing secret. Port of drafft's
-# scripts/local-backend.sh (which writes Local.private.xcconfig).
+# config/local.properties by app/build.gradle.kts. Prints nothing secret.
 #
 #   scripts/local-backend.sh            # emulator: 10.0.2.2, the Mac seen from the emulator
 #   scripts/local-backend.sh --device   # phone on the same Wi-Fi: this Mac's LAN address

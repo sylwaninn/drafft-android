@@ -15,11 +15,10 @@ val hasFirebaseConfig = listOf("production", "staging", "local").any { file("src
     file("google-services.json").exists()
 if (hasFirebaseConfig) apply(plugin = libs.plugins.google.services.get().pluginId)
 
-// Each flavor's values live in config/<flavor>.properties, committed, like the iPhone's
-// Config/*.xcconfig: public keys only (Supabase publishable key, RevenueCat public SDK key,
-// Turnstile site key, Sentry DSN, PostHog project key). The local Supabase depends on the machine:
-// scripts/local-backend.sh writes its URL and key to local.private.properties (gitignored), like the
-// iPhone's Local.private.xcconfig.
+// Each flavor's values live in config/<flavor>.properties, committed: public keys only (Supabase
+// publishable key, RevenueCat public SDK key, Turnstile site key, Sentry DSN, PostHog project key).
+// The local Supabase depends on the machine: scripts/local-backend.sh writes its URL and key to
+// local.private.properties (gitignored).
 val flavors = listOf("production", "staging", "local")
 val machineKeys = setOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY")
 // Supabase secret keys, Sentry auth tokens (sntrys_/sntryu_), PostHog personal API keys (phx_).
@@ -86,8 +85,8 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        // Same identifier as the iPhone app. All environments share it, like the iOS schemes:
-        // installing one replaces the other, the launcher name tells them apart.
+        // All environments share one identifier: installing one replaces the other, the launcher
+        // name tells them apart.
         applicationId = "so.drafft.app"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
@@ -98,7 +97,7 @@ android {
 
     flavorDimensions += "env"
     productFlavors {
-        // The iPhone's schemes: Drafft, Drafft Staging, Drafft Local. Values: config/<flavor>.properties.
+        // Production, staging and local backends. Values: config/<flavor>.properties.
         flavors.forEach { flavor ->
             create(flavor) {
                 dimension = "env"

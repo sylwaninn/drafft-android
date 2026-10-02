@@ -15,8 +15,6 @@ import androidx.compose.ui.semantics.semantics
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
 
-// Port of SheetBlock (Drafft/Features/Me/AccountSheets.swift).
-
 /**
  * A group in a sheet, with an optional small title: a sage well on the white sheet (a white block on a
  * page), like every sheet in You. Its fields stay white, so they stand out of the well.

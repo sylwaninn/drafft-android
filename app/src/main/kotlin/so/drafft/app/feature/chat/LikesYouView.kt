@@ -28,8 +28,6 @@ import so.drafft.core.ui.components.SheetNavBar
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
 
-// Port of Drafft/Features/Chat/LikesYouView.swift.
-
 /**
  * drafft tempo: everyone who already liked you, as the Likes grid (`LikesGrid`) under its banner.
  * Like back and it's mutual right away. Shown in a sheet (`DrafftSheet`); Close is its own (`LocalSheetDismiss`).

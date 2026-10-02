@@ -56,8 +56,6 @@ import so.drafft.core.ui.components.trackingScrollOffset
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 
-// Port of Drafft/Features/Chat/LikesTabView.swift.
-
 /**
  * Likes tab: a banner with how many people like you, then everyone who already liked you as a grid of
  * equal portraits (`LikesGrid`).

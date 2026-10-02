@@ -5,11 +5,10 @@ import java.io.File
 /**
  * The platform's audio: players, recorders, audio focus and where files go. Implemented in src/android
  * (`AndroidAudioEngine` with MediaPlayer and MediaRecorder, `AndroidAudioFocus` with AudioManager);
- * [AudioPlayback], [VoiceRecorder] and [AudioSessionController] hold the behaviour, as in
- * Drafft/Services/Audio.swift.
+ * [AudioPlayback], [VoiceRecorder] and [AudioSessionController] hold the behaviour.
  */
 interface AudioEngine {
-    /** Where clips from the server are kept (the iPhone's Caches/audio). */
+    /** Where clips from the server are kept. */
     val cacheDirectory: File
 
     /** Where recordings are written before they're sent. */

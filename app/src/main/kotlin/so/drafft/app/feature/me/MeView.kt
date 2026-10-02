@@ -104,9 +104,7 @@ import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/MeView.swift.
-
-/** The sheets You opens (`MeView.MeSheet` on iOS). */
+/** The sheets You opens. */
 enum class MeSheet(val rawValue: String) {
     EDIT("edit"), PREVIEW("preview"), FILTERS("filters"), EMAIL("email"), PHONE("phone"), PASSWORD("password"),
     EXPORT("export"), DELETE("delete"), PAYWALL("paywall"), NOTIFICATIONS("notifications"), LANGUAGE("language"),
@@ -115,7 +113,7 @@ enum class MeSheet(val rawValue: String) {
     val id: String get() = rawValue
 }
 
-/** Marker for rows that use the drafft tempo spark instead of an SF Symbol (`MeView.sparkIcon`). */
+/** Marker for rows that use the drafft tempo spark instead of an icon. */
 const val MeViewSparkIcon = "drafft.spark"
 
 /** The "You" tab: your card at the top, then settings grouped by what people come here to do. */

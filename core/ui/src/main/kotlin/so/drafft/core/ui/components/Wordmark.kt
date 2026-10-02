@@ -11,8 +11,6 @@ import so.drafft.core.model.Brand
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.display
 
-// Port of Wordmark (Drafft/Features/Auth/WelcomeView.swift).
-
 /** The logo: "drafft" set in the display face, solid. Never a drafting trail behind it. */
 @Composable
 fun Wordmark(

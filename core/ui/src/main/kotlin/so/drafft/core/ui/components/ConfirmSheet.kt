@@ -27,8 +27,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/DesignSystem/ConfirmSheet.swift.
-
 /** One button of a [DrafftConfirm]. */
 data class ConfirmAction(
     val title: String,

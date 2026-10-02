@@ -121,8 +121,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-// Port of Drafft/Features/Discover/DiscoverView.swift.
-
 /**
  * A card on its way out. Each one leaves the deck (and the data) the moment it's swiped and
  * finishes its flight in its own layer, so the next card is in play at once: fast swipes never
@@ -487,7 +485,7 @@ private fun DeckCard(
     val edge = palette.blockEdge
     val radius = with(density) { DS.Radius.xl.toPx() }
 
-    // The drag and its rotation, about the bottom of the deck's frame (as the iPhone turns it).
+    // The drag and its rotation, about the bottom of the deck's frame.
     Box(
         modifier
             .size(width, height)
@@ -498,7 +496,7 @@ private fun DeckCard(
                 val rad = deg * PI.toFloat() / 180f
                 transformOrigin = TransformOrigin(0.5f, 1f)
                 rotationZ = deg
-                // SwiftUI turns the offset view about its unmoved frame: the offset turns too.
+                // The drag offset is rotated by the card's angle, so the card moves along its own tilted axes.
                 translationX = d.x * cos(rad) - d.y * sin(rad)
                 translationY = d.x * sin(rad) + d.y * cos(rad)
             },
@@ -590,7 +588,7 @@ private fun DeckCard(
 private val ZeroProgress: () -> Float = { 0f }
 
 /**
- * The top card follows the finger from the touch (like SwiftUI's `translation`), a haptic tick
+ * The top card follows the finger from the touch, a haptic tick
  * when it crosses the threshold either way, and on release a decision from where it is and where
  * the fling would carry it. Positions are read in the window, so the card moving under the finger
  * never feeds back into the drag.
@@ -632,8 +630,8 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.swipeGes
             launch { offset.animateTo(Offset.Zero, Motion.bouncy()) }
             return@awaitEachGesture
         }
-        // Where the fling would come to rest: UIKit's projection at the normal deceleration rate
-        // (0.998 per ms), the same idea as SwiftUI's `predictedEndTranslation`.
+        // Where the fling would come to rest: a projection at the normal deceleration rate
+        // (0.998 per ms).
         val velocity = tracker.calculateVelocity().x
         val predicted = translation + velocity * 0.499f
         if (abs(translation) > threshold || abs(predicted) > threshold * 2.4f) {

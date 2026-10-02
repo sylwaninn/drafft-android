@@ -2,17 +2,15 @@ package so.drafft.core.data.telemetry
 
 import so.drafft.core.model.MessageContent
 
-// Ports Drafft/Services/Telemetry/Core/AnalyticsEvent.swift.
-
 /**
- * Every product event the app sends, in one place: the tracking plan (docs/telemetry.md) as code.
+ * Every product event the app sends, in one place: the tracked events (docs/telemetry.md) as code.
  *
  * Naming: `object_action`, snake_case, past tense (`profile_swiped`, `purchase_completed`), the way
  * PostHog recommends. Properties are numbers, booleans and codes from enums, never what people type or
  * the sensitive data of their profile ([PrivacyGuard] drops it anyway). An event's name and its
  * properties' names are a contract with the dashboards: add new ones, don't rename.
  *
- * The iPhone app sends the same events with the same names, so a funnel spans both platforms.
+ * Both drafft apps send these events under the same names, so a funnel spans both platforms.
  */
 sealed class AnalyticsEvent(val name: String, vararg props: Pair<String, Any?>) {
     val properties: Map<String, Any?> = props.toMap()

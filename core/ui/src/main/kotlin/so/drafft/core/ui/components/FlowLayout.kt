@@ -7,8 +7,6 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import so.drafft.core.ui.theme.DS
 
-// Port of FlowLayout (Drafft/Features/Auth/OnboardingView.swift).
-
 /**
  * Simple wrapping layout for chips: left to right, a new row when the next chip doesn't fit, the same
  * [spacing] between chips and between rows. Each chip is measured once per pass (the sports picker has

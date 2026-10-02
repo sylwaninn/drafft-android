@@ -41,8 +41,6 @@ import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.L
 
-// Ports Drafft/Services/Backend/Backend.swift.
-
 /**
  * The drafft backend: Supabase Auth for the account (email + password; the session is kept on the
  * phone and refreshes itself), plus the plain HTTPS calls the app makes as the signed-in person
@@ -70,7 +68,7 @@ class Backend(
             }
     }
 
-    /** The server's refusals the whole app reacts to (the iPhone posts them on `NotificationCenter`). */
+    /** The server's refusals the whole app reacts to. */
     enum class Event {
         /** An action was turned down because the profile is paused. */
         PROFILE_PAUSED_BY_SERVER,
@@ -406,5 +404,5 @@ class Backend(
 
 private val uuidPattern = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
-/** A UUID written the standard way (Swift's `UUID(uuidString:)`), or null. */
+/** A UUID written the standard way, or null. */
 fun uuidOrNull(text: String?): UUID? = text?.takeIf(uuidPattern::matches)?.let { UUID.fromString(it) }

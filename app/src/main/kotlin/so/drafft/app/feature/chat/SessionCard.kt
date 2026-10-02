@@ -58,8 +58,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 import java.time.Instant
 
-// Port of Drafft/Features/Chat/SessionCard.swift.
-
 /**
  * A session invite in the chat. It carries 1 to 3 time options: the receiver picks one, suggests
  * other times (which sends a new card), or declines. Once agreed, it shows the chosen time.

@@ -59,7 +59,7 @@ sealed interface Icebreaker {
                 GUESS -> L("They guess the right answer")
             }
 
-        /** SF Symbol name (see `DrafftIcon`). */
+        /** Icon name (see `DrafftIcon`). */
         val symbol: String
             get() = when (this) {
                 TWO_TRUTHS -> "incognito"
@@ -322,9 +322,9 @@ val Double.clock: String
 
 /**
  * Dates as the app writes them, in the app's language and the phone's time zone. Formats are ICU
- * skeletons, like the iPhone's `Date.FormatStyle` fields: each language orders and punctuates them its
- * own way. On Android, [formatter] is set to ICU (`android.icu.text.DateFormat.getInstanceForSkeleton`)
- * at launch; the default below serves JVM tests.
+ * skeletons: each language orders and punctuates them its own way. On Android, [formatter] is set to
+ * ICU (`android.icu.text.DateFormat.getInstanceForSkeleton`) at launch; the default below serves JVM
+ * tests.
  */
 object DateText {
     val zone: ZoneId get() = ZoneId.systemDefault()

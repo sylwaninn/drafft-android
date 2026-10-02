@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/VoiceViews.swift.
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -175,7 +173,7 @@ fun WaveformBars(
 }
 
 /**
- * A frame counter that ticks while [running] (the iPhone's `TimelineView(.animation(paused:))`).
+ * A frame counter that ticks while [running].
  * Read it inside a draw lambda: each frame redraws, nothing recomposes.
  */
 @Composable
@@ -354,7 +352,7 @@ fun VoiceIntroRecorder(
     LaunchedEffect(recorder) {
         snapshotFlow { recorder.duration }.collect { if (it >= limit) stop() }
     }
-    // Leaving mid-take throws it away, like the iPhone's recorder going with its view.
+    // Leaving mid-take throws it away: the recorder goes with its view.
     DisposableEffect(recorder) {
         onDispose { if (recorder.state == VoiceRecorder.State.RECORDING) recorder.finish(cancel = true) }
     }
@@ -524,5 +522,5 @@ private fun trackLevel(values: List<Float>, a: Int, b: Int): Float {
     return max(0.12f, min(1f, (slice.maxOrNull() ?: 0f) * 1.6f))
 }
 
-/** The box an SF Symbol set at [points] takes (Material glyphs carry a small margin). */
+/** The box an icon set at [points] takes (Material glyphs carry a small margin). */
 internal fun symbol(points: Float): Dp = (points * 1.2f).dp

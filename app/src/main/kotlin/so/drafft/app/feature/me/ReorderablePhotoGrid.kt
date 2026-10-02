@@ -80,12 +80,10 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.heavy
 
-// Port of Drafft/Features/Me/ReorderablePhotoGrid.swift.
-
 private const val COLUMNS = 3
 private val Spacing = DS.Space.sm
 
-/** How long a photo is held before it lifts (the iPhone's 0.25 s long press). */
+/** How long a photo is held before it lifts (a 0.25 s long press). */
 private const val HOLD_MILLIS = 250L
 
 /**

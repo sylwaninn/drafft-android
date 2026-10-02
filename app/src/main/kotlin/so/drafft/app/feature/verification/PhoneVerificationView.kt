@@ -74,8 +74,6 @@ import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Ports Drafft/Features/Verification/PhoneVerificationView.swift.
-
 /**
  * Phone number, then the 6-digit code. The primary action lives in the host's pinned footer
  * (model.primaryTitle / primaryEnabled); this view shows the fields, the states and the errors.

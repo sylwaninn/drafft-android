@@ -84,8 +84,6 @@ import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.monospacedDigits
 import kotlin.math.max
 
-// Port of Drafft/Features/Discover/SwipeCard.swift.
-
 /**
  * A profile card in the deck. [progress] (-1 pass ... 1 like) drives the stamps; it's read at draw
  * time, so a drag moves them without recomposing the card.
@@ -304,8 +302,7 @@ fun SportChipsPreview(
 /**
  * Sports as named chips on a single line, never two: as many as fit in order, then "+X" for the
  * rest. When not even one chip and its "+X" fit, the shortest name leads instead, cut short if it
- * still doesn't fit (the one place a sport name is truncated). Port of SportChipsLine
- * (Drafft/DesignSystem/Components.swift).
+ * still doesn't fit (the one place a sport name is truncated).
  */
 @Composable
 fun SportChipsLine(sports: List<Sport>, modifier: Modifier = Modifier) {

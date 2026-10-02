@@ -31,8 +31,6 @@ import so.drafft.core.ui.components.DrafftCheckbox
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
 
-// Port of Drafft/Features/Auth/ConsentChecks.swift.
-
 /**
  * The two required consents, unchecked until the person ticks them, each in its own white block:
  * the terms (the documents named in the sentence are links), then the use of sensitive data (gender,

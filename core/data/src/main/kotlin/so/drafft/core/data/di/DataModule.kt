@@ -23,7 +23,7 @@ import so.drafft.core.data.platform.PlaybackControl
 import so.drafft.core.data.telemetry.TelemetrySession
 
 /**
- * The app's state and its backend, as singletons (the iPhone's `.shared`). Needs, from elsewhere:
+ * The app's state and its backend, as singletons. Needs, from elsewhere:
  * a [so.drafft.core.data.backend.BackendConfig] (the app, from its BuildConfig), the platform services
  * (`androidDataModule`: KeyValueStore, LocationProvider, AppInfo, AppLifecycle, MonotonicClock,
  * DeviceIntegrityProvider, DiagnosticsSource), and the other services AppModel talks to (ChatService, Store, PurchaseCredit,

@@ -13,8 +13,6 @@ import so.drafft.core.data.backend.DrafftJson
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports Drafft/Services/OnboardingStore.swift.
-
 /**
  * Sign-up progress saved as it goes, so an unfinished sign-up resumes where it stopped. Kept on
  * this device, under the account it belongs to: another account signing in here never sees it.

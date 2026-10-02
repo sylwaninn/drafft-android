@@ -17,8 +17,6 @@ import io.sentry.android.core.SentryAndroid
 import io.sentry.logger.SentryLogParameters
 import io.sentry.protocol.User
 
-// Ports Drafft/Services/Telemetry/SentryCrashReporter.swift.
-
 /**
  * [Telemetry.CrashReporter] on Sentry (EU region, picked by the DSN). Crashes (Kotlin and native),
  * ANRs, the errors [Telemetry.unexpected] reports, app start and frame metrics, request traces, the

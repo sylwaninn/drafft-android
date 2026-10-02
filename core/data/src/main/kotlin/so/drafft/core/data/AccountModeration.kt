@@ -7,8 +7,6 @@ import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.PlaybackControl
 
-// Ports Drafft/Services/AccountModeration.swift.
-
 /**
  * A hold the drafft team put on the account (`profiles.moderation`, set from the dashboard): the
  * whole app gives way to a screen saying why (`AccountHoldView`), until it's lifted.

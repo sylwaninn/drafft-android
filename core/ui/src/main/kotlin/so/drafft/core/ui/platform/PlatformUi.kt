@@ -46,30 +46,29 @@ interface PlatformUi {
     fun pixels(image: ImageBitmap): IntArray?
 
     /**
-     * The action that opens this app's page in the system Settings (the iPhone's
-     * `UIApplication.openSettingsURLString`): location turned off, a permission refused for good.
+     * The action that opens this app's page in the system Settings: location turned off, a permission
+     * refused for good.
      */
     @Composable
     fun rememberOpenAppSettings(): () -> Unit
 
     /**
-     * The action that opens the phone's location settings, where its location switch is (Android only:
-     * the iPhone can't open Location Services directly).
+     * The action that opens the phone's location settings, where its location switch is.
      */
     @Composable
     fun rememberOpenLocationSettings(): () -> Unit
 
     /**
-     * The action that opens the phone app with [number] typed in (`ACTION_DIAL`, the iPhone's
-     * `tel:` URL): the person still taps call, the app never calls by itself.
+     * The action that opens the phone app with [number] typed in (`ACTION_DIAL`): the person still taps
+     * call, the app never calls by itself.
      */
     @Composable
     fun rememberDial(): (number: String) -> Unit
 
     /**
-     * The system photo picker, images only (the iPhone's `PhotosPicker(matching: .images)`): returns
-     * the action that opens it. [onPicked] gets the chosen photo's bytes, read off the main thread, or
-     * null when the photo can't be read (the screen says so); nothing is called when the picker is cancelled.
+     * The system photo picker, images only: returns the action that opens it. [onPicked] gets the chosen
+     * photo's bytes, read off the main thread, or null when the photo can't be read (the screen says so);
+     * nothing is called when the picker is cancelled.
      */
     @Composable
     fun rememberPhotoPicker(onPicked: (ByteArray?) -> Unit): () -> Unit
@@ -102,8 +101,7 @@ interface PlatformUi {
     @Composable
     fun WebPageView(page: WebPage, modifier: Modifier)
     /**
-     * The system photo picker for a chat: photos and videos, up to [maxSelection] (the iPhone's
-     * `photosPicker(maxSelectionCount: 5, matching: .any(of: [.images, .videos]))`). Returns the action
+     * The system photo picker for a chat: photos and videos, up to [maxSelection]. Returns the action
      * that opens it. [onPicked] gets the items in the order picked, read off the main thread: a photo's
      * bytes, a video copied to a file of the app's, [PickedMedia.Unreadable] for one that can't be read;
      * nothing when cancelled.
@@ -113,8 +111,7 @@ interface PlatformUi {
 
     /**
      * The system camera, photo or video (the person picks in the camera itself), full screen, with its
-     * own shutter and review (the iPhone's `UIImagePickerController`). Returns the action that opens it,
-     * or null when the phone has no camera (`CameraPicker.isAvailable`).
+     * own shutter and review. Returns the action that opens it, or null when the phone has no camera.
      */
     @Composable
     fun rememberCameraCapture(onCapture: (CameraCapture) -> Unit): (() -> Unit)?
@@ -122,7 +119,7 @@ interface PlatformUi {
     /** A video file's length and its first frame as a JPEG (at most 600 px), read off the main thread. */
     suspend fun videoInfo(url: String): VideoInfo?
 
-    /** The system share sheet (the iPhone's `ShareLink`): returns the action that opens it for an item. */
+    /** The system share sheet: returns the action that opens it for an item. */
     @Composable
     fun rememberShare(): (ShareItem) -> Unit
 }

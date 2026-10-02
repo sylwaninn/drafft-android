@@ -12,7 +12,6 @@ import kotlin.test.assertTrue
 import so.drafft.core.data.sessions.SessionLedger.Change
 import so.drafft.core.data.sessions.SessionRecord.Status
 
-/** Port of DrafftTests/SessionLedgerTests.swift. */
 class SessionLedgerTest {
     private val match = UUID.randomUUID()
     private val me = UUID.randomUUID()

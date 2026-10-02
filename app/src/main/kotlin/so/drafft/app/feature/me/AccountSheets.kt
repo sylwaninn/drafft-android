@@ -104,8 +104,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/AccountSheets.swift. `SheetBlock` lives in core:ui.
-
 /**
  * Shared chrome for account sheets: title, close on the right, content blocks, and a pinned primary
  * action that stays visible (disabled until it can run; only a real error under it).
@@ -242,7 +240,7 @@ private fun DestructiveAwareButton(
     }
 }
 
-/** The iPhone's `Toggle` with drafft's tint: the accent track when on (red for a destructive consent). */
+/** A switch with drafft's tint: the accent track when on (red for a destructive consent). */
 @Composable
 internal fun DrafftSwitch(
     checked: Boolean,

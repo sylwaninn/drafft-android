@@ -15,8 +15,8 @@ import so.drafft.core.model.L
 /**
  * A session change the server turned down or couldn't receive: the card is already back as it was
  * ([SessionStore]), and this banner says why, in the app's words for the server's code. Shown above
- * everything, never blocking: it swipes up and leaves on its own. The model half of
- * Drafft/Features/Chat/SessionFailureBanner.swift (the banner view is core:ui's / the app's).
+ * everything, never blocking: it swipes up and leaves on its own. The model half of the banner (the
+ * view is the app's `SessionFailureBanner`).
  */
 class SessionFailureNotice(private val scope: CoroutineScope) {
     /** The sentence on screen, or null when hidden. */

@@ -13,7 +13,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-// Ports DrafftTests/LocalCacheTests.swift.
 class LocalCacheTest {
     private lateinit var directory: File
 

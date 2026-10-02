@@ -3,8 +3,6 @@ package so.drafft.core.model
 import java.time.Duration
 import java.time.Instant
 
-// Ports Drafft/Services/LikeAge.swift.
-
 /**
  * How long ago someone liked you, in the one coarse unit the Likes tiles show ("5 min ago", "2 days
  * ago", "1 year ago"). Computed from the server's real `likedAt`, never invented; a like that has no

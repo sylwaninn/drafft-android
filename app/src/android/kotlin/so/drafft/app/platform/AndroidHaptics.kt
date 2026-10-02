@@ -8,7 +8,7 @@ import android.os.VibratorManager
 import so.drafft.core.data.platform.Haptics
 
 /**
- * The iPhone's feedback generators on Android's predefined effects: light impact → tick, medium
+ * The app's haptic feedback on Android's predefined effects: light impact → tick, medium
  * impact → click, success → double click, warning → heavy click, selection → tick. The vibrator is
  * looked up once and kept, so the effect fires without delay.
  */

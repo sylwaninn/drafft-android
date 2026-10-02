@@ -30,10 +30,10 @@ This skill enforces it; it restates no rule.
 ## Where text lives
 
 
-- **App strings**: `drafft-ios/Drafft/Resources/Localizable.xcstrings`. Android never adds a key of
-  its own: write it in the iPhone catalog, then `python3 scripts/sync-strings.py` in drafft-android.
-  The one text written in drafft-android: the Android wording of the iPhone's platform sentences
-  (App Store, Apple Account, iPhone Settings) in `core/model/src/main/resources/i18n/android/<lang>.json`.
+- **App strings**: the shared catalog, `drafft-ios/Drafft/Resources/Localizable.xcstrings`. Android never
+  adds a key of its own: write it in the shared catalog, then `python3 scripts/sync-strings.py` in
+  drafft-android. The one text written in drafft-android: the Android wording of platform sentences
+  (store, account, the phone's settings) in `core/model/src/main/resources/i18n/android/<lang>.json`.
 - **Pushes, emails, SMS**: drafft-backend (`supabase/functions/`), and the apps' `NotificationText`.
 - **Website**: drafft-web `public/i18n.js` and `public/index.html`.
 - **Store listings and screenshots**: `docs/wording/store.md` in drafft-ios.

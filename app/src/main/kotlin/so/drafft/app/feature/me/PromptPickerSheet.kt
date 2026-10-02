@@ -61,8 +61,6 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/PromptPickerSheet.swift.
-
 /**
  * Searchable, categorised prompt library. Questions already on your profile are left out. Present it
  * in a `DrafftSheet`: picking calls [onPick] and closes it.

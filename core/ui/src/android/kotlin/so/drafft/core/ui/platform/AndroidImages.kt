@@ -51,16 +51,16 @@ import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.media.PhotoDownloads
 import so.drafft.core.data.media.SharedFetches
 
-// Ports `Images.configure()` (Drafft/Services/Media/Images.swift), its `SignedLinkLoader` timing, and the
-// path half of Drafft/Services/Media/NetworkQuality.swift (NWPathMonitor there, ConnectivityManager here).
+// The image pipeline's setup, its signed-link timing, and the connection half of [NetworkQuality]
+// (ConnectivityManager).
 
 /**
  * The app's image pipeline, once, at launch, before the first photo is drawn: a memory cache sized to
  * the phone, a capped disk cache, and one HTTP client whose photo downloads go through [PhotoDownloads]
  * (by priority, fewer at once on a limited connection) and are timed for [NetworkQuality].
  *
- * Coil keeps any entry up to the whole memory cache (unlike Nuke's default tenth, which refused a
- * full-screen photo on the iPhone), and empties it when the system asks for memory.
+ * Coil keeps any entry up to the whole memory cache (a cap at a tenth of it would refuse a full-screen
+ * photo), and empties it when the system asks for memory.
  */
 fun installImages(context: Context) {
     val app = context.applicationContext

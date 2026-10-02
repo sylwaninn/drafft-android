@@ -11,7 +11,6 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import so.drafft.core.data.chat.ChatPayload.Kind
 
-/** Ports DrafftTests/ChatPayloadTests.swift. */
 class ChatPayloadTest {
     private fun extra(json: String): ChatPayload.Extra = ChatPayload.json.decodeFromString(json)
 

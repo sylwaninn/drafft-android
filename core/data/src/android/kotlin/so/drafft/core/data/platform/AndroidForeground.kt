@@ -7,7 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 
 /**
- * The app coming back to the front (the iPhone's `didBecomeActive`), from Settings included: the system
+ * The app coming back to the front, from Settings included: the system
  * permissions are read again then, so screens never refresh them themselves.
  */
 object AndroidForeground {

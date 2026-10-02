@@ -2,7 +2,7 @@ package so.drafft.core.data.platform
 
 import android.content.Context
 
-/** [KeyValueStore] on SharedPreferences (the iPhone's `UserDefaults.standard`). */
+/** [KeyValueStore] on SharedPreferences. */
 class SharedPreferencesKeyValueStore(context: Context, name: String = "drafft") : KeyValueStore {
     private val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
 

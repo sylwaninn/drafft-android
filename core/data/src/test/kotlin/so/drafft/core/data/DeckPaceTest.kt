@@ -3,7 +3,6 @@ package so.drafft.core.data
 import kotlin.test.assertEquals
 import org.junit.Test
 
-// Ports DrafftTests/DeckPaceTests.swift.
 class DeckPaceTest {
     @Test
     fun atFirstTenCardsLeftAskForMore() {

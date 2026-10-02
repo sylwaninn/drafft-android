@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
 import so.drafft.core.model.DateText
 
 /**
- * Dates in the app's language the way the iPhone writes them: ICU skeletons ("EEEEdMMM", "jmm")
- * resolved per language, like `Date.FormatStyle`. Formatters are cached per skeleton, language and zone.
+ * Dates in the app's language: ICU skeletons ("EEEEdMMM", "jmm") resolved per language. Formatters are cached per
+ * skeleton, language and zone.
  */
 object IcuDates {
     private val cache = ConcurrentHashMap<String, DateFormat>()

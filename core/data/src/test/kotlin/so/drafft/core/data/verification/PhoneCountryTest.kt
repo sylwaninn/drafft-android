@@ -5,7 +5,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import org.junit.Test
 
-// Port of DrafftTests/PhoneCountryTests.swift: the phone step reads the country from the number itself
+// The phone step reads the country from the number itself
 // when it's typed the international way, whatever country was picked, and leaves a national number to
 // the picked country.
 class PhoneCountryTest {

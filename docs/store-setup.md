@@ -8,7 +8,8 @@ when the setup changes.
 Two projects, `drafft` (`drafft-1abd3`, production) and `drafft staging` (`drafft-staging`), each with one
 Android app `so.drafft.app` (same package, SHA-1 left empty). `google-services.json` goes in
 `app/src/production/` and `app/src/staging/` (gitignored). Stream has a Firebase push provider named
-`drafft-fcm` in each of its apps. Sending FCM pushes from the backend is still to do (drafft-backend).
+`drafft-fcm` in each of its apps. The backend sends its own pushes through FCM with each project's service
+account (`FCM_SERVICE_ACCOUNT`, drafft-backend).
 
 ## RevenueCat
 
@@ -19,7 +20,7 @@ RevenueCat events) are not set up yet.
 
 ## Google Play
 
-One app, `so.drafft.app`. Nine products, active: three subscriptions (base plan `base`) and six
+One app, `so.drafft.app`. Nine products, active: three subscriptions (one base offer each, id `base`) and six
 consumables, created through the Play Developer API (`subscriptions`, `onetimeproducts`). Prices match the
 App Store's wherever the currency does (127 of 174 regions).
 

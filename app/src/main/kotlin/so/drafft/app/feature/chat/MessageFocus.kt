@@ -78,8 +78,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/MessageFocus.swift.
-
 /**
  * A message lifted out of the chat on long press, iMessage-style: the page blurs, the bubble stays
  * exactly where it was, a glass bar of reactions sits above it and the actions below.
@@ -406,8 +404,8 @@ private fun Menu(
 
 /**
  * Invisible text field that opens the keyboard and hands back the first emoji typed. Used by the
- * reaction bar's "+". Android can't open straight on the emoji keyboard (the iPhone's field asks for
- * the emoji input mode): the person switches to it in the keyboard.
+ * reaction bar's "+". Android can't open straight on the emoji keyboard: the person switches to it in
+ * the keyboard.
  */
 @Composable
 fun EmojiInput(active: Boolean, onPick: (String) -> Unit) {

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Checks that every literal key passed to L("...") in the Kotlin sources is in the string catalog
 (core/model/src/main/resources/i18n/keys.txt, from scripts/sync-strings.py). A key that isn't there
-shows in English in every language: fix the key (copy it from the iPhone app) or add the string to
-the catalog on the iPhone side first.
+shows in English in every language: fix the key (copy it from the shared catalog) or add the string
+to the shared catalog (drafft-ios `Localizable.xcstrings`) first.
 
 Usage: scripts/check-strings.py [paths...]   (default: every module)
 """

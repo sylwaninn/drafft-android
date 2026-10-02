@@ -14,6 +14,6 @@ val chatModule = module {
     single { ChatMediaCheck(get()) }
     single { AudioSessionController(get()) }
     single { AudioPlayback(get(), get()) }
-    // One per screen that records, like the iPhone's `@State` recorder.
+    // One per screen that records.
     factory { VoiceRecorder(get(), get(), get()) }
 }

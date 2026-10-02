@@ -19,8 +19,6 @@ import so.drafft.core.data.platform.LocationProvider
 import so.drafft.core.data.platform.LocationProvider.Authorization
 import so.drafft.core.model.L
 
-// Ports Drafft/Services/AreaService.swift.
-
 /** What a profile shows for "where": an area (arrondissement or city), never a street. */
 data class Area(
     /** "Lyon 4", "Paris 11", "Annecy" */

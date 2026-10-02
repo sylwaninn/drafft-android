@@ -5,13 +5,10 @@ import java.util.logging.Level
 import java.util.logging.LogRecord
 import java.util.logging.Logger
 
-// Ports Drafft/Services/Telemetry/AppLog.swift.
-
 /**
- * The app's own log lines (`java.util.logging`, the iPhone's `AppLog` on `os.Logger`) also go to Sentry:
- * INFO as a breadcrumb (it comes with the next error report), WARNING also as a Sentry log (searchable,
- * never an issue: the code that caught the error decides that, [Telemetry.unexpected]), SEVERE as a
- * Sentry issue grouped by its words (the iPhone's `fault`). Scrubbed on the way ([PrivacyGuard]). Only
+ * The app's own log lines (`java.util.logging`) also go to Sentry: INFO as a breadcrumb (it comes with the next error
+ * report), WARNING also as a Sentry log (searchable, never an issue: the code that caught the error decides that,
+ * [Telemetry.unexpected]), SEVERE as a Sentry issue grouped by its words. Scrubbed on the way ([PrivacyGuard]). Only
  * the app's loggers: libraries report through their own channels.
  */
 class TelemetryLogHandler : Handler() {

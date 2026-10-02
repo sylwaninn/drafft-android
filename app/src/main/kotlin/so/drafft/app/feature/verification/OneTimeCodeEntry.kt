@@ -81,8 +81,6 @@ import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Ports Drafft/Features/Verification/OneTimeCodeEntry.swift.
-
 /** The code's digits: the display font at a fixed size (points), so six always fit their boxes. */
 private const val CODE_DIGIT_SIZE = 26f
 
@@ -494,7 +492,7 @@ class EmailCodeModel(
     }
 }
 
-/** An [EmailCodeModel] living as long as the calling screen (the iPhone's `@State var flow = EmailCodeModel()`). */
+/** An [EmailCodeModel] living as long as the calling screen. */
 @Composable
 fun rememberEmailCodeModel(): EmailCodeModel {
     val scope = rememberCoroutineScope()

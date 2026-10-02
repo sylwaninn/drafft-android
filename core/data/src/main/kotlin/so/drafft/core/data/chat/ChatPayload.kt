@@ -18,7 +18,6 @@ import kotlinx.serialization.json.longOrNull
 
 /**
  * What drafft puts in a chat message besides its text, independent of the chat SDK (unit tested).
- * Ports Drafft/Services/Chat/ChatPayload.swift.
  *
  * - `drafft` (message extra data): the server's messages. `session` points to a row of `sessions`
  *   (the card shows its live status), `superLikeNote` is the note sent with a super like, and the
@@ -28,7 +27,10 @@ import kotlinx.serialization.json.longOrNull
  *   link (`media_urls`, only between the two members of an active match) when it shows it.
  */
 object ChatPayload {
-    /** Same JSON as the iPhone's Codable: absent fields for nil, unknown fields ignored. */
+    /**
+     * The JSON every drafft client writes and reads in a message: absent fields for null, unknown fields
+     * ignored, so a newer client's fields never break this one.
+     */
     val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
@@ -164,6 +166,6 @@ object ChatPayload {
 
     private val uuidPattern = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
-    /** Like Swift's `UUID(uuidString:)`: only the canonical form (Java's parser accepts "1-2-3-4-5"). */
+    /** Only the canonical UUID form (Java's parser accepts "1-2-3-4-5"). */
     fun uuidOrNull(text: String): UUID? = if (uuidPattern.matches(text)) UUID.fromString(text) else null
 }

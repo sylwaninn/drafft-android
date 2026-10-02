@@ -21,8 +21,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Microphone recorder that samples levels for a live waveform. One per screen that records (a Koin
- * factory: `remember { get<VoiceRecorder>() }`, the iPhone's `@State private var recorder = VoiceRecorder()`).
- * Ports `VoiceRecorder` (Drafft/Services/Audio.swift). Call it from the main thread.
+ * factory: `remember { get<VoiceRecorder>() }`). Call it from the main thread.
  */
 class VoiceRecorder(
     private val engine: AudioEngine,
@@ -145,7 +144,7 @@ class VoiceRecorder(
         /** Shortest voice message kept: anything held less is a slip, discarded. */
         const val minimumDuration: Double = 0.3
 
-        /** A level in dBFS as a bar height, 0.08...1 (the iPhone's curve on `averagePower`). */
+        /** A level in dBFS as a bar height, 0.08...1. */
         fun normalized(db: Float): Float = max(0.08f, min(1f, 10f.pow(db / 40f)))
 
         fun downsample(values: List<Float>, count: Int): List<Float> {

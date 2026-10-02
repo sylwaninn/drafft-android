@@ -3,13 +3,11 @@ package so.drafft.core.data.backend
 import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.DeviceIntegrityProvider
 
-// Ports Drafft/Services/Backend/DeviceIntegrity.swift.
-
 /**
- * Device attestation (the iPhone's DeviceCheck; Play Integrity here): at each launch and sign-in, a
- * fresh token goes to the server (`device-check`), which keeps a closed account from coming back on
- * the same phone. The token says nothing to the app; only the platform can tell which device it
- * stands for. Nothing is sent when the device can't give one.
+ * Device attestation: at each launch and sign-in, a fresh token goes to the server (`device-check`), which
+ * keeps a closed account from coming back on the same phone. The token says nothing to the app; only the
+ * platform can tell which device it stands for. Nothing is sent when the device can't give one. On Android
+ * this would be Play Integrity, not wired yet (`UnsupportedDeviceIntegrity`): nothing is sent today.
  */
 class DeviceIntegrity(
     private val backend: Backend,
@@ -19,7 +17,7 @@ class DeviceIntegrity(
     suspend fun report() {
         if (!provider.isSupported || !backend.hasSession()) return
         val token = attempt { provider.token() } ?: return
-        // Debug builds use the development environment, like their pushes.
+        // Debug builds report the development environment, release builds production.
         val environment = if (info.isDebugBuild) "development" else "production"
         attempt {
             backend.function(

@@ -79,8 +79,6 @@ import so.drafft.core.ui.theme.semibold
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-// Port of Drafft/Features/Discover/FiltersSheet.swift.
-
 /**
  * Discover filters. Edits a draft; Discover shows the result (or the too-tight message) once applied.
  * Present it in a `DrafftSheet`.
@@ -317,7 +315,7 @@ fun RangeSlider(
                             val r = current
                             val dLo = abs(at.x - (x(r.first) + thumbPx / 2))
                             val dHi = abs(at.x - (x(r.last) + thumbPx / 2))
-                            // Each knob answers on its 44 pt frame only.
+                            // Each knob answers on its 44 dp frame only.
                             dragging = when {
                                 dLo > hitPx / 2 && dHi > hitPx / 2 -> 0
                                 dLo < dHi || (dLo == dHi && at.x < x(r.first) + thumbPx / 2) -> -1

@@ -1,7 +1,5 @@
 package so.drafft.core.data
 
-// Ports Drafft/Services/DiscoveryFreshness.swift.
-
 /**
  * When discovery is read again without anyone asking (back at the front, Discover shown again, the
  * account's channel rejoined): only the parts older than that moment allows, so a quick trip to another

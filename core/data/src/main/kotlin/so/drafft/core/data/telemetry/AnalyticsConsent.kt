@@ -2,8 +2,6 @@ package so.drafft.core.data.telemetry
 
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports Drafft/Services/Telemetry/Core/AnalyticsConsent.swift.
-
 /**
  * What the person said about usage analytics (PostHog), kept on the phone.
  *
@@ -15,7 +13,7 @@ import so.drafft.core.data.platform.KeyValueStore
  *   screen as a breadcrumb). Crash and error reports (Sentry) still go: they keep the service working
  *   and safe, and carry only what happened inside the failure (its error breadcrumbs, its logs).
  *
- * Asking belongs to You › Privacy & data, once the iPhone catalog has its words (docs/telemetry.md).
+ * Asking belongs to You › Privacy & data, once the shared catalog has its words (docs/telemetry.md).
  */
 enum class AnalyticsConsent(val id: String) {
     UNKNOWN("unknown"),

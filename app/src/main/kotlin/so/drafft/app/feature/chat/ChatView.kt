@@ -160,8 +160,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-// Port of Drafft/Features/Chat/ChatView.swift.
-
 /** Opening a chat, on a given session card when [sessionID] is set (from the Sessions tab). */
 data class ChatRoute(val chatID: String, val sessionID: UUID? = null)
 
@@ -230,7 +228,7 @@ fun ChatView(
     val convo = app.conversation(conversationID)
     var draft by rememberSaveable(conversationID) { mutableStateOf("") }
 
-    // Open only while its tab is the one on screen (SwiftUI's onAppear/onDisappear on a tab switch):
+    // Open only while its tab is the one on screen (closed on a tab switch):
     // left open in a tab behind, new messages must still count as unread.
     val onScreen = LocalTabIsCurrent.current
     DisposableEffect(conversationID, onScreen) {
@@ -489,7 +487,7 @@ private fun ChatContent(
             .collect { chat.loadOlder(conversationID) }
     }
 
-    // The keyboard goes down when the thread is pulled down (the iPhone's interactive dismissal).
+    // The keyboard goes down when the thread is pulled down (interactive dismissal).
     val pullToHide = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -756,7 +754,7 @@ private fun JumpToLatestButton(unseen: Int, action: () -> Unit) {
 // MARK: - Header
 
 /**
- * The chat's navigation bar (ChatView.swift's toolbar), WhatsApp style: back, then the person
+ * The chat's navigation bar, WhatsApp style: back, then the person
  * (avatar at the bar controls' 44 dp, first name and presence beside it; opens their profile), and on
  * the right propose a session and More (mute, mark as unread, then report or block, apart).
  */
@@ -773,7 +771,7 @@ private fun ChatNavigationBar(
     var menu by remember { mutableStateOf(false) }
     val viewProfile = L("View %s's profile", convo.profile.name)
     val proposeLabel = L("Propose a session")
-    // Back, the person right after it (leading), the actions on the right, like the iPhone's bar.
+    // Back, the person right after it (leading), the actions on the right.
     Layout(
         modifier = Modifier
             .fillMaxWidth()
@@ -1523,7 +1521,7 @@ private fun photoSize(message: Message, data: ByteArray?): Pair<Double, Double>?
     return null
 }
 
-/** A file's size the way the iPhone's `.byteCount(style: .file)` writes it: decimal units, the app's language. */
+/** A file's size: decimal units, the app's language. */
 private fun byteCount(bytes: Long): String {
     val french = appLocale.language == "fr"
     val units = if (french) listOf("octets", "Ko", "Mo", "Go") else listOf("bytes", "KB", "MB", "GB")

@@ -8,8 +8,7 @@ import java.io.IOException
 import java.time.Instant
 import java.util.UUID
 
-// Ports Drafft/Services/Cache/LocalCache.swift. The iPhone keeps one SQLite file per account; here
-// each account has its own folder with one file per kind (written atomically), same semantics.
+// Each account has its own folder with one file per kind, written atomically.
 
 /**
  * The last known state of each account, on this phone: shown at launch before the network answers,

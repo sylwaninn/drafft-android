@@ -6,10 +6,10 @@ import so.drafft.core.model.MessageContent
 import so.drafft.core.model.SessionProposal
 
 /**
- * Chat on Stream (Drafft/Services/Chat/ChatService.swift): one connection for the account, a channel
+ * Chat on Stream: one connection for the account, a channel
  * per match (its id is the match's), messages mapped into `AppModel.conversations`. Sending is
  * optimistic: the bubble shows before the server has it. The Stream implementation lives in
- * src/android (`StreamChatService`, a Koin singleton, the iPhone's `ChatService.shared`); AppModel and
+ * src/android (`StreamChatService`, a Koin singleton); AppModel and
  * the screens only see this. Every call is made on the main thread.
  */
 interface ChatService {
@@ -90,7 +90,7 @@ interface ChatService {
         /** Stands for a link not signed yet (asked for, it replaces this in a moment). */
         const val UNSIGNED = "about:blank"
 
-        /** Stream's push provider for this app's FCM credentials (the iPhone's are `drafft-apn(-dev)`). */
+        /** Stream's push provider for this app's FCM credentials. */
         const val PUSH_PROVIDER = "drafft-fcm"
 
         /** Messages (and chats) read at a time: a chat opens on its latest page. */

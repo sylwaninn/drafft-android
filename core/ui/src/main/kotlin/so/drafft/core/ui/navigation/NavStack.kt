@@ -28,9 +28,9 @@ import kotlinx.coroutines.delay
 import so.drafft.core.ui.theme.Motion
 
 /**
- * A push stack, like SwiftUI's `NavigationStack(path:)`: the screens are plain values (routes) the
- * stack owns; the root is always there. Each tab has its own; a sheet that pushes gets its own too
- * (a flow started in a sheet stays in it, and closing returns to where it started).
+ * A push stack: the screens are plain values (routes) the stack owns; the root is always there. Each tab has its own;
+ * a sheet that pushes gets its own too (a flow started in a sheet stays in it, and closing returns to where it
+ * started).
  */
 @Stable
 class NavStack(root: Any) {
@@ -105,7 +105,7 @@ val LocalNavBackEnabled = compositionLocalOf { true }
 fun rememberNavStack(root: Any): NavStack = remember { NavStack(root) }
 
 /**
- * Draws the top of [stack] with the iPhone's push and pop (the new screen slides in from the trailing
+ * Draws the top of [stack] with a push and pop (the new screen slides in from the trailing
  * edge over the old one, which drifts a third of the way), system back pops. Screens below keep their
  * state (scroll position, fields) while covered.
  */

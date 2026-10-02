@@ -7,8 +7,8 @@ import so.drafft.core.data.platform.AppInfo
 import so.drafft.core.data.platform.DiagnosticsSource
 import so.drafft.core.data.telemetry.Telemetry
 
-// Ports Drafft/Services/Diagnostics.swift. The iPhone reads MetricKit; Android reports why past runs
-// ended (crashes, ANRs, low memory: `ApplicationExitInfo`), through [DiagnosticsSource].
+// Android reports why past runs ended (crashes, ANRs, low memory: `ApplicationExitInfo`), through
+// [DiagnosticsSource].
 
 /**
  * What the system measures of the app on people's phones: crash, hang and exit diagnostics.
@@ -16,8 +16,8 @@ import so.drafft.core.data.telemetry.Telemetry
  * They're written to the device log (tag `so.drafft.app`, category `metrics`) and kept as JSON files
  * in the app's files/Diagnostics (the last 30), readable with Android Studio's Device Explorer or a
  * bug report. Every summary also reaches Sentry as a log line, searchable by release: a problem through
- * `TelemetryLogHandler` (it is logged at WARNING), any other exit directly (as the iPhone does for its
- * MetricKit payloads), with a breadcrumb for the next report. Crashes and ANRs reach Sentry on their own,
+ * `TelemetryLogHandler` (it is logged at WARNING), any other exit directly, with a breadcrumb for the
+ * next report. Crashes and ANRs reach Sentry on their own,
  * so a problem is only a warning here, never a second error.
  */
 class Diagnostics(

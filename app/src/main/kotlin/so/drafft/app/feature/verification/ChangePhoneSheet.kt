@@ -36,8 +36,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Ports Drafft/Features/Verification/ChangePhoneSheet.swift.
-
 /**
  * Change the phone number: verify the new one first. The number can't be removed, only replaced.
  * Shown inside a `DrafftSheet` (closed through [LocalSheetDismiss]).

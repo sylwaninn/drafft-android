@@ -67,11 +67,11 @@ import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.PlainSurface
 import so.drafft.core.ui.theme.displayBold
 
-// The iPhone's presentations (`.sheet`, `.fullScreenCover`) in their Android form.
+// Sheets and full-screen covers.
 
-/** How tall a sheet stands, like `presentationDetents`. */
+/** How tall a sheet stands. */
 enum class SheetDetent {
-    /** Nearly full height, below the status bar (the default `.sheet`). */
+    /** Nearly full height, below the status bar (the default). */
     LARGE,
 
     /** Half the screen. */
@@ -82,18 +82,18 @@ enum class SheetDetent {
 }
 
 /**
- * Closes the sheet the content sits in, with its slide down (like SwiftUI's `dismiss`), then calls
- * its `onDismissRequest`. Outside a sheet it does nothing.
+ * Closes the sheet the content sits in, with its slide down, then calls its `onDismissRequest`. Outside a sheet it
+ * does nothing.
  */
 val LocalSheetDismiss = staticCompositionLocalOf<() -> Unit> { {} }
 
 /**
- * A modal sheet with the iPhone sheet's shape and surface. A sheet never shares the page's colour:
+ * A modal sheet with drafft's sheet shape and surface. A sheet never shares the page's colour:
  * the sheet itself is the lifted white ([raised]: `sheetRaised`, a step higher still, for short
  * modal sheets that must stand out over another sheet) and its blocks sink into sage wells; the
  * content is marked as a sheet surface so `canvas` / `canvasSoft` flip by themselves. System back
  * and a drag down close it. [drawsUnderNavigationBar]: the content reaches the bottom edge and pads
- * itself (a scroll view that runs under the bar, like the iPhone's), the keyboard still lifts it.
+ * itself (a scroll view that runs under the bar), the keyboard still lifts it.
  *
  * Present it by composing it (`if (showing) DrafftSheet(onDismissRequest = { showing = false }) { }`);
  * the content closes it with the slide through [LocalSheetDismiss].
@@ -117,8 +117,7 @@ fun DrafftSheet(
 }
 
 /**
- * [DrafftSheet] driven by [visible], like `.sheet(isPresented:)`: turning it off slides the sheet
- * down before it leaves.
+ * [DrafftSheet] shown while [visible]; turning it off slides the sheet down before it leaves.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,7 +170,7 @@ private fun SheetHost(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         properties = ModalBottomSheetProperties(shouldDismissOnBackPress = !lock.isLocked),
-        // A large sheet stops just below the status bar, like the iPhone's.
+        // A large sheet stops just below the status bar.
         modifier = if (detent == SheetDetent.LARGE) Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 10.dp) else Modifier,
         sheetState = state,
         shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
@@ -232,8 +231,8 @@ fun SheetContainerColor(color: Color) {
 }
 
 /**
- * Whether the sheet may be closed by a drag, a tap on the scrim or system back (iOS
- * `interactiveDismissDisabled`). A closing through [LocalSheetDismiss] always works.
+ * Whether the sheet may be closed by a drag, a tap on the scrim or system back. A closing through
+ * [LocalSheetDismiss] always works.
  */
 @Stable
 class SheetLock {
@@ -246,7 +245,7 @@ val LocalSheetLock = compositionLocalOf<SheetLock?> { null }
 
 /**
  * Keeps the enclosing [DrafftSheet] from being swiped or backed away while [disabled] (a purchase
- * running, a send in flight, unsaved changes), like SwiftUI's `.interactiveDismissDisabled(_:)`.
+ * running, a send in flight, unsaved changes).
  */
 @Composable
 fun InteractiveDismissDisabled(disabled: Boolean = true) {
@@ -258,10 +257,10 @@ fun InteractiveDismissDisabled(disabled: Boolean = true) {
     }
 }
 
-/** The iPhone sheets' corner. */
+/** The sheets' corner radius. */
 private val SheetCorner = 38.dp
 
-/** The iOS grabber: a 36 × 5 pill, mute at 40 %, 5 pt below the sheet's top edge. */
+/** The grabber: a 36 × 5 dp pill, mute at 40 %, 5 dp below the sheet's top edge. */
 @Composable
 private fun Grabber() {
     Box(
@@ -273,9 +272,9 @@ private fun Grabber() {
 }
 
 /**
- * The inline navigation bar of an iPhone sheet: the title in the middle (Inter Display ExtraBold
+ * The inline navigation bar of a sheet: the title in the middle (Inter Display ExtraBold
  * 17), close top-right as a glass circle (Close is top-right on every sheet and modal), an optional
- * [leading] control (back) on the left. 44 pt targets. A null [onClose] drops the close button: the
+ * [leading] control (back) on the left. 44 dp buttons in a 52 dp bar. A null [onClose] drops the close button: the
  * sheet's only action already just closes it ("Got it", "Done"), never two ways out.
  */
 @Composable
@@ -310,7 +309,7 @@ fun SheetNavBar(
 }
 
 /**
- * `.fullScreenCover`: slides up over everything (sheets included), full screen; system back calls
+ * A full-screen cover: slides up over everything (sheets included); system back calls
  * [onDismissRequest]. With Remove animations on, it fades. The cover's page is `canvasSoft` unless
  * its content paints its own.
  */

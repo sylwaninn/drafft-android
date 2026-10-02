@@ -40,8 +40,6 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.math.ceil
 
-// Port of Drafft/Features/Discover/BoostChip.swift.
-
 /**
  * Header chip for boosts. Idle: the bolt and how many you have. Running: one accent capsule with a
  * ring that drains around the bolt and a live mm:ss clock. A single surface either way, so it
@@ -121,8 +119,8 @@ internal fun clock(seconds: Double): String {
 }
 
 /**
- * The time now, refreshed every second while [until] lies ahead (`TimelineView(.periodic(by: 1))`):
- * one state write a second, only while something counts down.
+ * The time now, refreshed every second while [until] lies ahead: one state write a second, only while
+ * something counts down.
  */
 @Composable
 internal fun rememberSecondTicker(until: Instant?): Instant {

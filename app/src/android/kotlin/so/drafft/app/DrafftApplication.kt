@@ -27,7 +27,7 @@ import so.drafft.core.ui.platform.installDrafftUi
 import so.drafft.core.ui.platform.installImages
 import so.drafft.core.ui.theme.LanguageObservation
 
-/** The iPhone's `DrafftApp.init`: diagnostics, images, the store, dates, haptics, the language. */
+/** The app's start-up: diagnostics, images, the store, dates, haptics, the language. */
 class DrafftApplication : Application() {
     override fun onCreate() {
         super.onCreate()

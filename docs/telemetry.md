@@ -72,7 +72,7 @@ long as the privacy policy says so and people can object.
 ## Errors: what alerts and what doesn't
 
 `Telemetry.unexpected(error, area, action)` is called in a `catch` that swallows or rethrows a
-failure the app didn't expect. Best-effort upkeep written `attempt { }` (the Swift `try?`: realtime
+failure the app didn't expect. Best-effort upkeep written `attempt { }` (a failure gives null: realtime
 joins, wallet and block-list reads that run again) is not reported, unless a call asks for it with its
 own area and action. It classifies the error (`ErrorKind`):
 
@@ -109,11 +109,11 @@ level: INFO is a breadcrumb (it comes with the next error report), WARNING is al
 (searchable, never an issue), SEVERE is a Sentry issue (something that should never happen, like a
 backend that isn't deployed). Lower levels stay on the phone.
 
-System exit diagnostics (what MetricKit gives the iPhone): crashes and ANRs reach Sentry on their own;
+System exit diagnostics: crashes and ANRs reach Sentry on their own;
 `Diagnostics` keeps why past runs ended (`ApplicationExitInfo`) on the phone and sends their daily
 summary as a Sentry log line. PostHog's queue is sent when the app leaves the front.
 
-## The tracking plan
+## Tracked events
 
 All events live in `AnalyticsEvent` (one class per event). Names are `object_action`, snake_case, past
 tense. Every event also carries `screen` (the screen on show), and these super properties:
@@ -174,7 +174,7 @@ production.
    none).
 2. Call `Telemetry.track(...)` where the thing happened, preferably in the model (`AppModel`, a
    service) rather than a button: the model knows whether it worked.
-3. Add it to the table above, and to the iPhone app with the same name and properties.
+3. Add it to the table above, and to drafft-ios with the same name and properties.
 4. Never rename an event or a property: dashboards depend on them. Add a new one.
 
 ## Setup
@@ -188,7 +188,7 @@ production.
 | `POSTHOG_HOST` | `https://eu.i.posthog.com` |
 
 Empty values turn the service off. Production and staging share the Sentry project (the
-`environment` tag separates them) and the PostHog project too, with the iPhone app and the website:
+`environment` tag separates them) and the PostHog project too, with drafft-ios and the website:
 filter every insight, funnel, alert and experiment on `app_environment = production` (local builds send
 nothing: empty key). Staging events count in the same quota. The app and the build both refuse a non-EU host (anything but exactly
 `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`),
@@ -207,7 +207,7 @@ the mapping can be uploaded later with `sentry-cli`.
 - Alerts, at least: a new issue in `production`; an issue's frequency above its baseline; crash-free
   sessions under 99.5% for the latest release; `area:purchase` issues (money is involved) to a
   dedicated channel; the "purchase credited late" message.
-- Data retention: the plan's default (90 days) is fine for crash data.
+- Data retention: Sentry's default (90 days) is fine for crash data.
 
 ### PostHog project settings
 
@@ -215,20 +215,26 @@ the mapping can be uploaded later with `sentry-cli`.
 - Person profiles: identified only (also set in the SDK).
 - Feature flags are not preloaded (each preload is a billed request): turn `preloadFeatureFlags` on
   with the first experiment.
-- Data retention: not a setting. PostHog Cloud keeps events 1 year on the free plan and 7 years on a paid
-  plan, and a shorter period isn't available. The CNIL's audience measurement guidance (an identifier
-  lives 13 months at most, the data 25 months at most) holds on the free plan; on a paid plan, delete the
+- Data retention: not a setting. PostHog Cloud keeps events 1 year on the free tier and 7 years on a paid
+  tier, and a shorter period isn't available. The CNIL's audience measurement guidance (an identifier
+  lives 13 months at most, the data 25 months at most) holds on the free tier; on a paid tier, delete the
   older data (persons or batch deletion) or change the privacy policy first.
 - Dashboards to start with: the sign-up funnel (`onboarding_step_viewed` by `step_index`), activation
   (`onboarding_completed` → `profile_swiped` → `match_created` → `message_sent` → `session_proposed`),
   monetisation (`paywall_viewed` by `from_screen` → `purchase_completed`), retention by first week.
 
-## What remains to do outside this repository
+## What remains to do
 
-- **Consent switch (first, in the iPhone app):** a switch in You › Privacy & data ("Share usage
-  analytics", off by default, with one line on what it means), and optionally a one-time question after
-  sign-up. Its words go in the iPhone catalog first (WORDING.md), then `TelemetrySession.setConsent`
-  wires it. Until then everyone is in anonymous mode.
+### Here
+
+- **Consent switch:** a switch in You › Privacy & data ("Share usage analytics", off by default, with one
+  line on what it means), and optionally a one-time question after sign-up, wired to
+  `TelemetrySession.setConsent`. Until then everyone is in anonymous mode.
+
+### Elsewhere
+
+- **The switch's words (drafft-ios):** written in the shared catalog first (WORDING.md), then synced here.
+  drafft-ios gets the same switch.
 - **Privacy policy (drafft-web):** add PostHog (EU) to `/privacy#data` with the purpose, the anonymous
   mode, the consent for linking to the account, and how to object; Sentry is already listed.
 - **Account deletion (drafft-backend, `delete-account`):** delete the PostHog person and its events

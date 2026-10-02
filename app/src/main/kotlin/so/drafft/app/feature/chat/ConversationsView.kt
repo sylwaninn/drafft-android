@@ -117,8 +117,6 @@ import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 import so.drafft.core.ui.theme.weight
 
-// Port of Drafft/Features/Chat/ConversationsView.swift.
-
 /** The Chats tab's root in its stack. */
 private object ConversationsRoot
 
@@ -148,7 +146,7 @@ fun ConversationsView(modifier: Modifier = Modifier) {
     }
 }
 
-/** The list's own side margin (inset grouped, iPhone), where its cards start. */
+/** The list's own side margin, where its cards start. */
 private val Edge = 20.dp
 
 @Composable
@@ -352,7 +350,7 @@ private fun NoChatsYet(modifier: Modifier = Modifier) {
 private class SwipeAction(val title: String, val symbol: String, val tint: Color, val run: () -> Unit)
 
 /**
- * A list row with the iPhone's swipe actions: drag right to reveal [leading], left for [trailing];
+ * A list row with swipe actions: drag right to reveal [leading], left for [trailing];
  * a long swipe runs the action at once. A tap on the row opens it (or closes the revealed action).
  */
 @Composable

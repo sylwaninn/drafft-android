@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import so.drafft.core.data.media.AndroidPhotoCompressor
 
 /**
- * [FaceCheck.Engine] on ML Kit's on-device face detection (the iPhone's Vision face rectangles): the
+ * [FaceCheck.Engine] on ML Kit's on-device face detection: the
  * photo at 1024 px at most, upright, decoded off the main thread.
  */
 class AndroidFaceCheck(private val context: Context) : FaceCheck.Engine {

@@ -47,8 +47,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/TermsConsentView.swift.
-
 /**
  * An account that signed up before the consent was recorded on the server, or before the current
  * terms, is asked at each open until it accepts, after the location gate (`MainTabs`): the same two

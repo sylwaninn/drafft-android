@@ -46,7 +46,7 @@ import so.drafft.core.data.platform.LocationProvider.Authorization
  * permission is enough), only while the app is in use.
  *
  * Asking for the permission needs an activity: the one on screen installs [requester] (a permission
- * launcher for coarse and fine location) and reports the answer with [onPermissionResult].
+ * launcher for coarse location) and reports the answer with [onPermissionResult].
  */
 class AndroidLocationProvider(
     private val context: Context,
@@ -70,8 +70,7 @@ class AndroidLocationProvider(
     var rationale: (() -> Boolean)? = null
 
     init {
-        // The location switch can change without the app leaving the screen (quick settings): followed
-        // live, like the iPhone's authorization callback.
+        // The location switch can change without the app leaving the screen (quick settings): followed live.
         ContextCompat.registerReceiver(
             context,
             object : BroadcastReceiver() {
@@ -128,7 +127,7 @@ class AndroidLocationProvider(
     }
 
     /**
-     * Like the iPhone's `requestLocation()`: whatever source can answer does, within [TIMEOUT_MS].
+     * One reading: whatever source can answer does, within [TIMEOUT_MS].
      * A recent reading is used as is. Otherwise every source is asked at once and the first answer
      * wins: the fused provider on Wi-Fi and cell towers, and on GPS, which answers when Google
      * Location Accuracy is off; the system's own providers, the only ones on a phone without Google

@@ -6,7 +6,6 @@ import org.junit.Test
 import so.drafft.core.data.DiscoveryFreshness.Moment
 import so.drafft.core.data.DiscoveryFreshness.Part
 
-// Ports DrafftTests/DiscoveryFreshnessTests.swift.
 class DiscoveryFreshnessTest {
     @Test
     fun neverReadIsAlwaysDue() {

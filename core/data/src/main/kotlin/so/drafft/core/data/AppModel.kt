@@ -86,14 +86,12 @@ import so.drafft.core.model.TermsConsent
 import so.drafft.core.model.Vitals
 import so.drafft.core.model.newestFirst
 
-// Ports Drafft/Services/AppModel.swift and its extensions: AppModel+Account, +AccountSync,
-// +LiveProfile, +Matches, +Discover, +Sessions, +Wallet, +Pause and +Safety (one class here, one
-// section per Swift file, since Kotlin extensions can't reach the state they change).
+// One class, one region per domain (Account, Account sync, Live profile, Matches, Discover, Sessions,
+// Wallet, Pause, Safety), since extension functions can't reach the model's private state.
 
 /**
- * The app's single observable state, read by every screen (`LocalAppModel.current`) the way SwiftUI
- * reads the iPhone's `@Observable AppModel`. Every property a screen shows is Compose snapshot state;
- * all mutation happens on the main thread ([scope] runs on `Dispatchers.Main.immediate`).
+ * The app's single observable state, read by every screen (`LocalAppModel.current`). Every property a screen shows is
+ * Compose snapshot state; all mutation happens on the main thread ([scope] runs on `Dispatchers.Main.immediate`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppModel(
@@ -126,7 +124,7 @@ class AppModel(
     enum class Tab { DISCOVER, LIKES, SESSIONS, CHATS, ME }
     enum class ProfileLoad { LOADING, FAILED, LOADED }
 
-    /** The model's own work (the iPhone's `Task { }` from the main actor). Lives as long as the app. */
+    /** The model's own work, on the main thread. Lives as long as the app. */
     val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
 
     /** Local cache writes, one after the other, off the main thread. */
@@ -173,7 +171,7 @@ class AppModel(
     private var lastAccountRead: Pair<Instant, ProfileSync.Account>? = null
 
     /**
-     * drafft tempo's details as the store reports them for this account (plan, price, renewal),
+     * drafft tempo's details as the store reports them for this account (length, price, renewal),
      * shown in You. Billed and managed by the store: the app only reads it and links to its
      * management page. Whether it's on comes from the server: `isPremium`.
      */
@@ -568,7 +566,7 @@ class AppModel(
             return !last.matched && Duration.between(last.at, Instant.now()).seconds < UNDO_WINDOW_SECONDS
         }
 
-    // region Account (AppModel+Account.swift): signing in and out, and deleting the account.
+    // region Account: signing in and out, and deleting the account.
 
     /** An unfinished sign-up always resumes, whatever the entry point. `immediately`: at launch,
      * under the splash (no keyboard to put away, nothing to wait for). */
@@ -763,9 +761,9 @@ class AppModel(
     }
 
     /**
-     * The server's app-wide refusals, for as long as the app runs (the iPhone's RootView listens to
-     * the same notifications): a paused profile locks discovery at once; a hold, or a pause that may be
-     * one (a hold pauses the profile too, and bans it from chats), reads the account's hold.
+     * The server's app-wide refusals, for as long as the app runs: a paused profile locks discovery at
+     * once; a hold, or a pause that may be one (a hold pauses the profile too, and bans it from chats),
+     * reads the account's hold.
      */
     suspend fun followServerRefusals() {
         backend.events.collect { event ->
@@ -879,7 +877,7 @@ class AppModel(
 
     // endregion
 
-    // region Account sync (AppModel+AccountSync.swift)
+    // region Account sync
 
     // The account's own profile row, from one source: `refreshAccount` reads it in one request and
     // applies it everywhere it shows (You, the pause, a moderation hold, notification settings), and
@@ -1007,7 +1005,7 @@ class AppModel(
 
     // endregion
 
-    // region Live profile (AppModel+LiveProfile.swift)
+    // region Live profile
 
     // The person's own profile follows the server on every device (pause, notification settings, language,
     // card). The database broadcasts `profile` on `user:<id>` with the names of the columns that changed
@@ -1030,7 +1028,7 @@ class AppModel(
 
     // endregion
 
-    // region Matches (AppModel+Matches.swift)
+    // region Matches
 
     // Who liked you (`liked_me`) and your matches (`my_matches`), from the server and kept live by the
     // account's channel (`UserChannel`): `like`, `match` and `match_ended`. Each event only says something
@@ -1232,7 +1230,7 @@ class AppModel(
 
     // endregion
 
-    // region Discover (AppModel+Discover.swift)
+    // region Discover
 
     // Discover on the server (docs/matching.md in drafft-backend):
     //
@@ -1678,7 +1676,7 @@ class AppModel(
 
     // endregion
 
-    // region Sessions (AppModel+Sessions.swift)
+    // region Sessions
 
     // What the chat and the Sessions tab ask of sessions. The rows live on the server and in
     // `SessionStore` (optimistic, live); the chat's own card is only where the session shows.
@@ -1729,7 +1727,7 @@ class AppModel(
 
     // endregion
 
-    // region Wallet (AppModel+Wallet.swift): drafft tempo, boosts and super likes, as the server has them.
+    // region Wallet: drafft tempo, boosts and super likes, as the server has them.
 
     fun balance(of: Consumable): Int = when (of) {
         Consumable.BOOST -> boosts
@@ -1794,7 +1792,7 @@ class AppModel(
 
     // endregion
 
-    // region Pause (AppModel+Pause.swift)
+    // region Pause
 
     // The pause switch against the server: sent when the person flips it, read back when signing in,
     // and forced on when the server refuses an action because the profile is paused.
@@ -1881,7 +1879,7 @@ class AppModel(
 
     // endregion
 
-    // region Safety (AppModel+Safety.swift): blocking and unblocking, at once on the device, then on the
+    // region Safety: blocking and unblocking, at once on the device, then on the
     // server, through an outbox kept on this phone (SafetyOutbox) until the server has it.
 
     private val safetyOutbox = SafetyOutbox(defaults)

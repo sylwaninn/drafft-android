@@ -8,8 +8,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports Drafft/Services/Telemetry/TelemetrySession.swift (`start`).
-
 /**
  * Installs [Telemetry]'s engines on Android, in two steps of `Application.onCreate`. Starting never
  * throws: an SDK that fails to start leaves that service off and the app running.

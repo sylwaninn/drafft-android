@@ -29,8 +29,6 @@ import so.drafft.core.ui.components.Wordmark
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
-// Port of Drafft/Features/Auth/SplashView.swift.
-
 /**
  * Launch: the session photos rotate full screen (the log-in's quick crossfade, faster here) under
  * the white wordmark, centred at the bottom. It stays long enough to

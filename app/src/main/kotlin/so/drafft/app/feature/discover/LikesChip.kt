@@ -25,8 +25,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.heavy
 import so.drafft.core.ui.theme.monospacedDigits
 
-// Port of Drafft/Features/Discover/LikesChip.swift.
-
 /**
  * Header chip on Discover: who already liked you. Two stacked faces (blurred until drafft tempo)
  * and the count. Opens the likes grid, or the paywall.

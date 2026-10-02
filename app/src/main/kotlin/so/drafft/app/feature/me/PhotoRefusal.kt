@@ -69,14 +69,12 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/PhotoRefusal.swift.
-
 /**
  * Why a photo was refused, in plain words (never the detected labels), with what to do next: ask a
  * person for a second look, or take it off the profile.
  *
- * [measuring] lays it out without its scroll view (on the iPhone, to measure the height the sheet
- * opens at; a `SheetDetent.FIT` sheet measures itself here).
+ * [measuring] lays it out without its scroll view, for a sheet that measures its content (`SheetDetent.FIT`).
+ * No caller passes it today.
  */
 @Composable
 fun PhotoRefusalSheet(

@@ -5,7 +5,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 
-// NetworkQuality (Drafft/Services/Media/NetworkQuality.swift): slow by Data Saver or by slow photos,
+// NetworkQuality: slow by Data Saver or by slow photos,
 // limited when slow or not measured yet on this network.
 class NetworkQualityTest {
     /** A download of [bytes], its first kilobyte at 0, the rest [seconds] later, read to its end. */

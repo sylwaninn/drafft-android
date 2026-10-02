@@ -37,8 +37,6 @@ import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.medium
 
-// Port of Drafft/Features/Me/LanguageSheet.swift.
-
 /** You › Language: the same list as at sign-up. Present it in a `DrafftSheet` (medium detent). */
 @Composable
 fun LanguageSheet(modifier: Modifier = Modifier) {

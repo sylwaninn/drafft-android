@@ -4,8 +4,7 @@ import java.util.logging.Level as LogLevel
 import java.util.logging.Logger
 import kotlin.coroutines.cancellation.CancellationException
 
-// Ports Drafft/Services/Telemetry/Core/Telemetry.swift.
-// docs/telemetry.md is the plan both apps follow (events, properties, privacy).
+// docs/telemetry.md is the reference both apps follow (events, properties, privacy).
 
 /**
  * What leaves the phone about how the app behaves, callable from anywhere (model and screens), like
@@ -390,7 +389,7 @@ object Telemetry {
         }
     }
 
-    /** A value as Sentry shows it (a tag, an extra): a list of codes as `a,b`, like the iPhone. */
+    /** A value as Sentry shows it (a tag, an extra): a list of codes as `a,b`. */
     fun render(value: Any): String = if (value is Collection<*>) value.joinToString(",") else value.toString()
 
     /** Back to nothing installed (unit tests). */

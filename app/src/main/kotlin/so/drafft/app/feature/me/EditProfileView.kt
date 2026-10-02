@@ -117,11 +117,9 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/EditProfileView.swift.
-
 /**
  * Pages follow the profile as others read it: who you are and what you're after, then how you move,
- * then what you say in your own words. (`EditProfileView.Page` on iOS.)
+ * then what you say in your own words.
  */
 enum class EditProfilePage(val rawValue: String) {
     PHOTOS("photos"), IDENTITY("identity"), LIFESTYLE("lifestyle"), SPORTS("sports"),
@@ -154,7 +152,7 @@ enum class EditProfilePage(val rawValue: String) {
         }
 }
 
-/** Which field has the keyboard (`EditProfileView.Field` on iOS). */
+/** Which field has the keyboard. */
 private sealed interface EditField {
     data object Name : EditField
     data object Goal : EditField
@@ -205,7 +203,8 @@ private class EditProfileState(profile: Profile, val moderation: PhotoModeration
             return p
         }
 
-    // Compared as on the iPhone, where the draft's vitals are set and the saved ones may be nil.
+    // The draft, vitals, prompts and voice against what's saved. The draft's vitals are always set
+    // (`Vitals.blank` when none were saved), so a profile saved without vitals always counts as changed.
     val hasChanges: Boolean
         get() = draft != original || vitals != original.vitals || prompts != original.prompts || voice != null
 
@@ -646,7 +645,7 @@ private fun PhotosGrid(state: EditProfileState, pickPhoto: () -> Unit) {
     )
 }
 
-/** The add tile's dashed outline (1.5 pt, dashes of 6 with gaps of 5). */
+/** The add tile's dashed outline (1.5 dp, dashes of 6 with gaps of 5). */
 private fun Modifier.dashedBorder(color: Color, radius: Dp): Modifier = drawBehindDashed(color, radius)
 
 private fun Modifier.drawBehindDashed(color: Color, radius: Dp): Modifier =

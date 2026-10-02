@@ -18,11 +18,10 @@ import org.koin.core.component.inject
 import so.drafft.core.data.platform.AndroidLocalNotifications
 
 /**
- * Firebase Cloud Messaging (the iPhone's APNs delegate methods): a new token is registered like the
- * iPhone's device token ([NotificationService.didRegister]), and a push that arrives while the app is
- * running goes through [NotificationService.willPresent] before it's shown. With the app in the
- * background, FCM shows a push's notification itself and a tap opens the app with its data as extras
- * ([handleNotificationTap]).
+ * Firebase Cloud Messaging: a new token is registered with the backend ([NotificationService.didRegister]),
+ * and a push that arrives while the app is running goes through [NotificationService.willPresent] before
+ * it's shown. With the app in the background, FCM shows a push's notification itself and a tap opens
+ * the app with its data as extras ([handleNotificationTap]).
  *
  * Declared by the app's manifest (service `so.drafft.core.data.notifications.DrafftMessagingService`,
  * not exported, intent filter `com.google.firebase.MESSAGING_EVENT`).

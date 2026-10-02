@@ -25,9 +25,8 @@ import kotlinx.coroutines.withContext
 import so.drafft.core.data.media.MediaURL
 
 /**
- * One shared player: starting a clip stops whatever else was playing. A Koin singleton (the iPhone's
- * `AudioPlayback.shared`); screens read its state directly, like SwiftUI reads the `@Observable`.
- * Ports `AudioPlayback` (Drafft/Services/Audio.swift). Call it from the main thread.
+ * One shared player: starting a clip stops whatever else was playing. A Koin singleton; screens read
+ * its state directly (Compose snapshot state). Call it from the main thread.
  */
 class AudioPlayback(
     private val engine: AudioEngine,
@@ -73,7 +72,7 @@ class AudioPlayback(
 
     /**
      * Read straight from the player, for frame-by-frame progress (read it inside a frame loop,
-     * `withFrameNanos`, the way the iPhone reads it in a TimelineView).
+     * `withFrameNanos`).
      */
     val liveProgress: Double
         get() {

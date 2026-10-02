@@ -31,8 +31,6 @@ import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/OnboardingHeader.swift.
-
 /**
  * Sign-up header, one row: Back, the stepper, Skip. Pinned once over the whole flow, so it never
  * slides with the steps. Skip keeps its slot when it isn't offered (only faded out), so the stepper
@@ -112,5 +110,5 @@ fun OnboardingHeader(
     }
 }
 
-/** The buttons' 48 pt row; the stepper's bar sits on its middle. */
+/** The buttons' 48 dp row; the stepper's bar sits on its middle. */
 private val ROW_HEIGHT = 48.dp

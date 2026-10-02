@@ -49,8 +49,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Discover/DeckEmptyView.swift.
-
 /**
  * Discover when the stack runs out, filtered or not: one screen, the message in the middle. It shows
  * the moment the last profile card is swiped: three athlete photos are dealt into the spot it
@@ -150,7 +148,7 @@ private fun FanPhoto(name: String, slot: Int, index: Int, fanIn: Boolean, instan
             .size(w, h)
             .graphicsLayer {
                 val v = t.value
-                // Rotation about the bottom edge, then the offset (as SwiftUI orders them).
+                // Rotation about the bottom edge, then the offset.
                 transformOrigin = TransformOrigin(0.5f, 1f)
                 rotationZ = fanAngles[slot] * v
                 translationX = (fanXs[slot] * v).dp.toPx()

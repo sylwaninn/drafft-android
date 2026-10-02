@@ -3,8 +3,6 @@ package so.drafft.core.data.backend
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-// Ports Drafft/Services/Backend/ProfileCard.swift.
-
 /**
  * Someone else's profile as the server sends it: a `profile_cards` row (`private.rebuild_card`)
  * plus what each function adds (`discover`, `liked_me`, `my_matches`, `get_cards`). Plain Kotlin, so
@@ -81,7 +79,7 @@ data class ProfileCard(
     val isShowable: Boolean get() = name.isNotEmpty() && age != null && media.any { it.kind == "photo" }
 
     companion object {
-        /** One card from its JSON object; throws where Swift's decoding would. */
+        /** One card from its JSON object; throws on a value of the wrong shape. */
         fun decode(o: JsonObject): ProfileCard = ProfileCard(
             // Ids are compared as the app prints them.
             id = o.string("id").lowercase(),

@@ -96,8 +96,6 @@ import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 
-// Port of MainTabs (Drafft/App/DrafftApp.swift).
-
 private data class TabItem(val tab: AppModel.Tab, val title: () -> String, val symbol: String, val filled: String)
 
 private val tabs = listOf(
@@ -284,7 +282,7 @@ fun MainTabs(
         if (!isActive) return@LaunchedEffect
         foreground.returns.collect { location.refresh() }
     }
-    // drafft tempo's details (plan, renewal) follow the store, for the signed-in account only.
+    // drafft tempo's details (length, renewal) follow the store, for the signed-in account only.
     LaunchedEffect(Unit) {
         store.load()
         store.customerInfoStream.collect { info ->
@@ -311,9 +309,9 @@ fun MainTabs(
 }
 
 /**
- * What the iPhone shows in its own window above the app (TopOverlayWindow.swift), in every phase:
- * sign-up included (a photo refused on the photos step), and over a moderation hold. Placed once, at
- * the root, with the explanation sheets those banners open.
+ * What shows above the app, in its own window (`TopOverlayWindow`), in every phase: sign-up included (a
+ * photo refused on the photos step), and over a moderation hold. Placed once, at the root, with the
+ * explanation sheets those banners open.
  */
 @Composable
 fun WindowBanners() {

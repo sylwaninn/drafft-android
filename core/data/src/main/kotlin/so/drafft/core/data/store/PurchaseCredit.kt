@@ -32,8 +32,6 @@ import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Telemetry
 
 /**
- * Ports Drafft/Services/PurchaseCredit.swift.
- *
  * Purchases the store confirmed that the server hasn't credited yet.
  *
  * Right after Google Play confirms, the app asks the backend to credit it at once (`purchase-sync`,
@@ -104,7 +102,7 @@ class PurchaseCredit(
 
     /**
      * "Contact us" on the banner: the root opens "Get help" above whatever is on screen, filled in for
-     * this pending purchase (topic `Purchase`, the store's reference). The iPhone's `PurchaseHelpPresenter`.
+     * this pending purchase (topic `Purchase`, the store's reference).
      */
     val supportRequests: SharedFlow<Pending?> = _supportRequests.asSharedFlow()
 

@@ -2,8 +2,8 @@ package so.drafft.core.model
 
 /**
  * Every sport in drafft, in one place. Pickers (sign-up, Edit profile, Filters) all read this list,
- * and each sport has its own symbol (never shared with another sport). `id` is the server's value
- * (the iPhone app's raw value). `symbol` is the SF Symbol name, drawn by `DrafftIcon` in core:ui.
+ * and each sport has its own symbol (never shared with another sport). `id` is the server's value.
+ * `symbol` is the icon name, drawn by `DrafftIcon` in core:ui.
  */
 enum class Sport(
     val id: String,

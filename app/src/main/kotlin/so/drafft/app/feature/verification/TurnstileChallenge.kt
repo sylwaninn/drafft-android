@@ -24,8 +24,6 @@ import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.platform.WebPage
 import so.drafft.core.ui.theme.DS
 
-// Ports Drafft/Features/Verification/TurnstileChallenge.swift.
-
 /**
  * Cloudflare Turnstile for the support form sent signed out: the widget runs in a web view the person
  * never sees, and hands back a single-use token the backend `support` verifies. Only when Cloudflare
@@ -99,7 +97,7 @@ class TurnstileChallenge(
     private fun JsonObject.has(key: String): Boolean = containsKey(key)
 
     companion object {
-        /** The JavaScript interface the page posts through (the iPhone's `messageHandlers.turnstile`). */
+        /** The JavaScript interface the page posts through. */
         private const val BRIDGE = "turnstile"
 
         private fun page(siteKey: String): String = """

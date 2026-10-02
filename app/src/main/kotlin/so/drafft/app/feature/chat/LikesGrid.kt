@@ -80,8 +80,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 import java.time.Instant
 
-// Port of Drafft/Features/Chat/LikesGrid.swift.
-
 /** Tiles past this one arrive together with it: a long list doesn't make you wait. */
 private const val STAGGER_CAP = 9
 
@@ -152,7 +150,7 @@ fun <T> LikesGrid(
 }
 
 /**
- * The time now, read again at each minute (`EveryMinute` on the iPhone): one state write a minute
+ * The time now, read again at each minute: one state write a minute
  * for the whole grid.
  */
 @Composable

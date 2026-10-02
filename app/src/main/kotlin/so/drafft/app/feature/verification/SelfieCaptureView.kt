@@ -84,8 +84,7 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.semibold
 
-// Ports Drafft/Features/Verification/SelfieCaptureView.swift. The camera (AVFoundation, Vision) is the
-// design system's `FrontCamera` (CameraX and the platform's on-device face detector on Android).
+// The camera is the design system's `FrontCamera` (CameraX and the platform's on-device face detector).
 
 /**
  * The selfie the drafft team asked for (hold `selfie`): the front camera, live, with an on-device face
@@ -274,7 +273,7 @@ private fun Actions(
     }
 }
 
-/** A button label: the symbol, then the words (SwiftUI's `Label` in a button). */
+/** A button label: the symbol, then the words. */
 @Composable
 private fun Label(symbol: String, text: String) {
     DrafftIcon(symbol, size = 20.dp, tint = LocalContentColor.current)

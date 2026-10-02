@@ -21,8 +21,6 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.Sport
 
 /**
- * Ports Drafft/Services/Sessions/SessionStore.swift.
- *
  * Sessions, on the server (`public.sessions`), the one source for the Sessions tab and the chat cards.
  *
  * - Reads: `upcoming_sessions` for the tab, a read by id for a card the tab doesn't list (declined,
@@ -299,7 +297,7 @@ val SessionRecord.Status.proposalStatus: SessionProposal.Status
         SessionRecord.Status.CANCELLED -> SessionProposal.Status.CANCELLED
     }
 
-/** A server row as the chat card and the Sessions tab show it (Swift's `SessionProposal.init?(_ row:)`). */
+/** A server row as the chat card and the Sessions tab show it. */
 fun SessionProposal.Companion.from(row: SessionRecord): SessionProposal? {
     val sport = Sport.fromId(row.sportID) ?: return null
     return SessionProposal(

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- The launch: the night surface with nothing on it, then SplashView draws the photos and the word
-         (the system splash can only centre an icon; the iPhone's shows the word at the bottom). -->
+         (the system splash can only centre an icon). -->
     <style name="Theme.Drafft.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/launch_surface</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>

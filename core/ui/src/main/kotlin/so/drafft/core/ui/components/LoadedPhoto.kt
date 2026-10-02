@@ -39,8 +39,6 @@ import so.drafft.core.data.media.PhotoDownloads
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
-// Ports Drafft/DesignSystem/LoadedPhoto.swift.
-
 /**
  * A photo on the server (`http…`) or picked on this phone (`/…`), through `ImageStore`: the copy the
  * frame needs, decoded in the background at the frame's size, capped caches. A copy already in memory

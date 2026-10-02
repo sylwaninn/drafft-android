@@ -89,8 +89,6 @@ import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/MeInfoSheets.swift.
-
 /**
  * The page of a sheet from You: the inline navigation bar (title, close on the right, an optional
  * back on the left) over a progressive blur, an optional pinned [bottomBar], and [content] scrolling
@@ -118,7 +116,7 @@ internal fun SheetPage(
     )
 }
 
-/** SwiftUI's `Label`: an SF Symbol before the text, both in [color]. */
+/** A label: an icon before the text, both in [color]. */
 @Composable
 internal fun IconLabel(
     text: String,
@@ -134,10 +132,10 @@ internal fun IconLabel(
     }
 }
 
-/** The box an SF Symbol set in [style] takes (a bit larger than the type, like core:ui's). */
+/** The box an icon set in [style] takes (a bit larger than the type, like core:ui's). */
 internal fun symbolSize(style: TextStyle): Dp = (style.fontSize.value * 1.2f).dp
 
-/** `ProgressView()` inside a button: a small spinner in the label's colour. */
+/** A small spinner inside a button, in the label's colour. */
 @Composable
 internal fun ButtonSpinner(color: Color = LocalContentColor.current) {
     CircularProgressIndicator(Modifier.size(20.dp), color = color, strokeWidth = 2.dp)
@@ -431,7 +429,7 @@ private fun SafetyEmergency() {
     }
 }
 
-/** Shown right after you confirm a session time: the plan in one line, then the safety tips. */
+/** Shown right after you confirm a session time: the session in one line, then the safety tips. */
 @Composable
 fun SessionSafetySheet(
     session: SessionProposal,
@@ -537,7 +535,7 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
     }
 }
 
-/** A thin hairline between rows, full width (the iPhone's `Divider`). */
+/** A thin hairline between rows, full width. */
 @Composable
 internal fun Hairline(modifier: Modifier = Modifier, start: Dp = 0.dp) {
     Box(

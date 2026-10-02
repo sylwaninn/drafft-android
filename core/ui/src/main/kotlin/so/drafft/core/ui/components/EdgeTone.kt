@@ -20,8 +20,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import so.drafft.core.ui.platform.PlatformUi
 
-// Port of Drafft/DesignSystem/EdgeTone.swift.
-
 /**
  * Whether what scrolls under a top bar is light or dark. The status bar flips its time and icons
  * the same way: dark ink over a light page or white block, white over a night block or a photo.

@@ -107,8 +107,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/Composer.swift.
-
 /** The message being replied to, shown above the field ("Replying to Sam"). [author] "yourself" for your own. */
 data class ComposerReply(val id: String, val author: String, val text: String)
 
@@ -399,7 +397,7 @@ private fun AttachMenu(onCamera: (() -> Unit)?, onLibrary: () -> Unit) {
     }
 }
 
-/** A drafft menu (the iPhone's `Menu`): raised surface, rounded, ink items. */
+/** A drafft menu: raised surface, rounded, ink items. */
 @Composable
 internal fun ChatMenu(expanded: Boolean, onDismiss: () -> Unit, content: @Composable () -> Unit) {
     DropdownMenu(
@@ -484,7 +482,7 @@ private fun Field(
                     Text(r.text, style = TextStyles.footnote, color = p.body, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 val cancel = L("Cancel reply")
-                // 44 pt to hit, laid out as 32 so the quote doesn't grow.
+                // 44 dp to hit, laid out as 32 so the quote doesn't grow.
                 Box(
                     Modifier
                         .layout { measurable, constraints ->

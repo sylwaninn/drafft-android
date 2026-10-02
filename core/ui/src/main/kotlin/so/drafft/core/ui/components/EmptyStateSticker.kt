@@ -56,8 +56,6 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.time.TimeSource
 
-// Port of Drafft/DesignSystem/EmptyStateSticker.swift.
-
 private val StickerSide = 116.dp
 private const val TILT_DEGREES = -6f
 /** How far the fold sits inside the sticker's edge (dp), at rest and when the arrival starts. */
@@ -143,7 +141,6 @@ fun EmptyStateSticker(art: EmptyStateArt, modifier: Modifier = Modifier) {
 /**
  * The same sticker, at rest and still: no arrival, no pull. Drawn at the empty tab's size and scaled
  * down, so it shares that sticker's sheet and looks the same, only smaller (the Likes banner's sign).
- * Follows `StillSticker` in EmptyStateSticker.swift.
  */
 @Composable
 fun StillSticker(art: EmptyStateArt, modifier: Modifier = Modifier, size: Float = 56f) {
@@ -154,8 +151,7 @@ fun StillSticker(art: EmptyStateArt, modifier: Modifier = Modifier, size: Float 
 }
 
 /**
- * drafft tempo's round sticker, still: its spark filled on a night disc inside a white edge. Follows
- * `StillSticker(tempoSize:)` in EmptyStateSticker.swift.
+ * drafft tempo's round sticker, still: its spark filled on a night disc inside a white edge.
  */
 @Composable
 fun StillTempoSticker(modifier: Modifier = Modifier, size: Float = 56f) {

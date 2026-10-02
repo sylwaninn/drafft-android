@@ -12,8 +12,6 @@ import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.LocalTabsOnScreen
 
-// Ports Drafft/Services/Telemetry/TrackScreen.swift.
-
 /**
  * Counts [screen] as on show while it's composed in the current tab (every tab stays composed: a chat
  * left open in Chats isn't on show while Discover is), and not while the tabs are hidden (under the
