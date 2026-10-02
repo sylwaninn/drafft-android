@@ -16,7 +16,7 @@ data class StoreProduct(
     val localizedPriceString: String,
     val price: BigDecimal,
     val currencyCode: String,
-    /** A subscription's price for one month (the yearly plan's saving), null for a pack. */
+    /** A subscription's price for one month (the yearly subscription's saving), null for a pack. */
     val pricePerMonth: BigDecimal? = null,
     val localizedPricePerMonth: String? = null,
 ) {
@@ -60,7 +60,7 @@ data class CustomerInfo(
  * RevenueCat's offerings decide which products show, and the store formats them for the person's
  * country.
  *
- * - `default` offering: the drafft tempo plans (entitlement `drafft_tempo`).
+ * - current offering (`default`): the drafft tempo subscriptions (entitlement `drafft_tempo`).
  * - `boosts` and `super_likes` offerings: the consumable packs. A pack's size is the last part of its
  *   product ID (`so.drafft.app.boost.5` is 5 boosts).
  *
@@ -133,7 +133,10 @@ interface Store {
         }
 
         companion object {
-            /** The problem an error stands for; anything unexpected can't be said to be free. */
+            /**
+             * The problem an error stands for; anything unexpected is UNCONFIRMED: the app can't tell the
+             * person they weren't charged.
+             */
             fun from(error: Throwable): PurchaseProblem = when (error) {
                 is StoreError.NotLinked -> NOT_LINKED
                 is StoreError.Failed -> error.problem
@@ -192,7 +195,7 @@ interface Store {
     val reportsLinkedAccount: Boolean
 
     /**
-     * drafft tempo's details as the store reports them (plan, price, renewal), or null when it isn't
+     * drafft tempo's details as the store reports them (length, price, renewal), or null when it isn't
      * active. Whether it's on for the account comes from the server (`AppModel.isPremium`).
      */
     fun subscription(from: CustomerInfo): TempoSubscription? {

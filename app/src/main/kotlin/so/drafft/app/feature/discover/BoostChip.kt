@@ -119,8 +119,8 @@ internal fun clock(seconds: Double): String {
 }
 
 /**
- * The time now, refreshed every second while [until] lies ahead (`TimelineView(.periodic(by: 1))`):
- * one state write a second, only while something counts down.
+ * The time now, refreshed every second while [until] lies ahead: one state write a second, only while
+ * something counts down.
  */
 @Composable
 internal fun rememberSecondTicker(until: Instant?): Instant {

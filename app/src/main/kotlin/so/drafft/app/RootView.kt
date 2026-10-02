@@ -123,9 +123,9 @@ fun RootView(app: AppModel) {
                     }
                 }
             }
-            // A moderation hold: the hold screen covers everything, at once, and lifts the same way.
-            // Above the sheets and covers already open;
-            // kept a moment after the hold lifts, for the fade.
+            // A moderation hold: the hold screen covers everything, at once, and lifts the same way. In its own
+            // full-screen window (`FullScreenWindow`), above the sheets and covers already open; kept a moment
+            // after the hold lifts, for the fade.
             if (app.phase != AppModel.Phase.WELCOME && holdWindow) {
                 LocalPlatformUi.current.FullScreenWindow(onDismissRequest = {}) { HoldLayer() }
             }

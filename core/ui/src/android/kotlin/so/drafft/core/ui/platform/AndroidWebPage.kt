@@ -23,7 +23,7 @@ internal class AndroidWebPage(context: Context) : WebPage {
         overScrollMode = WebView.OVER_SCROLL_NEVER
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        // Nothing kept from one check to the next.
+        // No HTTP cache between checks (cookies and DOM storage persist).
         settings.cacheMode = WebSettings.LOAD_NO_CACHE
     }
     private val main = Handler(Looper.getMainLooper())
@@ -65,7 +65,10 @@ internal class AndroidWebPage(context: Context) : WebPage {
         webView.destroy()
     }
 
-    /** Called on the web view's JavaScript thread; points back weakly. */
+    /**
+     * Called on the web view's JavaScript thread. Holds the page weakly: the web view keeps this interface alive
+     * and must not keep the page alive with it.
+     */
     private class Bridge(page: AndroidWebPage) {
         private val page = WeakReference(page)
 

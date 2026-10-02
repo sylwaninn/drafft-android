@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.junit.Test
 
-// The codes added with the offline-aware text.
+// Every server code the app can show has its own words, offline-aware.
 class ServerMessageTest {
     @Test
     fun sessionAndTargetCodesHaveWords() {

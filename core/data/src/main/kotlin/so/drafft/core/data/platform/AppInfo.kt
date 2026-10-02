@@ -4,10 +4,10 @@ import java.io.File
 
 /** What the app knows about itself and the device. */
 interface AppInfo {
-    /** "0.1.0" (`CFBundleShortVersionString`). */
+    /** "0.1.0" (`versionName`). */
     val version: String
 
-    /** The build number (`CFBundleVersion`). */
+    /** The build number (`versionCode`). */
     val build: String
 
     /** "" for production, "staging" or "local" (the build flavor's `ENVIRONMENT`). */
@@ -25,7 +25,7 @@ interface AppInfo {
     /** A stable identifier of this app on this device, if any. */
     val installID: String?
 
-    /** Kept across launches, not shown to people (Application Support). */
+    /** Kept across launches, not shown to people (`Context.filesDir`). */
     val filesDir: File
 
     /** Kept across launches and never backed up. */
@@ -35,7 +35,7 @@ interface AppInfo {
     val cacheDir: File
 }
 
-/** Whether the app is on screen right now (`UIApplication.shared.applicationState == .active`). */
+/** Whether the app is on screen right now (an activity is resumed). */
 fun interface AppLifecycle {
     fun isActive(): Boolean
 }
@@ -48,14 +48,14 @@ fun interface MonotonicClock {
     fun seconds(): Double
 }
 
-/** Stops whatever audio is playing (`AudioPlayback.shared.stop()`), bound by the audio service. */
+/** Stops whatever audio is playing, bound by the audio service. */
 fun interface PlaybackControl {
     fun stop()
 }
 
 /**
- * A device attestation token for the server (Play Integrity).
- * Null when the device can't give one.
+ * A device attestation token for the server. Null when the device can't give one. On Android this would be
+ * Play Integrity, not wired yet: [isSupported] is false and nothing is sent.
  */
 interface DeviceIntegrityProvider {
     val isSupported: Boolean

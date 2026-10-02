@@ -152,7 +152,7 @@ fun AccountHoldView(hold: AccountHold, modifier: Modifier = Modifier) {
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         // The empty screens' sign, its outline lined up with the text.
                         Box(Modifier.fillMaxWidth().rise(appeared, 1, reduceMotion)) {
-                            // (200 - 54) / 2: the sign sits in the middle of its 200 pt map.
+                            // (200 - 54) / 2: the sign sits in the middle of its 200 dp map.
                             EmptyStateIllustration(art, Modifier.offset(x = (-73).dp), tint = tint)
                         }
                         Column(

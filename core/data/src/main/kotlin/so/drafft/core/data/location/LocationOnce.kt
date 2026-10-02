@@ -5,7 +5,6 @@ import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.backend.jsonOf
 import so.drafft.core.data.platform.LocationProvider
 
-
 /**
  * The location, once, when the server has none on file (`location_required`): the same blurred,
  * reduced-accuracy area as sign-up, sent with `set_location`.

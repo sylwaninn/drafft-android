@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /** A point on Earth. */
 data class Coordinate(val latitude: Double, val longitude: Double) {
-    /** Great-circle distance in kilometres (`CLLocation.distance(from:)` / 1000). */
+    /** Great-circle (haversine) distance in kilometres, on the Earth's mean radius. */
     fun distanceKm(to: Coordinate): Double {
         val r = 6_371.0088
         val dLat = Math.toRadians(to.latitude - latitude)
@@ -20,9 +20,8 @@ data class Coordinate(val latitude: Double, val longitude: Double) {
 }
 
 /**
- * The phone's location, one reading at a time, reduced accuracy, only while the app is in use.
- * Implemented on Android with the
- * fused location provider and the system's own providers (`AndroidLocationProvider`).
+ * The phone's location, one reading at a time, reduced accuracy, only while the app is in use. Implemented on Android
+ * with the fused location provider and the system's own providers (`AndroidLocationProvider`).
  */
 interface LocationProvider {
     enum class Authorization {

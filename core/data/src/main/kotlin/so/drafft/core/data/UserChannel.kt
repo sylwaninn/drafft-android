@@ -176,7 +176,7 @@ class UserChannel(
     }
 
     private companion object {
-        /** How long a join may take before it counts as failed. */
+        /** How long a join may take before it counts as failed (10 s, Supabase Realtime's usual join timeout). */
         val JOIN_TIMEOUT = 10.seconds
     }
 }

@@ -146,7 +146,7 @@ fun ConversationsView(modifier: Modifier = Modifier) {
     }
 }
 
-/** The list's own side margin (inset grouped), where its cards start. */
+/** The list's own side margin, where its cards start. */
 private val Edge = 20.dp
 
 @Composable

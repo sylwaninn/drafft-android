@@ -73,8 +73,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// BannerSurface is core:ui's `Modifier.bannerSurface()`.
-
 /** Full-screen match moment: two portraits slide into drafting formation, one tucked behind the other. */
 @Composable
 fun MatchView(

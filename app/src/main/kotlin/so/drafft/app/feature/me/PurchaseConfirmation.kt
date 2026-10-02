@@ -277,7 +277,7 @@ private fun Recap(item: PurchaseReceipt.Item) {
     Column(
         Modifier
             .fillMaxWidth()
-            // The page tone, not the sheet's flipped one: this sheet isn't marked as a sheet surface.
+            // Always the page tone (sage), even inside a sheet surface, never the sheet's flipped one.
             .background(p.sage, RoundedCornerShape(DS.Radius.lg))
             .padding(horizontal = DS.Space.lg),
     ) {

@@ -496,7 +496,7 @@ private fun DeckCard(
                 val rad = deg * PI.toFloat() / 180f
                 transformOrigin = TransformOrigin(0.5f, 1f)
                 rotationZ = deg
-                // The offset view turns about its unmoved frame: the offset turns too.
+                // The drag offset is rotated by the card's angle, so the card moves along its own tilted axes.
                 translationX = d.x * cos(rad) - d.y * sin(rad)
                 translationY = d.x * sin(rad) + d.y * cos(rad)
             },

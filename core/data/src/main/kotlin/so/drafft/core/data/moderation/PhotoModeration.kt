@@ -39,7 +39,6 @@ import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 
 /**
- *
  * Where a profile photo stands on the server: sent, then judged by moderation (AWS Rekognition in the
  * backend's db-events function). Known by its local path (picked) or its object key (on the server).
  */

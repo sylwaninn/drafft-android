@@ -28,9 +28,9 @@ import kotlinx.coroutines.delay
 import so.drafft.core.ui.theme.Motion
 
 /**
- * A push stack: the screens are plain values (routes) the
- * stack owns; the root is always there. Each tab has its own; a sheet that pushes gets its own too
- * (a flow started in a sheet stays in it, and closing returns to where it started).
+ * A push stack: the screens are plain values (routes) the stack owns; the root is always there. Each tab has its own;
+ * a sheet that pushes gets its own too (a flow started in a sheet stays in it, and closing returns to where it
+ * started).
  */
 @Stable
 class NavStack(root: Any) {

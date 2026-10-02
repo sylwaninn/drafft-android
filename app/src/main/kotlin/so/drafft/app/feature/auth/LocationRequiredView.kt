@@ -113,7 +113,7 @@ fun LocationRequiredView(modifier: Modifier = Modifier) {
                     ) {
                         Spacer(Modifier.weight(1f).heightIn(min = DS.Space.lg))
                         Box(Modifier.fillMaxWidth().rise(appeared, 0, reduceMotion)) {
-                            // (200 - 54) / 2: the sign sits in the middle of its 200 pt map.
+                            // (200 - 54) / 2: the sign sits in the middle of its 200 dp map.
                             EmptyStateIllustration(
                                 EmptyStateArt(symbol = "map-point-remove"),
                                 Modifier.offset(x = (-73).dp),

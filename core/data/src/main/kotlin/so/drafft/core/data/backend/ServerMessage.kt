@@ -6,7 +6,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.model.L
 
-
 /**
  * What people read when the server turns something down. Database functions put a stable code in
  * `hint` (`private.fail`), Edge Functions in `code`; the known ones get their own words, anything

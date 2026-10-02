@@ -23,7 +23,7 @@ object DS {
     val palette: Palette
         @Composable @ReadOnlyComposable get() = if (LocalDarkTheme.current) Palette.Dark else Palette.Light
 
-    /** Spacing (4 pt base). */
+    /** Spacing (4 dp base). */
     object Space {
         val xxs = 2.dp
         val xs = 4.dp
@@ -60,7 +60,7 @@ class Palette private constructor(val isDark: Boolean) {
     /** The accent as text or a glyph on neutral surfaces: links, the selected tab, "Typing", the app tint. */
     val accentInk = c(0x111214, 0xF2F3F5)
 
-    /** Selected fill on a night surface (plan rows, time options, icebreaker picks): a wash, never a frame. */
+    /** Selected fill on a night surface (subscription rows, time options, icebreaker picks): a wash, never a frame. */
     val selectedOnNight = Color.White.copy(alpha = 0.16f)
 
     /** The accent on a night surface. Graphite is near-black, so there it turns white and what sits on it turns ink. */
@@ -168,11 +168,10 @@ val LocalIsSheetSurface = compositionLocalOf { false }
 val LocalIsNightSurface = compositionLocalOf { false }
 
 /**
- * Motion: everything answers fast. Springs are specified as response and damping fraction; Compose
- * springs take a stiffness, derived here so each curve lands at the specified time.
+ * Motion: everything answers fast. Springs are given as a response (seconds, the undamped period) and a
+ * damping fraction; Compose takes a stiffness, derived here: k = (2π / response)².
  */
 object Motion {
-    /** stiffness for a spring response (seconds): k = (2π / response)². */
     private fun stiffness(response: Double): Float = (2 * PI / response).pow(2).toFloat()
 
     fun <T> springOf(response: Double, damping: Float, visibilityThreshold: T? = null) =
@@ -190,7 +189,6 @@ object Motion {
     /** Swipe fly-out. */
     const val FLY_OUT_MILLIS = 260
 
-    /** The ease-out curve. */
     val EaseOut = CubicBezierEasing(0f, 0f, 0.58f, 1f)
     val EaseInOut = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
     val EaseIn = CubicBezierEasing(0.42f, 0f, 1f, 1f)

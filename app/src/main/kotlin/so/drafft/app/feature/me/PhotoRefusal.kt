@@ -73,7 +73,8 @@ import so.drafft.core.ui.theme.semibold
  * Why a photo was refused, in plain words (never the detected labels), with what to do next: ask a
  * person for a second look, or take it off the profile.
  *
- * [measuring] lays it out without its scroll view (a `SheetDetent.FIT` sheet measures itself).
+ * [measuring] lays it out without its scroll view, for a sheet that measures its content (`SheetDetent.FIT`).
+ * No caller passes it today.
  */
 @Composable
 fun PhotoRefusalSheet(

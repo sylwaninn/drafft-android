@@ -32,8 +32,8 @@ enum class AppLanguage(val code: String, val displayName: String) {
 /**
  * The interface language, picked in the app rather than the phone's. Strings come from the shared
  * catalog (scripts/sync-strings.py): the key is the English text, placeholders are
- * Java's (`%s`, `%d`, `%1$s`). The root of the UI is keyed on [language], so every screen redraws in
- * the new language at once.
+ * Java's (`%s`, `%d`, `%1$s`). Texts observe [language] (see [Observer]): each one that called [L]
+ * redraws in the new language at once.
  */
 object Localization {
     @Volatile

@@ -179,7 +179,10 @@ class RevenueCatStore(
         }
     }
 
-    /** RevenueCat unreachable: the phone's connection, not a purchase that went wrong. */
+    /**
+     * RevenueCat unreachable: the phone's connection, not a purchase that went wrong (the Android SDK has no
+     * dedicated offline code; `NetworkError` covers it).
+     */
     private fun isOffline(code: PurchasesErrorCode) = code == PurchasesErrorCode.NetworkError
 
     /** What a failed purchase throws: offline stays offline, anything else is the store's own outcome. */

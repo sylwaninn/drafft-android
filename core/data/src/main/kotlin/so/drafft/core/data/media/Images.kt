@@ -1,8 +1,8 @@
 package so.drafft.core.data.media
 
-// The platform-neutral part of images: the cache sizes, the download
-// priorities and the media Worker's sized links. Loading, decoding and caching the photos is Coil's,
-// configured in core:ui with these numbers (`ImageStore`, and `installImages` on Android).
+// The platform-neutral part of images: the cache sizes, the download priorities and the media Worker's sized links.
+// Loading, decoding and caching the photos is Coil's, configured in core:ui with these numbers (`ImageStore`, and
+// `installImages` on Android).
 
 /**
  * Every photo that isn't bundled with the app (on the server, or picked on this phone) goes through one

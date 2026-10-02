@@ -482,7 +482,7 @@ private fun Field(
                     Text(r.text, style = TextStyles.footnote, color = p.body, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 val cancel = L("Cancel reply")
-                // 44 pt to hit, laid out as 32 so the quote doesn't grow.
+                // 44 dp to hit, laid out as 32 so the quote doesn't grow.
                 Box(
                     Modifier
                         .layout { measurable, constraints ->

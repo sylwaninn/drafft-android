@@ -165,7 +165,7 @@ fun ProfileDetailView(
     // A composer open over the profile: the sheet stays put, and system back reaches the composer's Cancel.
     InteractiveDismissDisabled(pendingLike != null || superLiking)
 
-    // Behind a composer the profile blurs, standing in for a material veil.
+    // Behind a composer the profile blurs, so the composer stands out from it.
     val veil by animateDpAsState(if (pendingLike != null || superLiking) 18.dp else 0.dp, tween(180, easing = Motion.EaseOut), label = "veil")
 
     Box(modifier.fillMaxSize().background(p.canvasSoft)) {

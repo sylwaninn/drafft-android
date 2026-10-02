@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Design rules drafft's code must keep (DESIGN.md, PRODUCT.md), checked on every change.
-DESIGN.md's rules in their Compose form.
+The rules and rule names are drafft's (DESIGN.md), checked in their Compose form; the names are the ones
+`design-lint: allow <rule>` takes.
 
 A line may opt out of one rule with a reason, on that line or the line above:
     // design-lint: allow <rule> - <why>

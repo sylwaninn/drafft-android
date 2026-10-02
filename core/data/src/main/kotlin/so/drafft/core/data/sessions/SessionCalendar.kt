@@ -26,7 +26,6 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.Sport
 
 /**
- *
  * The calendar events added from "Add to calendar" follow their session: moved when its time or title
  * changes, removed when it's cancelled, declined, replaced by other times, or gone. Each session keeps
  * the link to its event (saved on the phone), and only events drafft added are ever changed:
@@ -76,7 +75,7 @@ class SessionCalendar(
         /** Full access: the event is added in the app and follows the session. */
         FULL,
 
-        /** Add-only access: not a case Android has, kept so the access states stay complete. */
+        /** Add-only access: never produced on Android, where calendar permission is all or nothing. */
         ADD_ONLY,
 
         /** Refused: nothing is added, a banner explains it (`CalendarAccessNotice`). */

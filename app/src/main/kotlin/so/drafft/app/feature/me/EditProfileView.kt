@@ -203,7 +203,8 @@ private class EditProfileState(profile: Profile, val moderation: PhotoModeration
             return p
         }
 
-    // Compared field by field: the draft's vitals are set and the saved ones may be null.
+    // The draft, vitals, prompts and voice against what's saved. The draft's vitals are always set
+    // (`Vitals.blank` when none were saved), so a profile saved without vitals always counts as changed.
     val hasChanges: Boolean
         get() = draft != original || vitals != original.vitals || prompts != original.prompts || voice != null
 
@@ -644,7 +645,7 @@ private fun PhotosGrid(state: EditProfileState, pickPhoto: () -> Unit) {
     )
 }
 
-/** The add tile's dashed outline (1.5 pt, dashes of 6 with gaps of 5). */
+/** The add tile's dashed outline (1.5 dp, dashes of 6 with gaps of 5). */
 private fun Modifier.dashedBorder(color: Color, radius: Dp): Modifier = drawBehindDashed(color, radius)
 
 private fun Modifier.drawBehindDashed(color: Color, radius: Dp): Modifier =

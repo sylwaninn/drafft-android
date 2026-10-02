@@ -315,7 +315,7 @@ fun RangeSlider(
                             val r = current
                             val dLo = abs(at.x - (x(r.first) + thumbPx / 2))
                             val dHi = abs(at.x - (x(r.last) + thumbPx / 2))
-                            // Each knob answers on its 44 pt frame only.
+                            // Each knob answers on its 44 dp frame only.
                             dragging = when {
                                 dLo > hitPx / 2 && dHi > hitPx / 2 -> 0
                                 dLo < dHi || (dLo == dHi && at.x < x(r.first) + thumbPx / 2) -> -1

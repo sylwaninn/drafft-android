@@ -135,7 +135,7 @@ internal fun IconLabel(
 /** The box an icon set in [style] takes (a bit larger than the type, like core:ui's). */
 internal fun symbolSize(style: TextStyle): Dp = (style.fontSize.value * 1.2f).dp
 
-/** `ProgressView()` inside a button: a small spinner in the label's colour. */
+/** A small spinner inside a button, in the label's colour. */
 @Composable
 internal fun ButtonSpinner(color: Color = LocalContentColor.current) {
     CircularProgressIndicator(Modifier.size(20.dp), color = color, strokeWidth = 2.dp)
@@ -429,7 +429,7 @@ private fun SafetyEmergency() {
     }
 }
 
-/** Shown right after you confirm a session time: the plan in one line, then the safety tips. */
+/** Shown right after you confirm a session time: the session in one line, then the safety tips. */
 @Composable
 fun SessionSafetySheet(
     session: SessionProposal,

@@ -87,12 +87,11 @@ import so.drafft.core.model.Vitals
 import so.drafft.core.model.newestFirst
 
 // One class, one region per domain (Account, Account sync, Live profile, Matches, Discover, Sessions,
-// Wallet, Pause, Safety), since Kotlin extensions can't reach the state they change.
+// Wallet, Pause, Safety), since extension functions can't reach the model's private state.
 
 /**
- * The app's single observable state, read by every screen (`LocalAppModel.current`). Every property a
- * screen shows is Compose snapshot state;
- * all mutation happens on the main thread ([scope] runs on `Dispatchers.Main.immediate`).
+ * The app's single observable state, read by every screen (`LocalAppModel.current`). Every property a screen shows is
+ * Compose snapshot state; all mutation happens on the main thread ([scope] runs on `Dispatchers.Main.immediate`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppModel(
@@ -172,7 +171,7 @@ class AppModel(
     private var lastAccountRead: Pair<Instant, ProfileSync.Account>? = null
 
     /**
-     * drafft tempo's details as the store reports them for this account (plan, price, renewal),
+     * drafft tempo's details as the store reports them for this account (length, price, renewal),
      * shown in You. Billed and managed by the store: the app only reads it and links to its
      * management page. Whether it's on comes from the server: `isPremium`.
      */

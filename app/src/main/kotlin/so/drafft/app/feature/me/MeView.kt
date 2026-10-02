@@ -113,7 +113,7 @@ enum class MeSheet(val rawValue: String) {
     val id: String get() = rawValue
 }
 
-/** Marker for rows that use the drafft tempo spark instead of an icon (`MeView.sparkIcon`). */
+/** Marker for rows that use the drafft tempo spark instead of an icon. */
 const val MeViewSparkIcon = "drafft.spark"
 
 /** The "You" tab: your card at the top, then settings grouped by what people come here to do. */

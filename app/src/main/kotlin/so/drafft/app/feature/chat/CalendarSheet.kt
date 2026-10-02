@@ -42,7 +42,8 @@ import so.drafft.core.ui.theme.semibold
 import kotlinx.coroutines.launch
 
 // Android has no system "New Event" sheet that hands the saved event back, so the event
-// is written by `SessionCalendar.add` (same title, time, 90 minutes, note and reminder an hour before)
+// is written by `SessionCalendar.add` (the session's title and time, 90 minutes long, a note and a reminder
+// an hour before)
 // and linked to the session at once; tapping "In your calendar" then shows it in the calendar app to
 // review or edit it.
 

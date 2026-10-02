@@ -37,8 +37,6 @@ import so.drafft.core.model.Sport
 import so.drafft.core.model.SportEntry
 import so.drafft.core.model.Vitals
 
-// MediaURL is in so.drafft.core.data.media.
-
 /**
  * The signed-in person's own profile on the server: sign-up sends everything it collected and
  * opens the profile (`complete_onboarding`), Edit profile saves changes, and launch reads it back.

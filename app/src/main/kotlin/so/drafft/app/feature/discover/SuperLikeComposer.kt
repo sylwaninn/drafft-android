@@ -157,8 +157,8 @@ fun SuperLikeComposer(
 
     val statusTop = WindowInsets.statusBars.getTop(density)
     Box(modifier.fillMaxSize()) {
-        // The dimmed page. A window here can't blur what's behind it, so the night tint alone dims it a
-        // step further.
+        // The dimmed page. A window here can't blur what's behind it, so two tints dim it instead: 18 % black,
+        // then the night colour at 50 %.
         Box(
             Modifier
                 .fillMaxSize()

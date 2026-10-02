@@ -69,7 +69,7 @@ internal fun BannerIcon(symbol: String) {
 }
 
 /**
- * A notice banner's frame: `BannerSurface`, swipe up to dismiss (past 30 dp; otherwise it springs
+ * A notice banner's frame: `Modifier.bannerSurface()`, swipe up to dismiss (past 30 dp; otherwise it springs
  * back), and a "Dismiss" accessibility action.
  */
 @Composable

@@ -28,7 +28,6 @@ import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 
 /**
- *
  * Notifications: permission, the per-type preferences, and the push plumbing (the FCM token). Session
  * reminders are the server's pushes (`session.reminder`, following `notify_session_*`): checked against
  * the session when they're sent, so a cancelled or changed one never reminds anyone. Tapping a

@@ -446,7 +446,7 @@ object HelpTopics {
         )
 }
 
-/** A support topic, for a sheet shown while one is set (`.sheet(item:)`). */
+/** A support topic, for a sheet shown while one is set. */
 data class HelpTopic(val id: String)
 
 /** The support function's message limit. */

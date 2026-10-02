@@ -13,7 +13,6 @@ import so.drafft.core.data.backend.serverFilters
 import so.drafft.core.data.backend.toBytes
 import so.drafft.core.model.DiscoverFilters
 
-
 /** Discovery's bookkeeping, not observed by the screens. */
 class DiscoveryState {
     /** The deck read in flight, and which one (a newer one supersedes it). */

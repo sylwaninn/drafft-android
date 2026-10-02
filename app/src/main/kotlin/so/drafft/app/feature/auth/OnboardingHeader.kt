@@ -110,5 +110,5 @@ fun OnboardingHeader(
     }
 }
 
-/** The buttons' 48 pt row; the stepper's bar sits on its middle. */
+/** The buttons' 48 dp row; the stepper's bar sits on its middle. */
 private val ROW_HEIGHT = 48.dp

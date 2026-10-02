@@ -27,7 +27,10 @@ import kotlinx.serialization.json.longOrNull
  *   link (`media_urls`, only between the two members of an active match) when it shows it.
  */
 object ChatPayload {
-    /** The shared JSON shape: absent fields for null, unknown fields ignored. */
+    /**
+     * The JSON every drafft client writes and reads in a message: absent fields for null, unknown fields
+     * ignored, so a newer client's fields never break this one.
+     */
     val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

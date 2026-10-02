@@ -110,7 +110,7 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.semibold
 
-// PaywallView and SubscriptionSheet. `TempoPlan` lives in core:data, next to `TempoSubscription`.
+// This file holds PaywallView and SubscriptionSheet.
 //
 // Billing wording: the catalog only has the App Store / Apple Account copy for the auto-renewal
 // terms and the subscription links (no Google Play strings yet), so that copy is shown as written;
@@ -124,7 +124,7 @@ private val storeLog = java.util.logging.Logger.getLogger("so.drafft.store")
 private data class Perk(val icon: String, val title: String, val detail: String)
 
 /**
- * drafft tempo paywall. Plans and prices come from Google Play through RevenueCat (`Store`).
+ * drafft tempo paywall. Subscription lengths and prices come from Google Play through RevenueCat (`Store`).
  * Presented in a sheet ([LocalSheetDismiss] closes it).
  *
  * [onUnlocked] is called after a successful purchase, e.g. to perform the undo that opened the
@@ -145,7 +145,7 @@ fun PaywallView(
     val scope = rememberCoroutineScope()
     val p = DS.palette
 
-    // Nothing chosen on arrival: the person picks a plan.
+    // Nothing chosen on arrival: the person picks a subscription length.
     var plan by remember { mutableStateOf<TempoPlan?>(null) }
     var purchasing by remember { mutableStateOf(false) }
     var restoring by remember { mutableStateOf(false) }
@@ -160,7 +160,7 @@ fun PaywallView(
 
     LaunchedEffect(Unit) { store.load() }
     TrackPaywall(AnalyticsEvent.ProductKind.TEMPO) { bought }
-    // While a purchase runs, the sheet can't be swiped down and system back waits too.
+    // While a purchase runs or its receipt shows, the sheet can't be swiped down and system back waits too.
     BackHandler(enabled = purchasing || receipt != null) {}
 
     fun say(text: String) {
@@ -382,8 +382,8 @@ private fun TierLockup(size: Float, modifier: Modifier = Modifier) {
 }
 
 /**
- * The plans Google Play returned, or why there are none yet. They show once purchases are linked to
- * the account too: a plan bought before that would never be credited.
+ * The subscription options Google Play returned, or why there are none yet. They show once purchases are
+ * linked to the account too: a subscription bought before that would never be credited.
  */
 @Composable
 private fun Plans(store: Store, selected: TempoPlan?, onSelect: (TempoPlan) -> Unit, onRetry: () -> Unit) {
@@ -540,7 +540,7 @@ private fun PaywallFooter(
             }
         }
 
-        // Why it's disabled, only while it is: no empty line under the button once a plan is picked.
+        // Why it's disabled, only while it is: no empty line under the button once an option is picked.
         AnimatedVisibility(plan == null, enter = fadeIn(Motion.select()), exit = fadeOut(Motion.select())) {
             Text(
                 L("Pick an option to continue."),
@@ -643,7 +643,7 @@ private fun LegalLinks(
     )
 }
 
-/** A plain text button (footnote semibold, the content colour), its whole 44 pt row the target. */
+/** A plain text button (footnote semibold, the content colour), its whole 44 dp row the target. */
 @Composable
 private fun FooterLink(
     text: String,
@@ -706,7 +706,7 @@ private fun FirstThatFits(
 private data class IncludedPerk(val icon: String, val title: String)
 
 /**
- * The active subscription, as the store reports it. Plan, price, next renewal (or end date once
+ * The active subscription, as the store reports it. Length, price, next renewal (or end date once
  * cancelled), what's included, and the way to change or cancel it: the store's own subscription
  * page, since billing belongs to the store. Presented in a sheet ([LocalSheetDismiss] closes it).
  */
@@ -790,7 +790,7 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
         }
     }
 
-    // Back from Google Play's page: read what the store now says (cancelled, plan change). The app
+    // Back from Google Play's page: read what the store now says (cancelled, subscription changed). The app
     // leaving and coming back to the front marks the page's closing.
     LaunchedEffect(managing) {
         if (!managing) return@LaunchedEffect

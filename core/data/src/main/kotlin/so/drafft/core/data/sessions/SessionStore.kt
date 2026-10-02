@@ -21,7 +21,6 @@ import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.Sport
 
 /**
- *
  * Sessions, on the server (`public.sessions`), the one source for the Sessions tab and the chat cards.
  *
  * - Reads: `upcoming_sessions` for the tab, a read by id for a card the tab doesn't list (declined,

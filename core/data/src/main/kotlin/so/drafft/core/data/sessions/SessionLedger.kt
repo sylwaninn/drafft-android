@@ -141,7 +141,8 @@ object ServerDate {
  *   server's state as it is now, including anything that arrived meanwhile, never to a stale snapshot;
  * - rows are merged by version (`updated_at`): an old reply never overwrites a newer Realtime read.
  *
- * An immutable value: [SessionStore] edits a [copy] and publishes it, so screens observe it.
+ * Mutable, but used as a value: [SessionStore] changes a [copy] and publishes it, never the published instance,
+ * so screens observe every change.
  */
 class SessionLedger private constructor(
     private val confirmedRows: LinkedHashMap<UUID, SessionRecord>,

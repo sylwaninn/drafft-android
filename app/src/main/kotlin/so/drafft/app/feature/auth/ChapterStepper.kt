@@ -87,7 +87,7 @@ fun ChapterStepper(chapters: List<ChapterSteps>, current: Int, modifier: Modifie
                     )
                     AnimatedVisibility(
                         visible = actives[i],
-                        // A blur replace, as a fade with a slight scale (no cheap blur transition in Compose).
+                        // The label swaps with a fade and a slight scale (no cheap blur transition in Compose).
                         enter = if (reduceMotion) fadeIn(Motion.gentle()) else fadeIn(Motion.progress()) + scaleIn(Motion.progress(), initialScale = 0.9f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)),
                         exit = if (reduceMotion) fadeOut(Motion.gentle()) else fadeOut(Motion.progress()) + scaleOut(Motion.progress(), targetScale = 0.9f, transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)),
                     ) {

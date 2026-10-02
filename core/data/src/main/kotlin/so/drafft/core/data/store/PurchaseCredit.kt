@@ -32,7 +32,6 @@ import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Telemetry
 
 /**
- *
  * Purchases the store confirmed that the server hasn't credited yet.
  *
  * Right after Google Play confirms, the app asks the backend to credit it at once (`purchase-sync`,

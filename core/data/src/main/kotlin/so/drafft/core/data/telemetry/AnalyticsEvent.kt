@@ -3,7 +3,7 @@ package so.drafft.core.data.telemetry
 import so.drafft.core.model.MessageContent
 
 /**
- * Every product event the app sends, in one place: the tracking plan (docs/telemetry.md) as code.
+ * Every product event the app sends, in one place: the tracked events (docs/telemetry.md) as code.
  *
  * Naming: `object_action`, snake_case, past tense (`profile_swiped`, `purchase_completed`), the way
  * PostHog recommends. Properties are numbers, booleans and codes from enums, never what people type or

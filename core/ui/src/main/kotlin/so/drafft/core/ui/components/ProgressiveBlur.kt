@@ -57,10 +57,9 @@ enum class VerticalEdge { TOP, BOTTOM }
  * colour band. Compose has no backdrop filter, so the content under a bar blurs itself: put it on
  * the scrolling content, under the bar (`EdgeBars` does it for you).
  *
- * With a [veil] (the surface's own tone), the blur replaces the sharp content instead of laying over
- * it, as a backdrop blur does, and a light veil keeps a bar's text readable whatever
- * scrolls under it. The first [solid] pixels from the edge (a bar's own height) are at full
- * strength: only the margin past the bar fades.
+ * With a [veil] (the surface's own tone), the blur replaces the sharp content instead of laying over it, as a
+ * backdrop blur does, and a light veil keeps a bar's text readable whatever scrolls under it. The first [solid]
+ * pixels from the edge (a bar's own height) are at full strength: only the margin past the bar fades.
  *
  * Android 12+ blurs with a RenderEffect (only the band is blurred, from one recorded display list);
  * older versions ([so.drafft.core.ui.platform.PlatformUi.blursEdges] false) fade the band into a

@@ -14,7 +14,6 @@ import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.verification.VerificationError
 
-
 /**
  * What kind of failure an error is, for [Telemetry.unexpected]. Only the [reportable] kinds become
  * Sentry events (and can alert someone): a phone going offline or the server refusing with a reason the

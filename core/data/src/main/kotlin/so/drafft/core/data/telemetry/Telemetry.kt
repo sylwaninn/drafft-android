@@ -4,7 +4,7 @@ import java.util.logging.Level as LogLevel
 import java.util.logging.Logger
 import kotlin.coroutines.cancellation.CancellationException
 
-// docs/telemetry.md is the plan both apps follow (events, properties, privacy).
+// docs/telemetry.md is the reference both apps follow (events, properties, privacy).
 
 /**
  * What leaves the phone about how the app behaves, callable from anywhere (model and screens), like

@@ -17,7 +17,6 @@ import so.drafft.core.data.backend.DrafftJson
 import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.platform.KeyValueStore
 
-
 /**
  * Media links. The bucket is private: the backend signs a link for each object the person may see
  * (cards, `media_urls`), valid for about an hour. Caches are keyed by the object ([canonical]), never by

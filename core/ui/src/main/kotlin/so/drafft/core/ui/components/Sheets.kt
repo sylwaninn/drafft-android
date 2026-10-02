@@ -69,9 +69,9 @@ import so.drafft.core.ui.theme.displayBold
 
 // Sheets and full-screen covers.
 
-/** How tall a sheet stands, like `presentationDetents`. */
+/** How tall a sheet stands. */
 enum class SheetDetent {
-    /** Nearly full height, below the status bar (the default `.sheet`). */
+    /** Nearly full height, below the status bar (the default). */
     LARGE,
 
     /** Half the screen. */
@@ -82,8 +82,8 @@ enum class SheetDetent {
 }
 
 /**
- * Closes the sheet the content sits in, with its slide down, then calls
- * its `onDismissRequest`. Outside a sheet it does nothing.
+ * Closes the sheet the content sits in, with its slide down, then calls its `onDismissRequest`. Outside a sheet it
+ * does nothing.
  */
 val LocalSheetDismiss = staticCompositionLocalOf<() -> Unit> { {} }
 
@@ -117,8 +117,7 @@ fun DrafftSheet(
 }
 
 /**
- * [DrafftSheet] driven by [visible], like `.sheet(isPresented:)`: turning it off slides the sheet
- * down before it leaves.
+ * [DrafftSheet] shown while [visible]; turning it off slides the sheet down before it leaves.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -261,7 +260,7 @@ fun InteractiveDismissDisabled(disabled: Boolean = true) {
 /** The sheets' corner radius. */
 private val SheetCorner = 38.dp
 
-/** The grabber: a 36 × 5 pill, mute at 40 %, 5 pt below the sheet's top edge. */
+/** The grabber: a 36 × 5 dp pill, mute at 40 %, 5 dp below the sheet's top edge. */
 @Composable
 private fun Grabber() {
     Box(
@@ -275,7 +274,7 @@ private fun Grabber() {
 /**
  * The inline navigation bar of a sheet: the title in the middle (Inter Display ExtraBold
  * 17), close top-right as a glass circle (Close is top-right on every sheet and modal), an optional
- * [leading] control (back) on the left. 44 pt targets. A null [onClose] drops the close button: the
+ * [leading] control (back) on the left. 44 dp buttons in a 52 dp bar. A null [onClose] drops the close button: the
  * sheet's only action already just closes it ("Got it", "Done"), never two ways out.
  */
 @Composable
@@ -310,7 +309,7 @@ fun SheetNavBar(
 }
 
 /**
- * `.fullScreenCover`: slides up over everything (sheets included), full screen; system back calls
+ * A full-screen cover: slides up over everything (sheets included); system back calls
  * [onDismissRequest]. With Remove animations on, it fades. The cover's page is `canvasSoft` unless
  * its content paints its own.
  */

@@ -46,7 +46,7 @@ import so.drafft.core.data.platform.LocationProvider.Authorization
  * permission is enough), only while the app is in use.
  *
  * Asking for the permission needs an activity: the one on screen installs [requester] (a permission
- * launcher for coarse and fine location) and reports the answer with [onPermissionResult].
+ * launcher for coarse location) and reports the answer with [onPermissionResult].
  */
 class AndroidLocationProvider(
     private val context: Context,

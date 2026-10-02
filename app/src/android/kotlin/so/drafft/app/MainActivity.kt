@@ -32,8 +32,8 @@ import so.drafft.core.ui.theme.DrafftTheme
 import so.drafft.core.ui.theme.LocalReduceMotion
 
 /**
- * The only activity. Edge to edge (content under the status and navigation bars),
- * portrait, the system splash handing over to SplashView on its first frame.
+ * The only activity. Edge to edge (content under the status and navigation bars), portrait, the system splash handing
+ * over to SplashView on its first frame.
  */
 class MainActivity : ComponentActivity() {
     private val app: AppModel by inject()

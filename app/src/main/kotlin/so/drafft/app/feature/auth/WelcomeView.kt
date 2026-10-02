@@ -67,8 +67,6 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 
-// Wordmark lives in core:ui.
-
 /** The welcome screen: the session photos full bleed, the wordmark, and the way in (sign up or log in). */
 @Composable
 fun WelcomeView(modifier: Modifier = Modifier) {
@@ -146,7 +144,7 @@ private fun WelcomeWordmark(modifier: Modifier) {
             .fillMaxWidth()
             .drawBehind {
                 val h = size.height + 72.dp.toPx()
-                // design-lint: allow gradient - photo scrim under the wordmark (72 pt past it).
+                // design-lint: allow gradient - photo scrim under the wordmark (72 dp past it).
                 drawRect(Brush.verticalGradient(*scrim, startY = 0f, endY = h), size = Size(size.width, h))
             }
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
