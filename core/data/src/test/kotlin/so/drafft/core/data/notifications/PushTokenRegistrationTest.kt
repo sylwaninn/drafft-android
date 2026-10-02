@@ -7,7 +7,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import so.drafft.core.data.platform.InMemoryKeyValueStore
 
-/** Port of DrafftTests/PushTokenRegistrationTests.swift. */
 class PushTokenRegistrationTest {
     private val defaults = InMemoryKeyValueStore()
     private val account = UUID.randomUUID()

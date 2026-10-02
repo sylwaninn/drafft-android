@@ -3,7 +3,7 @@ package so.drafft.core.data.platform
 import java.time.Instant
 
 /**
- * The phone's calendar, for the events drafft adds for a confirmed session (the iPhone's `EKEventStore`).
+ * The phone's calendar, for the events drafft adds for a confirmed session.
  * Android: `CalendarContract` on the primary writable calendar (`AndroidCalendarWriter`), with the
  * READ_CALENDAR and WRITE_CALENDAR runtime permissions ([SystemPermission]).
  *

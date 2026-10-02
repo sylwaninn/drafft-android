@@ -5,8 +5,8 @@ import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import so.drafft.core.model.L
 
-// Ports Drafft/Services/Store.swift: the interface and the store's values. RevenueCat (Google Play)
-// implements it in src/android (`RevenueCatStore`).
+// The interface and the store's values. RevenueCat (Google Play) implements it in src/android
+// (`RevenueCatStore`).
 
 /** A product as the store sells it, priced and formatted for the person's country. */
 data class StoreProduct(
@@ -133,7 +133,7 @@ interface Store {
         }
 
         companion object {
-            /** The Swift `PurchaseProblem(error)`; anything unexpected can't be said to be free. */
+            /** The problem an error stands for; anything unexpected can't be said to be free. */
             fun from(error: Throwable): PurchaseProblem = when (error) {
                 is StoreError.NotLinked -> NOT_LINKED
                 is StoreError.Failed -> error.problem
@@ -183,7 +183,7 @@ interface Store {
     suspend fun customerInfo(): CustomerInfo
 
     /**
-     * RevenueCat's customer info updates (the iPhone's `customerInfoStream`). It also reports the
+     * RevenueCat's customer info updates. It also reports the
      * anonymous user, before log-in and after log-out: check [reportsLinkedAccount].
      */
     val customerInfoStream: Flow<CustomerInfo>

@@ -110,8 +110,7 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/PaywallView.swift (PaywallView and SubscriptionSheet). The Swift
-// `PaywallView.Plan` lives in core:data as `TempoPlan`, next to `TempoSubscription`.
+// PaywallView and SubscriptionSheet. `TempoPlan` lives in core:data, next to `TempoSubscription`.
 //
 // Billing wording: the catalog only has the App Store / Apple Account copy for the auto-renewal
 // terms and the subscription links (no Google Play strings yet), so that copy is shown as written;
@@ -161,7 +160,7 @@ fun PaywallView(
 
     LaunchedEffect(Unit) { store.load() }
     TrackPaywall(AnalyticsEvent.ProductKind.TEMPO) { bought }
-    // The iPhone turns off the swipe-down while a purchase runs; here system back waits too.
+    // While a purchase runs, the sheet can't be swiped down and system back waits too.
     BackHandler(enabled = purchasing || receipt != null) {}
 
     fun say(text: String) {
@@ -677,7 +676,7 @@ private fun FooterLink(
     }
 }
 
-/** The iPhone's `ProgressView()`: a small indeterminate ring. */
+/** A small indeterminate ring. */
 @Composable
 private fun Spinner(color: Color, modifier: Modifier = Modifier) {
     CircularProgressIndicator(modifier.size(20.dp), color = color, strokeWidth = 2.dp, trackColor = Color.Transparent)
@@ -791,9 +790,8 @@ fun SubscriptionSheet(modifier: Modifier = Modifier) {
         }
     }
 
-    // Back from Google Play's page: read what the store now says (cancelled, plan change). The
-    // iPhone's `manageSubscriptionsSheet` reports its closing; here the app leaving and coming back
-    // to the front marks it.
+    // Back from Google Play's page: read what the store now says (cancelled, plan change). The app
+    // leaving and coming back to the front marks the page's closing.
     LaunchedEffect(managing) {
         if (!managing) return@LaunchedEffect
         repeat(50) {

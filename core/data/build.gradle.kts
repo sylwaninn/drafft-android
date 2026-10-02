@@ -36,7 +36,7 @@ kotlin {
 
 dependencies {
     api(project(":core:model"))
-    // Snapshot state: AppModel is observed by the screens the way SwiftUI observes @Observable.
+    // Snapshot state: the screens observe AppModel's properties directly.
     api(platform(libs.compose.bom))
     api(libs.compose.runtime)
     api(libs.kotlinx.coroutines.android)

@@ -60,8 +60,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import kotlin.math.roundToInt
 
-// Port of Drafft/DesignSystem/TabHeader.swift.
-
 /**
  * Shared header for top-level tabs, instead of a large-title bar. The title sits right under the
  * status bar and shrinks as content scrolls. Attach it with `TopBar(scroll, bar = { TabHeader(...) })`:
@@ -84,7 +82,7 @@ fun TabHeader(
     var searchExpanded by remember { mutableStateOf(false) }
     var searchFocused by remember { mutableStateOf(false) }
     // The search field no longer folds on scroll: changing the header's height moved the list under
-    // the finger (a visible jump when scrolling back up). Kept as on iOS, where it stays false.
+    // the finger (a visible jump when scrolling back up).
     val folded = false
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current

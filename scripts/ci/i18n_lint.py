@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Translation checks for drafft-android's strings, on every change.
-Port of drafft's scripts/ci/i18n_lint.py for the tables scripts/sync-strings.py writes.
+For the tables scripts/sync-strings.py writes.
 
 Fails when a string people see is missing a language, loses or gains a placeholder, capitalises the
 brand, uses a '·' or a wording WORDING.md forbids (its `wording-forbidden` block), or when the Android
@@ -65,7 +65,7 @@ def load(path: pathlib.Path) -> dict[str, str]:
 
 
 def check_catalog(errors: list[str], warnings: list[str]) -> set[str]:
-    """The tables copied from the iPhone catalog. English equal to its key is left out of en.json."""
+    """The tables copied from the shared catalog. English equal to its key is left out of en.json."""
     keys = {line.rstrip("\n").replace("\\n", "\n") for line in (I18N / "keys.txt").open(encoding="utf-8")}
     tables = {lang: load(I18N / f"{lang}.json") for lang in LANGUAGES}
     for lang, table in tables.items():
@@ -93,12 +93,12 @@ def check_catalog(errors: list[str], warnings: list[str]) -> set[str]:
 
 
 def check_android_variants(keys: set[str], errors: list[str], warnings: list[str]) -> None:
-    """The Android wording of the iPhone's platform sentences: same keys in the 7 languages."""
+    """The Android wording of the catalog's Apple-platform sentences: same keys in the 7 languages."""
     tables = {lang: load(I18N / "android" / f"{lang}.json") for lang in LANGUAGES}
     every = set().union(*tables.values())
     for key in sorted(every):
         if key not in keys:
-            errors.append(f"i18n/android: not a catalog key (the iPhone sentence changed?): {key!r}")
+            errors.append(f"i18n/android: not a catalog key (the catalog sentence changed?): {key!r}")
         source = tables["en"].get(key, key)
         for lang in LANGUAGES:
             where = f"i18n/android/{lang}.json: {key!r}"

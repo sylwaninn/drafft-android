@@ -49,8 +49,6 @@ import so.drafft.core.ui.platform.LocalPlatformUi
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
-// Port of RootView (Drafft/App/DrafftApp.swift).
-
 /**
  * The app's root: the welcome screen, sign-up or the tabs, the splash over them until the first screen
  * is ready, and the moderation hold over everything. A newly picked language reaches every text on
@@ -126,7 +124,7 @@ fun RootView(app: AppModel) {
                 }
             }
             // A moderation hold: the hold screen covers everything, at once, and lifts the same way.
-            // In its own window (the iPhone's HoldWindow), above the sheets and covers already open;
+            // Above the sheets and covers already open;
             // kept a moment after the hold lifts, for the fade.
             if (app.phase != AppModel.Phase.WELCOME && holdWindow) {
                 LocalPlatformUi.current.FullScreenWindow(onDismissRequest = {}) { HoldLayer() }

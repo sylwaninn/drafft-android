@@ -36,8 +36,6 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.medium
 
-// Ports Drafft/Features/Matches/UnmatchButton.swift.
-
 /**
  * "Unmatch" on a matched profile opened from its chat: quiet like Report or block, confirmed first.
  * The chat closes behind it ([onDone]), then the match ends (`AppModel.unmatch`).

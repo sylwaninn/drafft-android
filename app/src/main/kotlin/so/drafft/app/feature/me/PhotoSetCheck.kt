@@ -1,7 +1,5 @@
 package so.drafft.app.feature.me
 
-// Port of Drafft/Features/Me/PhotoSetCheck.swift.
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -87,7 +85,7 @@ enum class PhotoSetCheck {
 }
 
 /**
- * A failed sign-up or save, in words (the Swift `ProfileSync.failure`). The first photo still with the team
+ * A failed sign-up or save, in words. The first photo still with the team
  * answers `portrait_required`: said as that, not as a photo to change.
  */
 fun profileSaveFailure(error: Throwable, photos: PhotoSetCheck): String {

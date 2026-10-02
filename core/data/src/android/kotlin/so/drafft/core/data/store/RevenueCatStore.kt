@@ -35,7 +35,7 @@ import com.revenuecat.purchases.Offering as RCOffering
 import com.revenuecat.purchases.Package as RCPackage
 
 /**
- * [Store] on RevenueCat and Google Play (Drafft/Services/Store.swift). Configured once, at launch
+ * [Store] on RevenueCat and Google Play. Configured once, at launch
  * ([configure]), before anything reads purchases. Google Play's purchase sheet needs an activity: the
  * store follows the one on screen by itself.
  */
@@ -179,7 +179,7 @@ class RevenueCatStore(
         }
     }
 
-    /** RevenueCat unreachable: the phone's connection, not a purchase that went wrong (the iPhone's `offlineConnectionError` has no Android code). */
+    /** RevenueCat unreachable: the phone's connection, not a purchase that went wrong. */
     private fun isOffline(code: PurchasesErrorCode) = code == PurchasesErrorCode.NetworkError
 
     /** What a failed purchase throws: offline stays offline, anything else is the store's own outcome. */
@@ -198,7 +198,7 @@ class RevenueCatStore(
         }
     }
 
-    /** The Swift `PurchaseProblem(error)`'s cases, from RevenueCat's code. */
+    /** The purchase problem an error stands for, from RevenueCat's code. */
     private fun problem(code: PurchasesErrorCode): Store.PurchaseProblem = when (code) {
         PurchasesErrorCode.PaymentPendingError -> Store.PurchaseProblem.PENDING
         PurchasesErrorCode.PurchaseNotAllowedError -> Store.PurchaseProblem.NOT_ALLOWED

@@ -29,8 +29,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import so.drafft.core.data.platform.PermissionPrompter
 
-// Ports SelfieCamera (Drafft/Features/Verification/SelfieCaptureView.swift): AVFoundation and Vision
-// become CameraX and ML Kit's on-device face detector (`AndroidFaceCheck`).
+// The selfie camera: CameraX and ML Kit's on-device face detector (`AndroidFaceCheck`).
 
 /**
  * The front camera: frames for the live face check, and one photo when asked. Analysis runs on its

@@ -3,8 +3,8 @@ package so.drafft.core.data.media
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 
-// Nuke's shared downloads (Drafft/Services/Media/Images.swift: "one download per photo, however many
-// views ask for it at once"), which Coil doesn't have: used by the image pipeline's fetcher
+// Shared downloads ("one download per photo, however many views ask for it at once"), which Coil
+// doesn't have: used by the image pipeline's fetcher
 // (`installImages` in core:ui).
 
 /**

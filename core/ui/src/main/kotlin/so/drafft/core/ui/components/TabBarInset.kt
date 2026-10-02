@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Room taken by the floating tab bar at the bottom of a tab (above the system navigation bar). Tab
- * screens scroll under it and end their content with this much extra space, like the iPhone's safe area.
+ * screens scroll under it and end their content with this much extra space.
  * 0 while the bar is hidden (a pushed chat).
  */
 val LocalTabBarInset = compositionLocalOf<Dp> { 0.dp }
@@ -28,8 +28,8 @@ class TabBarVisibility {
 val LocalTabBarVisibility = compositionLocalOf<TabBarVisibility?> { null }
 
 /**
- * False inside a tab that isn't the one on screen. Every tab stays composed, so what SwiftUI does in
- * `onAppear`/`onDisappear` on a tab switch (a chat counting as open, say) follows this instead.
+ * False inside a tab that isn't the one on screen. Every tab stays composed, so what a screen does when
+ * its tab shows or hides (a chat counting as open, say) follows this.
  */
 val LocalTabIsCurrent = compositionLocalOf { true }
 
@@ -40,7 +40,7 @@ val LocalTabIsCurrent = compositionLocalOf { true }
 val LocalTabsOnScreen = compositionLocalOf { true }
 
 /**
- * Hides the tab bar while the calling screen is shown (iOS `.toolbarVisibility(.hidden, for: .tabBar)`):
+ * Hides the tab bar while the calling screen is shown:
  * a chat pushed from Sessions or Chats.
  */
 @Composable

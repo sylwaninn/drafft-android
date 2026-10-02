@@ -40,8 +40,6 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.math.ceil
 
-// Port of Drafft/Features/Discover/BoostChip.swift.
-
 /**
  * Header chip for boosts. Idle: the bolt and how many you have. Running: one accent capsule with a
  * ring that drains around the bolt and a live mm:ss clock. A single surface either way, so it

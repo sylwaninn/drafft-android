@@ -1,7 +1,7 @@
 package so.drafft.core.data.media
 
-// Ports Drafft/Services/Media/PhotoCompressor.swift (the decoding and encoding is Android's:
-// `AndroidPhotoCompressor`, installed as [PhotoCompressor.engine] at launch).
+// The decoding and encoding is the platform's: `AndroidPhotoCompressor`, installed as
+// [PhotoCompressor.engine] at launch.
 
 /** A photo ready to upload: JPEG bytes, final pixel size and its ThumbHash. */
 class PreparedPhoto(

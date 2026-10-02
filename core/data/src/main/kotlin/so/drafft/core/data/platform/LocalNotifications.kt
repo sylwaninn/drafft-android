@@ -1,7 +1,7 @@
 package so.drafft.core.data.platform
 
 /**
- * The phone's notifications (the iPhone's `UNUserNotificationCenter` and `registerForRemoteNotifications`).
+ * The phone's notifications and push registration.
  * Android: `NotificationManagerCompat` with channels, the POST_NOTIFICATIONS permission and Firebase
  * Cloud Messaging (`AndroidLocalNotifications`, `DrafftMessagingService`).
  */
@@ -22,7 +22,7 @@ interface LocalNotifications {
         val title: String,
         val body: String,
         val channel: Channel,
-        /** Notifications of one conversation are grouped (the iPhone's `threadIdentifier`). */
+        /** Notifications of one conversation are grouped. */
         val threadID: String? = null,
         val info: Map<String, String> = emptyMap(),
         /** A profile photo (a file path or a bundled image name) shown as the notification's picture. */

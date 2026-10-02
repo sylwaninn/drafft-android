@@ -6,7 +6,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlinx.coroutines.flow.StateFlow
 
-/** A point on Earth (the iPhone's `CLLocationCoordinate2D`). */
+/** A point on Earth. */
 data class Coordinate(val latitude: Double, val longitude: Double) {
     /** Great-circle distance in kilometres (`CLLocation.distance(from:)` / 1000). */
     fun distanceKm(to: Coordinate): Double {
@@ -20,8 +20,8 @@ data class Coordinate(val latitude: Double, val longitude: Double) {
 }
 
 /**
- * The phone's location, one reading at a time, reduced accuracy, only while the app is in use (the
- * iPhone's `CLLocationManager` with `kCLLocationAccuracyReduced`). Implemented on Android with the
+ * The phone's location, one reading at a time, reduced accuracy, only while the app is in use.
+ * Implemented on Android with the
  * fused location provider and the system's own providers (`AndroidLocationProvider`).
  */
 interface LocationProvider {
@@ -40,8 +40,7 @@ interface LocationProvider {
     val authorization: StateFlow<Authorization>
 
     /**
-     * The phone's location turned off for every app (the iPhone's Location Services off), read with the
-     * permission.
+     * The phone's location turned off for every app, read with the permission.
      */
     val servicesOff: StateFlow<Boolean>
 

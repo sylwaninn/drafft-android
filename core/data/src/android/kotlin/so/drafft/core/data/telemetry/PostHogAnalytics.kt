@@ -7,8 +7,6 @@ import com.posthog.PostHogBeforeSend
 import com.posthog.android.PostHogAndroid
 import com.posthog.android.PostHogAndroidConfig
 
-// Ports Drafft/Services/Telemetry/PostHogAnalytics.swift.
-
 /**
  * [Telemetry.Analytics] on PostHog, EU cloud. Only what [AnalyticsEvent] and [Screen] describe, plus
  * PostHog's own app lifecycle events (installed, updated, opened, backgrounded). No autocapture of

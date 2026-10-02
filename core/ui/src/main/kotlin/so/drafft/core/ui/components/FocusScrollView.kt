@@ -32,8 +32,6 @@ import kotlinx.coroutines.launch
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
-// Port of Drafft/DesignSystem/FocusScrollView.swift.
-
 /**
  * Lets a field bring itself into view when it gets focus, above the keyboard and above any pinned
  * bottom bar (which the system's own avoidance doesn't account for). Positions live in plain

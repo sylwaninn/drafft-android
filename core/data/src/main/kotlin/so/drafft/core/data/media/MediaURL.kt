@@ -17,7 +17,6 @@ import so.drafft.core.data.backend.DrafftJson
 import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports `MediaURL` from Drafft/Services/Backend/ProfileSync.swift.
 
 /**
  * Media links. The bucket is private: the backend signs a link for each object the person may see
@@ -25,7 +24,7 @@ import so.drafft.core.data.platform.KeyValueStore
  * the signature. [base] is where media is served from (`app-config`), for builds and backends from
  * before signed links.
  *
- * Called from anywhere, like the iPhone's static enum: [install] gives it the backend and the phone's
+ * Called from anywhere (a singleton object): [install] gives it the backend and the phone's
  * storage at launch (the Koin module does it).
  */
 object MediaURL {

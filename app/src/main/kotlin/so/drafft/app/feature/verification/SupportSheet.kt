@@ -81,8 +81,6 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.semibold
 
-// Ports Drafft/Features/Verification/SupportSheet.swift.
-
 /** Signed in, the reply goes to the account's email; signed out, to one typed here. */
 private enum class Session { UNKNOWN, SIGNED_IN, SIGNED_OUT }
 

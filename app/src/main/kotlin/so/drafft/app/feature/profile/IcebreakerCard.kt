@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/IcebreakerCard.swift.
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize

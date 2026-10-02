@@ -6,8 +6,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports Drafft/Services/PushTokenRegistration.swift.
-
 /**
  * Remembers which device token the server already holds for which account, so a return to the app
  * (which asks FCM for the token again, and gets the same one) doesn't write `push_tokens` every time.

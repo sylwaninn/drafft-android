@@ -15,8 +15,7 @@ import so.drafft.core.model.Sport
 import so.drafft.core.model.SportEntry
 import so.drafft.core.model.Vitals
 
-// Ports Drafft/Services/Backend/ProfileCard+App.swift: cards from the server as the app's `Profile`,
-// and what the discovery calls send.
+// Cards from the server as the app's `Profile`, and what the discovery calls send.
 
 /** The profile the screens show. `base`: the media base for a backend from before signed links. */
 fun ProfileCard.profile(mediaBase: String?): Profile {
@@ -52,7 +51,7 @@ fun ProfileCard.profile(mediaBase: String?): Profile {
     )
 }
 
-/** Some lifestyle answer is filled in (the iPhone's `Vitals.hasLifestyle`). */
+/** Some lifestyle answer is filled in. */
 val Vitals.hasLifestyle: Boolean
     get() = listOf(drinks, smokes, diet, chronotype).any { it.isNotEmpty() }
 

@@ -2,8 +2,6 @@ package so.drafft.core.data.media
 
 import so.drafft.core.model.ThumbHash
 
-// Ports Drafft/Services/Media/MediaPreviews.swift.
-
 /**
  * The ThumbHash of each server photo the app knows (sent with its media row), turned into a blurred
  * preview the photo view draws while the real image loads, and its proportions, which decide the copy

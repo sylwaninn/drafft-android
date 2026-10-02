@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/LifestylePicker.swift.
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

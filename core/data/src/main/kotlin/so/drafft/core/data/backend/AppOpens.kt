@@ -4,8 +4,6 @@ import java.util.Locale
 import java.util.TimeZone
 import so.drafft.core.data.platform.AppInfo
 
-// Ports Drafft/Services/Backend/AppOpens.swift.
-
 /**
  * Each time the app comes to the front, signed in: which phone, OS and app version, locale and time
  * zone (`report_app_open`). The server adds the IP and country. For the team's safety checks only (ban

@@ -32,7 +32,7 @@ import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.appLocale
 
-// Ports Drafft/Services/Verification.swift (the face check's Android side is `AndroidFaceCheck`).
+// The face check's platform side is `AndroidFaceCheck`.
 
 // Contracts
 
@@ -539,8 +539,8 @@ class PhoneVerificationModel(
 // Face on the main photo
 
 /**
- * On-device check that a photo shows a face big enough to be recognised (the iPhone's Vision; ML Kit
- * face detection on Android, `AndroidFaceCheck`, installed as [engine] at launch).
+ * On-device check that a photo shows a face big enough to be recognised (ML Kit face detection,
+ * `AndroidFaceCheck`, installed as [engine] at launch).
  */
 object FaceCheck {
     enum class Result { FACE, NO_FACE, TOO_SMALL }

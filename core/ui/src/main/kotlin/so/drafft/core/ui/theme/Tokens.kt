@@ -15,7 +15,7 @@ import kotlin.math.pow
 
 /**
  * DESIGN.md palette, with the app's accent: graphite (near-black `#111214` in light mode, off-white
- * `#F2F3F5` in dark mode). Token names keep "lime" for the role (the one accent), as on iOS.
+ * `#F2F3F5` in dark mode). Token names keep "lime" for the role (the one accent).
  * Every token resolves for the current appearance ([LocalDarkTheme]) and, for the page and block
  * tones, for where it sits ([LocalIsSheetSurface]).
  */
@@ -168,11 +168,11 @@ val LocalIsSheetSurface = compositionLocalOf { false }
 val LocalIsNightSurface = compositionLocalOf { false }
 
 /**
- * Motion: everything answers fast. iOS springs are given as response and damping fraction; Compose
- * springs take a stiffness, derived here so each curve lands at the same time.
+ * Motion: everything answers fast. Springs are specified as response and damping fraction; Compose
+ * springs take a stiffness, derived here so each curve lands at the specified time.
  */
 object Motion {
-    /** stiffness for an iOS spring response (seconds): k = (2π / response)². */
+    /** stiffness for a spring response (seconds): k = (2π / response)². */
     private fun stiffness(response: Double): Float = (2 * PI / response).pow(2).toFloat()
 
     fun <T> springOf(response: Double, damping: Float, visibilityThreshold: T? = null) =
@@ -190,7 +190,7 @@ object Motion {
     /** Swipe fly-out. */
     const val FLY_OUT_MILLIS = 260
 
-    /** SwiftUI's ease-out curve. */
+    /** The ease-out curve. */
     val EaseOut = CubicBezierEasing(0f, 0f, 0.58f, 1f)
     val EaseInOut = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
     val EaseIn = CubicBezierEasing(0.42f, 0f, 1f, 1f)

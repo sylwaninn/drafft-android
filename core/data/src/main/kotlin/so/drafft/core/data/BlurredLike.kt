@@ -13,7 +13,6 @@ import so.drafft.core.model.ThumbHash
 import so.drafft.core.model.newestFirst
 import java.time.Instant
 
-// Ports Drafft/Services/AppModel+BlurredLikes.swift.
 
 /**
  * One like on the free plan: what the server gives without drafft tempo (`liked_me`, backend

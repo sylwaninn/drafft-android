@@ -10,8 +10,6 @@ import so.drafft.core.data.AppModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.KeyValueStore
 
-// Ports Drafft/Services/Telemetry/TelemetrySession.swift.
-
 /**
  * Keeps [Telemetry] in step with the account: who is signed in (Supabase Auth's session, the one
  * source), and the few facts dashboards split by (language, drafft tempo, where the person is in the

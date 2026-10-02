@@ -43,8 +43,6 @@ import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 
-// Port of Drafft/DesignSystem/PausedLock.swift.
-
 /** What a pause puts on hold. Discover always is; everything else works as usual. */
 object PauseScope {
     /** Likes is paused with Discover: answering a like creates a match. Flip to keep it open. */

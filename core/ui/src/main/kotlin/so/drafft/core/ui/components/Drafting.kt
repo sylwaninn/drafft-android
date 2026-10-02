@@ -44,7 +44,6 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.heavy
 import so.drafft.core.ui.theme.monospacedDigits
 
-// Port of Drafft/DesignSystem/Drafting.swift.
 // The drafting motif: a lead shape followed by fading ghost copies, like riders tucked in behind
 // each other. Under buttons only, never under the logo (Wordmark).
 
@@ -93,7 +92,7 @@ fun Modifier.draftBlock(fill: Color, radius: Dp = DS.Radius.xl): Modifier {
     return background(fill, shape).border(1.dp, DS.palette.blockEdge, shape)
 }
 
-/** Round icon badge carrying a bold SF Symbol. No trail: the drafting effect is reserved for buttons. */
+/** Round icon badge carrying a bold icon. No trail: the drafting effect is reserved for buttons. */
 @Composable
 fun DraftGlyph(
     symbol: String,

@@ -32,8 +32,6 @@ import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.store.PurchaseCredit
 
-// Ports Drafft/Services/UserChannel.swift.
-
 /**
  * The person's own Realtime topic, `user:<id>` (private): the database broadcasts on it when
  * something of theirs changes. One channel per account, whatever listens:
@@ -178,7 +176,7 @@ class UserChannel(
     }
 
     private companion object {
-        /** How long a join may take before it counts as failed (the Swift SDK's default timeout). */
+        /** How long a join may take before it counts as failed. */
         val JOIN_TIMEOUT = 10.seconds
     }
 }

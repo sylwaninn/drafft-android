@@ -11,8 +11,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import java.lang.ref.WeakReference
 
-// The web view behind TurnstileChallenge (Drafft/Features/Verification/TurnstileChallenge.swift): the
-// iPhone's WKWebView with a script message handler becomes a WebView with a JavaScript interface.
+// The web view behind TurnstileChallenge: a WebView with a JavaScript interface the page posts through.
 
 /** A page kept alive in one web view, shown wherever [AndroidPlatformUi.WebPageView] places it. */
 @SuppressLint("SetJavaScriptEnabled")
@@ -24,7 +23,7 @@ internal class AndroidWebPage(context: Context) : WebPage {
         overScrollMode = WebView.OVER_SCROLL_NEVER
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        // Nothing kept from one check to the next (the iPhone's non-persistent data store).
+        // Nothing kept from one check to the next.
         settings.cacheMode = WebSettings.LOAD_NO_CACHE
     }
     private val main = Handler(Looper.getMainLooper())
@@ -66,7 +65,7 @@ internal class AndroidWebPage(context: Context) : WebPage {
         webView.destroy()
     }
 
-    /** Called on the web view's JavaScript thread; points back weakly, like the iPhone's handler. */
+    /** Called on the web view's JavaScript thread; points back weakly. */
     private class Bridge(page: AndroidWebPage) {
         private val page = WeakReference(page)
 

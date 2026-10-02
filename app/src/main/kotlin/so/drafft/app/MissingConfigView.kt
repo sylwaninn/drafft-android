@@ -15,7 +15,7 @@ import so.drafft.core.ui.theme.display
 
 /**
  * A build that can't reach a backend (the local flavor without its machine's URL and key)
- * stops here and says what's missing, like the iPhone's launch check. Developer-facing: not translated.
+ * stops here and says what's missing. Developer-facing: not translated.
  */
 @Composable
 fun MissingConfigView(missing: List<String>, modifier: Modifier = Modifier) {

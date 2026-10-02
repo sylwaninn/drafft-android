@@ -25,8 +25,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/CalendarAccessBanner.swift.
-
 /**
  * Calendar access refused when the person tries to add a session: the event isn't added (it couldn't
  * follow the session), and this banner says why and opens Settings. Shown above everything

@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-// Android's form of Nuke's data loading queue (Drafft/Services/Media/Images.swift): Coil has no request
+// A data loading queue with priorities: Coil has no request
 // priority and OkHttp frees a download's slot as soon as its headers arrive, so the photo downloads go
 // through this queue instead, from the image client's interceptor (`installImages` in core:ui).
 
@@ -21,7 +21,7 @@ class PhotoDownloads(limit: Int = Images.downloads) {
     private var next = 0L
     private val waiting = mutableListOf<Ticket>()
 
-    /** The current priority of photos whose view changed it after asking (Nuke updates a task's priority). */
+    /** The current priority of photos whose view changed it after asking. */
     private val priorities = object : LinkedHashMap<String, Int>(32, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Int>?) = size > 64
     }

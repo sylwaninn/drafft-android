@@ -71,8 +71,7 @@ import io.getstream.result.Error as StreamError
 
 /**
  * The chat, on Stream (low-level client, drafft's own screens). One connection per signed-in account.
- * Ports Drafft/Services/Chat/ChatService.swift; the model building (ChatService+Model.swift) is
- * [ChatThreads], shared and SDK-free.
+ * The model building is [ChatThreads], platform-neutral and SDK-free.
  *
  * - Connection: `stream-token` gives the key and a 24 h token; the SDK asks for a new one through the
  *   token provider before it expires, reconnects by itself (network, foreground), keeps an offline copy

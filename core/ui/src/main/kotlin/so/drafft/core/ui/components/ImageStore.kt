@@ -30,14 +30,13 @@ import so.drafft.core.ui.image.BundledImages
 import java.io.File
 import kotlin.math.roundToInt
 
-// Port of Drafft/DesignSystem/ImageStore.swift, with the parts of Services/Media/Images.swift that
-// pick, size and decode remote photos (the requests; the pipeline is set up by `installImages`).
+// Also the requests that pick, size and decode remote photos (the pipeline is set up by `installImages`).
 
 /**
  * Display-ready copies of the bundled photos, through Coil's memory cache.
  *
  * A bundled photo (1000 to 1400 px) decoded on the main thread the first time it's drawn froze the
- * tab bar on iOS when a tab full of avatars did it dozens of times. Here small displays get a
+ * tab bar when a tab full of avatars did it dozens of times. Here small displays get a
  * downsampled copy, blurred displays get the blur baked in once (no live blur), and the photos the
  * first screens need are prepared in the background at launch ([prewarm]).
  */
@@ -98,7 +97,7 @@ object ImageStore {
         blurred.forEach { (name, fraction) -> loader.enqueue(request(context, name, null, fraction)) }
     }
 
-    // MARK: Photos on the server or on this phone (Services/Media/Images.swift)
+    // MARK: Photos on the server or on this phone
 
     /**
      * The request for a photo drawn in a frame of [width] × [height] pixels: `/…` is a file on this

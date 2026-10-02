@@ -79,8 +79,6 @@ import so.drafft.core.ui.theme.semibold
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-// Port of Drafft/Features/Discover/FiltersSheet.swift.
-
 /**
  * Discover filters. Edits a draft; Discover shows the result (or the too-tight message) once applied.
  * Present it in a `DrafftSheet`.

@@ -5,7 +5,7 @@ import kotlin.test.assertNotNull
 import org.junit.Test
 import so.drafft.core.model.TermsConsent
 
-// Ports DrafftTests/TermsConsentTests.swift (reading the gate from the profile row's bytes).
+// Terms consent: reading the gate from the profile row's bytes.
 class AccountConsentTest {
     private fun row(onboarded: Boolean = true, consent: String = ""): ByteArray = """
         [{"name": "Maya", "birthdate": "1995-04-12", "neighborhood": "Belleville", "bio": "", "goal": "", "favorite_spot": "",

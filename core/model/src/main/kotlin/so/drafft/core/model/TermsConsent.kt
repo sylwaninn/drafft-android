@@ -1,6 +1,6 @@
 package so.drafft.core.model
 
-// Ports Drafft/Services/Backend/TermsConsent.swift (the rules; `accept_terms` itself is `ProfileSync.acceptTerms`).
+// The rules; `accept_terms` itself is `ProfileSync.acceptTerms`.
 
 /**
  * The terms and the consent to sensitive data, recorded on the server (`accept_terms`): the version

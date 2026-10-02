@@ -1,6 +1,6 @@
 package so.drafft.core.data.platform
 
-// Ports Drafft/Services/SystemPermission.swift (the protocol; `PermissionButton` is core:ui's).
+// The protocol; `PermissionButton` is core:ui's.
 
 /** Where a system permission stands, in the three cases a screen acts on. */
 enum class PermissionStatus {

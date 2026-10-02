@@ -13,12 +13,10 @@ import so.drafft.core.data.platform.SystemPermission
 import so.drafft.core.model.L
 import so.drafft.core.ui.theme.DrafftIcon
 
-// Port of PermissionButton (Drafft/Services/SystemPermission.swift).
-
 /**
  * The action for a permission that isn't on: the system prompt the first time, then Settings once
  * refused (never a dead, disabled button). [askTitle] is already localized ("Turn on
- * notifications", "Allow location"). On iOS the container styles it; here [kind] does.
+ * notifications", "Allow location"). [kind] styles it.
  */
 @Composable
 fun PermissionButton(

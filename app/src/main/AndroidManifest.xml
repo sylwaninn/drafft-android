@@ -4,8 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- An area, never a street: the position is blurred to ~1 km before it leaves the phone, so coarse is enough
-         (the iPhone app asks for reduced accuracy too). -->
+    <!-- An area, never a street: the position is blurred to ~1 km before it leaves the phone, so coarse is enough. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

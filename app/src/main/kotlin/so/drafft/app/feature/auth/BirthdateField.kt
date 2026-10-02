@@ -71,8 +71,6 @@ import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/BirthdateField.swift.
-
 /**
  * Birthday typed, not scrolled: three boxes (day, month, year, in the app language's order) over one
  * hidden number-pad field, so eight digits in a row fill them and delete walks back. Nothing is set

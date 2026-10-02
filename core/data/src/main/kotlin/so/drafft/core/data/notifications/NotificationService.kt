@@ -28,7 +28,6 @@ import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 
 /**
- * Ports Drafft/Services/Notifications.swift.
  *
  * Notifications: permission, the per-type preferences, and the push plumbing (the FCM token). Session
  * reminders are the server's pushes (`session.reminder`, following `notify_session_*`): checked against
@@ -196,8 +195,8 @@ class NotificationService(
     fun forgetPushTokenRegistration() = registration.forget()
 
     /**
-     * Which push environment this build registers (the iPhone's APNs `sandbox` for development builds,
-     * `production` otherwise). FCM has a single one; the value keeps the server's contract.
+     * Which push environment this build registers (`sandbox` for development builds, `production`
+     * otherwise). FCM has a single one; the value keeps the server's contract.
      */
     private val pushEnvironment: String get() = if (appInfo.isDebugBuild) "sandbox" else "production"
 
@@ -352,13 +351,13 @@ class NotificationService(
     // Pushes and taps
 
     /**
-     * A push arrived while the app is running (`DrafftMessagingService.onMessageReceived`, the iPhone's
-     * `willPresent`). Whether the system banner should show; with true, [present] posts it.
+     * A push arrived while the app is running (`DrafftMessagingService.onMessageReceived`). Whether the
+     * system banner should show; with true, [present] posts it.
      */
     suspend fun willPresent(info: Map<String, String>): Boolean {
         val kind = info["kind"]
-        // The iPhone's `willPresent` only runs in the foreground; here the service also runs for a push
-        // that arrives while the app is in the background, which isn't counted.
+        // The service also runs for a push that arrives while the app is in the background, which isn't
+        // counted.
         if (lifecycle.isActive()) Telemetry.track(AnalyticsEvent.PushReceived(pushKind(info), inForeground = true))
         // A refused photo while the app is open: its own banner says it, not the system's (shown once,
         // whether the push or the live `media` event comes first).

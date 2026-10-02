@@ -2,9 +2,7 @@ package so.drafft.core.data.media
 
 import kotlin.math.ceil
 
-// Ports Drafft/Services/Media/Renditions.swift.
-
-/** A size in pixels (the iPhone code's `CGSize` in pixels). */
+/** A size in pixels. */
 data class PixelSize(val width: Double, val height: Double) {
     constructor(width: Int, height: Int) : this(width.toDouble(), height.toDouble())
 }

@@ -49,8 +49,6 @@ import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
-// Port of Drafft/DesignSystem/ProgressiveBlur.swift.
-
 enum class VerticalEdge { TOP, BOTTOM }
 
 /**
@@ -60,7 +58,7 @@ enum class VerticalEdge { TOP, BOTTOM }
  * the scrolling content, under the bar (`EdgeBars` does it for you).
  *
  * With a [veil] (the surface's own tone), the blur replaces the sharp content instead of laying over
- * it, as the iPhone's backdrop blur does, and a light veil keeps a bar's text readable whatever
+ * it, as a backdrop blur does, and a light veil keeps a bar's text readable whatever
  * scrolls under it. The first [solid] pixels from the edge (a bar's own height) are at full
  * strength: only the margin past the bar fades.
  *

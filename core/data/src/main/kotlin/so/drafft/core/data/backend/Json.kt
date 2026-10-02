@@ -11,8 +11,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 
-// The JSON the app sends and reads as the signed-in person (the iPhone's `[String: Any]` and
-// `JSONSerialization`), with the strictness of Swift's `Decodable` where the port needs it.
+// The JSON the app sends and reads as the signed-in person: lenient on unknown keys, strict on types
+// where the server's contract needs it.
 
 /** Lenient reader: unknown keys are fine, the server adds columns. */
 val DrafftJson = Json { ignoreUnknownKeys = true }
@@ -20,7 +20,7 @@ val DrafftJson = Json { ignoreUnknownKeys = true }
 /** A JSON object from Kotlin values (String, Number, Boolean, null, lists, maps, JSON elements). */
 fun jsonOf(vararg pairs: Pair<String, Any?>): JsonObject = JsonObject(pairs.associate { (k, v) -> k to v.toJsonElement() })
 
-/** Any Kotlin value as JSON (the iPhone's `JSONSerialization.data(withJSONObject:)`). */
+/** Any Kotlin value as JSON. */
 fun Any?.toJsonElement(): JsonElement = when (this) {
     null -> JsonNull
     is JsonElement -> this
@@ -49,10 +49,10 @@ val JsonElement?.asDouble: Double? get() = (this as? JsonPrimitive)?.takeIf { !i
 val JsonElement?.asLong: Long? get() = (this as? JsonPrimitive)?.takeIf { !it.isString }?.longOrNull
 val JsonElement?.asInt: Int? get() = asLong?.let { if (it in Int.MIN_VALUE..Int.MAX_VALUE) it.toInt() else null }
 
-/** A value of the wrong type where Swift's `Decodable` would throw. */
+/** A value of the wrong type where a strict read expects another. */
 class JsonShapeException(message: String) : Exception(message)
 
-// Swift `decode` / `decodeIfPresent` on an object: missing or null gives null for the optional readers,
+// Strict reads on an object: missing or null gives null for the optional readers,
 // a value of another type throws.
 
 private fun JsonObject.present(key: String): JsonElement? = this[key]?.takeIf { it !is JsonNull }
@@ -74,16 +74,16 @@ fun JsonObject.obj(key: String): JsonObject = optObject(key) ?: throw JsonShapeE
 fun JsonElement.requireObject(): JsonObject = asObject ?: throw JsonShapeException("not an object")
 fun JsonElement.requireString(): String = asString ?: throw JsonShapeException("not a string")
 
-/** An array of JSON elements, or throws (Swift decoding `[T]`). */
+/** An array of JSON elements, or throws. */
 fun ByteArray.jsonArray(): JsonArray =
     (runCatching { DrafftJson.parseToJsonElement(decodeToString()) }.getOrNull() as? JsonArray)
         ?: throw JsonShapeException("not an array")
 
 /**
- * Swift's `try?` for suspending work: the value, or null if it threw. Cancellation still propagates,
- * so a cancelled coroutine never carries on as if the call had merely failed.
+ * Suspending work as a value, or null if it threw. Cancellation still propagates, so a cancelled
+ * coroutine never carries on as if the call had merely failed.
  *
- * Quiet, like the iPhone's `try?` at the same places: connection upkeep and reads that run again
+ * Quiet: connection upkeep and reads that run again
  * (a wallet, a block list) don't need an alert. A call whose failure would be a bug passes
  * [report] with its own [area] and [action], and goes to Sentry unless it's offline or a refusal.
  */
@@ -101,7 +101,7 @@ suspend inline fun <T> attempt(
     null
 }
 
-/** Swift's `try?` for plain work. */
+/** Plain work as a value, or null if it threw. Cancellation still propagates. */
 inline fun <T> attemptOrNull(block: () -> T): T? = try {
     block()
 } catch (e: CancellationException) {

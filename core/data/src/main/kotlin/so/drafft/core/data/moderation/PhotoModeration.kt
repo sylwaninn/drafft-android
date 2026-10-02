@@ -39,7 +39,6 @@ import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 
 /**
- * Ports Drafft/Services/Backend/PhotoModeration.swift.
  *
  * Where a profile photo stands on the server: sent, then judged by moderation (AWS Rekognition in the
  * backend's db-events function). Known by its local path (picked) or its object key (on the server).
@@ -95,7 +94,7 @@ class PhotoModeration(
 
     /**
      * The refusal explanation to present above whatever is on screen (a tapped push): the root shows it
-     * as a sheet and sets it back to null when closed (the iPhone's `PhotoRefusalPresenter`).
+     * as a sheet and sets it back to null when closed.
      */
     var presentedRefusal: Refusal? by mutableStateOf(null)
 

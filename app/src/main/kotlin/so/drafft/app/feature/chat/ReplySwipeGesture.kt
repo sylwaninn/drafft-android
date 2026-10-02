@@ -16,8 +16,6 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import kotlin.math.abs
 import kotlin.math.max
 
-// Port of Drafft/Features/Chat/ReplySwipeGesture.swift.
-
 /**
  * Swipe right on a message to reply. A drag that only begins on a clearly rightward, horizontal
  * movement: any vertical drag gives up at once and the thread scrolls as usual (the scroll view only

@@ -12,8 +12,8 @@ import so.drafft.core.ui.R
 
 /**
  * Display face: Inter Display Black stands in for the proprietary Wise Sans (DESIGN.md substitute),
- * ExtraBold for inline titles. Everything else is the system text face at the iPhone's text-style
- * sizes, in sp so the phone's font size setting scales it (Dynamic Type).
+ * ExtraBold for inline titles. Everything else is the system text face at the text-style sizes
+ * below, in sp so the phone's font size setting scales it.
  */
 object DisplayFont {
     val black = FontFamily(Font(R.font.inter_display_black, FontWeight.Black))
@@ -39,7 +39,7 @@ fun displayBold(size: Float): TextStyle = TextStyle(
     lineHeight = (size * 1.1f).sp,
 )
 
-/** The iPhone's text styles (size, leading, weight), used where SwiftUI uses `.font(.body)` etc. */
+/** The text styles (size, leading, weight), from large title to caption. */
 object TextStyles {
     private fun style(size: Float, leading: Float, weight: FontWeight = FontWeight.Normal, tracking: TextUnit = TextUnit.Unspecified) =
         TextStyle(fontSize = size.sp, lineHeight = leading.sp, fontWeight = weight, letterSpacing = tracking)
@@ -57,7 +57,7 @@ object TextStyles {
     val caption2 = style(11f, 13f)
 }
 
-/** `.weight(...)` like SwiftUI's `.fontWeight`. */
+/** The same style at another [weight]. */
 fun TextStyle.weight(weight: FontWeight): TextStyle = copy(fontWeight = weight)
 val TextStyle.semibold: TextStyle get() = copy(fontWeight = FontWeight.SemiBold)
 val TextStyle.bold: TextStyle get() = copy(fontWeight = FontWeight.Bold)

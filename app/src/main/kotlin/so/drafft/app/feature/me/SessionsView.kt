@@ -76,8 +76,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.heavy
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/SessionsView.swift.
-
 /** The Sessions tab's own page, the root of its stack. */
 private data object SessionsRoot
 

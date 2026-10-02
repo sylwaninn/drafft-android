@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger
  * playback or recording ends, so music from another app picks up again. The release waits a moment
  * and is dropped if anything asked for focus after it (the next clip, a recording): requests are
  * counted synchronously by the caller, so a release never lands after the activation that follows.
- * Ports `AudioSessionController` (Drafft/Services/Audio.swift).
  */
 class AudioSessionController(private val focus: AudioFocus) {
     private val queue: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->

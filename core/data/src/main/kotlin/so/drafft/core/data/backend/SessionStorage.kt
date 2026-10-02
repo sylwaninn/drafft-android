@@ -5,7 +5,7 @@ import io.github.jan.supabase.auth.user.UserSession
 import so.drafft.core.data.platform.KeyValueStore
 
 /**
- * Where Supabase Auth keeps the session between launches (the iPhone keeps it in the Keychain): the
+ * Where Supabase Auth keeps the session between launches: the
  * app's [KeyValueStore], as JSON. The SDK loads it at start and refreshes it by itself.
  */
 class KeyValueSessionManager(

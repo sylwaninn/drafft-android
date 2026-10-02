@@ -97,15 +97,13 @@ import so.drafft.core.ui.theme.semibold
 import java.text.BreakIterator
 import androidx.compose.ui.res.painterResource
 
-// Port of Drafft/DesignSystem/Components.swift.
-
 /**
- * The box an SF Symbol set at [fontSize] points takes: Material glyphs sit in a square with a small
+ * The box an icon set at [fontSize] points takes: Material glyphs sit in a square with a small
  * margin, so the box is a bit larger than the type size to draw the glyph at the same visual size.
  */
 internal fun symbolBox(fontSize: Float): Dp = (fontSize * 1.2f).dp
 
-/** A size in dp as a font size that ignores the font scale, like `.system(size:)` on iOS. */
+/** A size in dp as a font size that ignores the font scale. */
 @Composable
 internal fun Dp.fixedSp(): TextUnit = with(LocalDensity.current) { this@fixedSp.toSp() }
 
@@ -648,7 +646,7 @@ fun CheckDisc(
 /**
  * A changing label: its digits roll while the wording stays the same; when the words change
  * ("Any" to "3 selected", "Resend in 0:05" to "Resend code") the old and new labels cross-fade in
- * place instead, so a longer old label never slides out of its block. (`rollingDigits` on iOS.)
+ * place instead, so a longer old label never slides out of its block.
  * [rollsDigits] false: the digits change in place, nothing moves each tick (a countdown); only a
  * change of wording cross-fades.
  */
@@ -685,7 +683,7 @@ fun RollingText(
 /** The words without the numbers, to tell a count change from a wording change. */
 val String.wording: String get() = filter { !it.isDigit() }
 
-/** How many characters a person sees (grapheme clusters), like Swift's `String.count`. */
+/** How many characters a person sees (grapheme clusters). */
 val String.characterCount: Int
     get() {
         if (all { it.code < 0x300 }) return length

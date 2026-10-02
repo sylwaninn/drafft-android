@@ -24,8 +24,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-// Ports Drafft/Services/Media/MediaUploader.swift.
-
 /** Mirrors `purposes` in the backend's media-upload-url function (types and size limits live there). */
 enum class MediaPurpose(val rawValue: String) {
     PROFILE_PHOTO("profile_photo"),
@@ -99,9 +97,9 @@ class EdgeFunctionTicketProvider(
 /**
  * Uploads files straight to the media bucket (a PUT to the ticket's signed URL), with progress.
  *
- * The iPhone hands the upload to a background URLSession. Here it runs in the app's process (the
- * caller's coroutine): the person is waiting on it, and Android keeps a recently used app's process
- * alive for the few seconds a photo or a short video takes. Transient failures are retried.
+ * It runs in the app's process (the caller's coroutine): the person is waiting on it, and Android keeps
+ * a recently used app's process alive for the few seconds a photo or a short video takes. Transient
+ * failures are retried.
  */
 class MediaUploader(internal val client: HttpClient = defaultClient()) {
     /**
@@ -179,7 +177,7 @@ class MediaUploader(internal val client: HttpClient = defaultClient()) {
                     connectTimeout(30, TimeUnit.SECONDS)
                     writeTimeout(60, TimeUnit.SECONDS)
                     readTimeout(60, TimeUnit.SECONDS)
-                    // The iPhone's resource timeout: an hour for the whole upload.
+                    // An hour for the whole upload.
                     callTimeout(60, TimeUnit.MINUTES)
                 }
             }

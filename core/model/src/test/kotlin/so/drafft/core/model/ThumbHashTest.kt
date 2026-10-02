@@ -8,7 +8,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** Port of DrafftTests/ThumbHashTests.swift. */
 class ThumbHashTest {
     /** A 100 × 60 landscape: red to blue left to right, brighter at the top. */
     private fun gradient(w: Int = 100, h: Int = 60): ByteArray {

@@ -19,7 +19,7 @@ import so.drafft.core.data.verification.BackendPhoneVerifier
 import so.drafft.core.data.verification.PhoneVerificationModel
 import so.drafft.core.data.verification.PhoneVerifying
 
-/** A service's own scope on the main thread (the iPhone's `@MainActor` singletons), never cancelled. */
+/** A service's own scope on the main thread, never cancelled. */
 private fun mainScope() = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
 /**
@@ -55,7 +55,7 @@ val sessionsStoreNotificationsModule = module {
             scope = mainScope(),
         )
     }
-    // The media helpers called from anywhere (static, like the iPhone's enums) get their pieces at
+    // The media helpers called from anywhere (static) get their pieces at
     // launch. An account on hold can't upload: the hold screen takes over (Backend's app-wide event).
     single(createdAtStart = true) {
         val backend = get<Backend>()
@@ -65,7 +65,7 @@ val sessionsStoreNotificationsModule = module {
         MediaSetup
     }
     single<PhoneVerifying> { BackendPhoneVerifier(get()) }
-    // One per phone step (sign-up, You › Phone), on the screen's scope, like the iPhone's `@State` model.
+    // One per phone step (sign-up, You › Phone), on the screen's scope.
     factory { (scope: CoroutineScope) -> PhoneVerificationModel(get(), get<Backend>().config.smsCodeLifetime, scope) }
 }
 

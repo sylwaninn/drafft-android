@@ -50,8 +50,6 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/PurchaseCreditBanner.swift.
-
 /**
  * Top banner for a purchase the store confirmed that the server hasn't credited yet
  * (`PurchaseCredit`). Never in the way: it doesn't block the screen, swipes up to go away, and never
@@ -66,7 +64,7 @@ fun PurchaseCreditBanner(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Swift's `TimelineView(.periodic(by: 15))`: the clock the "slow" check reads, every 15 s.
+    // The clock the "slow" check reads, every 15 s.
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (true) {

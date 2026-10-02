@@ -2,8 +2,6 @@ package so.drafft.core.data
 
 import kotlin.math.ceil
 
-// Ports Drafft/Services/DeckPace.swift.
-
 /**
  * When to ask for the next batch of cards: early enough that it arrives, with its first photos, before
  * the person reaches the end at the pace they swipe. Measured rather than guessed: how long the last

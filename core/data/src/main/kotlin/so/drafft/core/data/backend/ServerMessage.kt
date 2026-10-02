@@ -6,7 +6,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.model.L
 
-// Ports Drafft/Services/Backend/ServerMessage.swift and ServerMessage+Error.swift.
 
 /**
  * What people read when the server turns something down. Database functions put a stable code in

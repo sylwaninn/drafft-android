@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/ProposeSessionSheet.swift.
-
 import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.InteractiveDismissDisabled

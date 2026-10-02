@@ -43,8 +43,6 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.branded
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/NotificationsSettingsView.swift.
-
 /** Settings › Notifications: the system permission first, then what to be notified about. Present it in a `DrafftSheet`. */
 @Composable
 fun NotificationsSettingsView(modifier: Modifier = Modifier) {

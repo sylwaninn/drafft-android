@@ -14,7 +14,6 @@ import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.verification.VerificationError
 
-// Ports Drafft/Services/Telemetry/Core/ErrorKind.swift and AppErrorClassifier.swift.
 
 /**
  * What kind of failure an error is, for [Telemetry.unexpected]. Only the [reportable] kinds become
@@ -86,8 +85,8 @@ enum class ErrorKind(val id: String, val reportable: Boolean) {
             // An expired or revoked token: the session refresh and the sign-out handle it.
             status == 401 -> SIGNED_OUT
             // A code (one word) is a refusal the server meant (`not_found`, `already_swiped`),
-            // whether or not the app has words for it. A sentence is the database failing. Read like the
-            // iPhone does: lowercased, as a short code (`PrivacyGuard.isCode`).
+            // whether or not the app has words for it. A sentence is the database failing. Read
+            // lowercased, as a short code (`PrivacyGuard.isCode`).
             PrivacyGuard.isCode(message.lowercase()) -> REFUSED
             else -> CLIENT_CONTRACT
         }

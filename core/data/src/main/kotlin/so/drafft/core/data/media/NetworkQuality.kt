@@ -1,7 +1,7 @@
 package so.drafft.core.data.media
 
-// Ports Drafft/Services/Media/NetworkQuality.swift. The path (which network, Data Saver) comes from the
-// Android side (`installImages` in core:ui), the speed from the photo downloads themselves.
+// The path (which network, Data Saver) comes from the Android side (`installImages` in core:ui), the
+// speed from the photo downloads themselves.
 
 /**
  * How the connection is doing, for what the app fetches first and how big (`ImageStore`, `PhotoWindow`).

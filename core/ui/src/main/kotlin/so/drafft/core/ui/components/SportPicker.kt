@@ -39,8 +39,6 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/DesignSystem/SportPicker.swift.
-
 /**
  * The one sport picker: a search field over the full catalog, then chips in a fixed order.
  * A [limit] greys out the rest once reached.

@@ -37,8 +37,7 @@ import so.drafft.core.model.Sport
 import so.drafft.core.model.SportEntry
 import so.drafft.core.model.Vitals
 
-// Ports Drafft/Services/Backend/ProfileSync.swift (MediaURL, also defined there on the iPhone, is in
-// so.drafft.core.data.media).
+// MediaURL is in so.drafft.core.data.media.
 
 /**
  * The signed-in person's own profile on the server: sign-up sends everything it collected and
@@ -348,7 +347,7 @@ class ProfileSync(
             val voiceIntroKey = o.optString("voice_intro_key")
             val voiceDuration = o.optDouble("voice_duration")
             val paused = o.boolean("paused")
-            // An unknown hold fails the row, as the iPhone's decoding does.
+            // An unknown hold fails the row.
             val moderation = o.optString("moderation")?.let { raw ->
                 AccountHold.entries.firstOrNull { it.rawValue == raw } ?: throw JsonShapeException("moderation")
             }

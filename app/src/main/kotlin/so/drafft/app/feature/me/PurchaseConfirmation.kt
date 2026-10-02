@@ -54,8 +54,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/PurchaseConfirmation.swift.
-
 /** What was just bought, as the store confirmed it. */
 @Immutable
 data class PurchaseReceipt(
@@ -279,7 +277,7 @@ private fun Recap(item: PurchaseReceipt.Item) {
     Column(
         Modifier
             .fillMaxWidth()
-            // The page tone, not the sheet's flipped one: this sheet isn't marked as a sheet surface on the iPhone.
+            // The page tone, not the sheet's flipped one: this sheet isn't marked as a sheet surface.
             .background(p.sage, RoundedCornerShape(DS.Radius.lg))
             .padding(horizontal = DS.Space.lg),
     ) {

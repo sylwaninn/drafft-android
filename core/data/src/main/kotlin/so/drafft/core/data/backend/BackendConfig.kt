@@ -1,7 +1,5 @@
 package so.drafft.core.data.backend
 
-// Ports Drafft/Services/Backend/BackendConfig.swift.
-
 /**
  * The drafft backend (Supabase, EU): production, staging or local, picked by the build flavor (the
  * app's `BuildConfig`, provided through Koin). The publishable key is public by design: it only
@@ -26,7 +24,7 @@ data class BackendConfig(
     val functionsURL: String get() = url.trimEnd('/') + "/functions/v1"
 
     /**
-     * What this build lacks to reach a backend (the iPhone stops with "missing from Info.plist"): the
+     * What this build lacks to reach a backend: the
      * local flavor needs its machine's URL and key in local.private.properties
      * (scripts/local-backend.sh), the others config/<flavor>.properties. Empty when configured.
      */

@@ -29,8 +29,8 @@ import so.drafft.core.model.SessionProposal
 /**
  * The chats as the app shows them: the matches (`AppModel.matches`, from `my_matches`), their Stream
  * channels and messages, the sessions' rows (`SessionStore`) and the signed media links, turned into
- * `Conversation`s and `Message`s. Ports Drafft/Services/Chat/ChatService+Model.swift, plus the parts of
- * ChatService.swift that don't touch the SDK (pending invites, uploads, the link cache).
+ * `Conversation`s and `Message`s, plus the chat's parts that don't touch the SDK (pending invites,
+ * uploads, the link cache).
  *
  * Owned by `StreamChatService`, which fills [channels] and [history] from the SDK. Not thread-safe:
  * every call is made on the main thread, and [scope] runs on `Dispatchers.Main.immediate`.

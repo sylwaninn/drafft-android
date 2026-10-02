@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Design rules drafft's code must keep (DESIGN.md, PRODUCT.md), checked on every change.
-Port of drafft's scripts/ci/design_lint.py: same rules and names, in their Compose form.
+DESIGN.md's rules in their Compose form.
 
 A line may opt out of one rule with a reason, on that line or the line above:
     // design-lint: allow <rule> - <why>
@@ -25,7 +25,7 @@ RULES = {
         re.compile(r"\bBrush\.(linear|radial|sweep|vertical|horizontal)Gradient\b|\b(Linear|Radial|Sweep)Gradient\("),
         "Solid fills only. Gradients are for photo scrims and blur masks: annotate them.",
     ),
-    # On the iPhone `.lineLimit` cuts with "…" on its own; here it's asked for, so every cut is visible.
+    # Compose only cuts with "…" when it's asked for, so every cut is visible.
     "truncation": (
         re.compile(r"TextOverflow\.(Ellipsis|StartEllipsis|MiddleEllipsis)\b|\+\s*\"(…|\.\.\.)\"|\bellipsize\("),
         "No '…' on UI copy: wrap, reflow (AdaptiveRow/FirstThatFits), then scale. "
@@ -47,7 +47,7 @@ RULES = {
         re.compile(r"sb_secret_[A-Za-z0-9]|service_role\s*=|-----BEGIN [A-Z ]*PRIVATE KEY"),
         "Never a secret in the app: only public (publishable) keys.",
     ),
-    # The iPhone's `.sheet { }.sheetSurface()`: DrafftSheet puts every sheet on its own surface.
+    # DrafftSheet puts every sheet on its own surface.
     "sheet-surface": (
         re.compile(r"\b(ModalBottomSheet|BottomSheetScaffold|AlertDialog|BasicAlertDialog)\("),
         "Sheets never share the page colour: present them with DrafftSheet (confirmations: DrafftConfirm).",

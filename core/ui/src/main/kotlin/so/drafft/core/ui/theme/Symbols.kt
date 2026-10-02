@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import so.drafft.core.ui.R
 
 /**
- * The app's icons, named as on the iPhone app (Resources/Assets.xcassets/Icons): the Solar linear
+ * The app's icons, by name: the Solar linear
  * set, its bold twin ("<name>-bold") for the current tab, Material Symbols Light for the sports
  * Solar lacks, and a few drawn in the Solar style. The drawables in res/drawable/ic_*.xml are
  * generated from the same outlines. One icon per meaning: never map two different items of a list

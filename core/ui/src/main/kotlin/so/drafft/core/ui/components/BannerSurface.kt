@@ -10,8 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import so.drafft.core.ui.theme.DS
 
-// Port of BannerSurface (Drafft/Features/Matches/MatchViews.swift).
-
 /**
  * Surface for in-app banners (match, boost, notices): solid night, a thin light rim and a layered
  * shadow, so it lifts off any page, light or dark. No gradient in the fill. Wrap the banner's content

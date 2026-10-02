@@ -117,11 +117,9 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Me/EditProfileView.swift.
-
 /**
  * Pages follow the profile as others read it: who you are and what you're after, then how you move,
- * then what you say in your own words. (`EditProfileView.Page` on iOS.)
+ * then what you say in your own words.
  */
 enum class EditProfilePage(val rawValue: String) {
     PHOTOS("photos"), IDENTITY("identity"), LIFESTYLE("lifestyle"), SPORTS("sports"),
@@ -154,7 +152,7 @@ enum class EditProfilePage(val rawValue: String) {
         }
 }
 
-/** Which field has the keyboard (`EditProfileView.Field` on iOS). */
+/** Which field has the keyboard. */
 private sealed interface EditField {
     data object Name : EditField
     data object Goal : EditField
@@ -205,7 +203,7 @@ private class EditProfileState(profile: Profile, val moderation: PhotoModeration
             return p
         }
 
-    // Compared as on the iPhone, where the draft's vitals are set and the saved ones may be nil.
+    // Compared field by field: the draft's vitals are set and the saved ones may be null.
     val hasChanges: Boolean
         get() = draft != original || vitals != original.vitals || prompts != original.prompts || voice != null
 

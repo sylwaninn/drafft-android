@@ -4,8 +4,6 @@ import java.time.Instant
 import java.time.ZoneId
 import so.drafft.core.model.L
 
-// Ports TempoSubscription (Drafft/Services/AppModel.swift) and PaywallView.Plan
-// (Drafft/Features/Me/PaywallView.swift), the plans it's billed on.
 
 /** drafft tempo's plans. */
 enum class TempoPlan {

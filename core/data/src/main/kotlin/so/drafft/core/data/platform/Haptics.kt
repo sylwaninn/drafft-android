@@ -1,7 +1,7 @@
 package so.drafft.core.data.platform
 
 /**
- * Haptic feedback, callable from anywhere (screens and AppModel), like the iPhone's `Haptics`.
+ * Haptic feedback, callable from anywhere (screens and AppModel).
  * The Android implementation ([engine]) is installed at launch and keeps its vibrator warm, so the
  * tick lands with the visual change.
  */

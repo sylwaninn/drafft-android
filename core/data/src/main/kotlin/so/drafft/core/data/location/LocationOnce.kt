@@ -5,7 +5,6 @@ import so.drafft.core.data.backend.attempt
 import so.drafft.core.data.backend.jsonOf
 import so.drafft.core.data.platform.LocationProvider
 
-// Ports LocationOnce (Drafft/Services/AppModel+Discover.swift).
 
 /**
  * The location, once, when the server has none on file (`location_required`): the same blurred,

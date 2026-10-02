@@ -3,8 +3,8 @@ package so.drafft.core.data.chat
 import java.time.Instant
 
 /**
- * A Stream message as the shared chat code reads it (the fields of StreamChat's `ChatMessage` that
- * ChatService+Model.swift uses). `StreamChatService` builds these from the SDK's models, so everything
+ * A Stream message as the shared chat code reads it (the fields of StreamChat's `ChatMessage` it
+ * uses). `StreamChatService` builds these from the SDK's models, so everything
  * that turns them into the app's `Message`s ([ChatThreads]) stays platform-neutral and compiles on the JVM.
  */
 data class ChatMessage(

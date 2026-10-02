@@ -16,8 +16,6 @@ import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.model.Profile
 
-// Ports Drafft/Services/Media/PhotoWindow.swift.
-
 /**
  * The deck's photos fetched ahead, as a window that moves with every swipe (the way a list prefetches
  * the rows about to scroll in). The cards on screen load their own photo, the one in play first
@@ -120,7 +118,7 @@ class PhotoWindow private constructor() {
 }
 
 /**
- * Nuke's `ImagePrefetcher`: fetches its requests in order, [maxConcurrent] at a time. [set] replaces
+ * A prefetcher: fetches its requests in order, [maxConcurrent] at a time. [set] replaces
  * them: one no longer asked for is cancelled, one still asked for keeps running (or stays done).
  */
 private class Prefetcher(maxConcurrent: Int) {

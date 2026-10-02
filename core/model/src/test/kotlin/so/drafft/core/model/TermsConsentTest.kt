@@ -6,7 +6,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-// Ports DrafftTests/TermsConsentTests.swift (the rules; the column reading is in ProfileSyncTest).
+// The rules; the column reading is in ProfileSyncTest.
 
 class TermsConsentTest {
     private fun record(version: String? = TermsConsent.VERSION, consent: String? = "2026-09-30T10:00:00Z") =

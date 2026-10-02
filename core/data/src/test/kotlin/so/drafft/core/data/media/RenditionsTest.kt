@@ -4,9 +4,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import org.junit.Test
 
-// Ports DrafftTests/RenditionsTests.swift.
 class RenditionsTest {
-    /** A deck card on a 6.3" iPhone: 361 × 560 pt at 3x. */
+    /** A deck card on a 6.3" phone: 361 × 560 points at 3x. */
     private val card = PixelSize(1_083, 1_680)
 
     @Test

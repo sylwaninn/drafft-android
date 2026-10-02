@@ -30,8 +30,8 @@ enum class AppLanguage(val code: String, val displayName: String) {
 }
 
 /**
- * The interface language, picked in the app rather than the phone's. Strings come from the same
- * catalog as the iPhone app (scripts/sync-strings.py): the key is the English text, placeholders are
+ * The interface language, picked in the app rather than the phone's. Strings come from the shared
+ * catalog (scripts/sync-strings.py): the key is the English text, placeholders are
  * Java's (`%s`, `%d`, `%1$s`). The root of the UI is keyed on [language], so every screen redraws in
  * the new language at once.
  */
@@ -47,8 +47,8 @@ object Localization {
         }
 
     /**
-     * Lets the UI observe the language like SwiftUI observes `Localization.shared`: every text that
-     * called [L] redraws when it changes, nothing else. Installed by core:ui (a snapshot state).
+     * Lets the UI observe the language: every text that called [L] redraws when it changes, nothing
+     * else. Installed by core:ui (a snapshot state).
      */
     interface Observer {
         fun read()
@@ -79,8 +79,8 @@ object Localization {
     }
 
     /**
-     * The shared catalog's table for [language], with the Android variants on top: the few sentences
-     * the iPhone writes for its own platform (App Store, Apple Account, iPhone Settings) have an
+     * The shared catalog's table for [language], with the Android variants on top: the few catalog
+     * sentences written for Apple's platform (App Store, Apple Account, its Settings app) have an
      * Android wording under the same key in `i18n/android/` (Google Play, Google account, the phone's
      * settings). English included, since the catalog's English is the key itself.
      */

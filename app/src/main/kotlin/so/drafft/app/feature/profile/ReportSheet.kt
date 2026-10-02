@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/ReportSheet.swift.
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -95,7 +93,7 @@ fun ReportSheet(
         } catch (e: Exception) {
             Haptics.warning()
             // A refusal (daily limit, account on hold...) says why; the connection only when it's the cause.
-            // The iPhone's URLError: no connection or a timeout, also from a token refresh (Supabase wraps it).
+            // A network error: no connection or a timeout, also from a token refresh (Supabase wraps it).
             val offline = e is HttpRequestException || generateSequence<Throwable>(e) { it.cause }.any { it is IOException }
             error = ServerMessage.text(e) ?: if (offline) {
                 L("Your report couldn't be sent. Check your connection and try again.")

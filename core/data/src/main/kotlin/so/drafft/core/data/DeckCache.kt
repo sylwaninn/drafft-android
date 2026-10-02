@@ -13,7 +13,6 @@ import so.drafft.core.data.backend.serverFilters
 import so.drafft.core.data.backend.toBytes
 import so.drafft.core.model.DiscoverFilters
 
-// Ports DiscoveryState and DeckCache (Drafft/Services/AppModel+Discover.swift).
 
 /** Discovery's bookkeeping, not observed by the screens. */
 class DiscoveryState {

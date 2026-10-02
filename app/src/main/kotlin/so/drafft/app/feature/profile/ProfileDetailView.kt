@@ -1,7 +1,5 @@
 package so.drafft.app.feature.profile
 
-// Ports Drafft/Features/Profile/ProfileDetailView.swift.
-
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -91,7 +89,7 @@ import so.drafft.core.ui.theme.heavy
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-/** Where a profile detail is shown (Swift `ProfileDetailView.Mode`). */
+/** Where a profile detail is shown. */
 enum class ProfileDetailMode { DISCOVER, SHEET, ME }
 
 /**
@@ -167,7 +165,7 @@ fun ProfileDetailView(
     // A composer open over the profile: the sheet stays put, and system back reaches the composer's Cancel.
     InteractiveDismissDisabled(pendingLike != null || superLiking)
 
-    // Behind a composer the profile blurs, standing in for the iPhone's material veil.
+    // Behind a composer the profile blurs, standing in for a material veil.
     val veil by animateDpAsState(if (pendingLike != null || superLiking) 18.dp else 0.dp, tween(180, easing = Motion.EaseOut), label = "veil")
 
     Box(modifier.fillMaxSize().background(p.canvasSoft)) {
@@ -195,7 +193,7 @@ fun ProfileDetailView(
                     profile,
                     showDistance = false,
                     showsPlace = false,
-                    // Sits closer to what follows (the iPhone's `.padding(.bottom, -md)`).
+                    // Sits closer to what follows (a negative bottom padding).
                     modifier = Modifier.layout { m, c ->
                         val placeable = m.measure(c)
                         val trim = DS.Space.md.roundToPx()

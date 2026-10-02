@@ -1,6 +1,6 @@
 package so.drafft.core.data.media
 
-// Ports the platform-neutral part of Drafft/Services/Media/Images.swift: the cache sizes, the download
+// The platform-neutral part of images: the cache sizes, the download
 // priorities and the media Worker's sized links. Loading, decoding and caching the photos is Coil's,
 // configured in core:ui with these numbers (`ImageStore`, and `installImages` on Android).
 
@@ -33,7 +33,7 @@ object Images {
     const val limitedDownloads = 2
 
     /**
-     * Download order among photos waiting (Nuke's request priorities on the iPhone): the deck card in
+     * Download order among photos waiting: the deck card in
      * play first, then the ones behind it, then what's fetched ahead.
      */
     enum class Priority { VERY_LOW, LOW, NORMAL, HIGH, VERY_HIGH }

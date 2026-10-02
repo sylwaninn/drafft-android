@@ -38,7 +38,7 @@ fun Modifier.glass(shape: Shape, tint: Color? = null): Modifier {
 }
 
 /**
- * A round glass button with an SF Symbol (close, search, more): ink glyph, never the accent
+ * A round glass button with an icon (close, search, more): ink glyph, never the accent
  * (utility controls are ink). The whole [size] frame takes the touch.
  */
 @Composable

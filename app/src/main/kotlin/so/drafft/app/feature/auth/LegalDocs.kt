@@ -4,8 +4,6 @@ import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.L
 import so.drafft.core.model.Localization
 
-// Port of Drafft/Features/Auth/LegalDocs.swift.
-
 /**
  * The legal documents. Their only text is the one published on getdrafft.com, opened in the
  * browser: the app never keeps a copy that could say something else.

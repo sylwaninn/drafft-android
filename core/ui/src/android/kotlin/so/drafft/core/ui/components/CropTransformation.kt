@@ -8,8 +8,6 @@ import coil3.size.Size
 import coil3.transform.Transformation
 import kotlin.math.roundToInt
 
-// The crop of Drafft/Services/Media/Images.swift (`.resize(size:unit:contentMode:crop:)`).
-
 /**
  * Crops a decoded copy to the frame it fills ([width] × [height] pixels, centred): decoded aspect fill,
  * it still holds the edges the frame hides, and memory should keep only what the screen shows. A copy

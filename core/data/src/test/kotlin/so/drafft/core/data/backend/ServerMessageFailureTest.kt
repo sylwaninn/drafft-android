@@ -6,7 +6,7 @@ import org.junit.Test
 import so.drafft.core.data.media.MediaUploadError
 import so.drafft.core.model.L
 
-// How a failed action is put in words (`ServerMessage.failure`, the Swift `ServerMessage.failure(for:)`).
+// How a failed action is put in words (`ServerMessage.failure`).
 class ServerMessageFailureTest {
     private val connection = L("Couldn't connect. Check your connection and try again.")
 

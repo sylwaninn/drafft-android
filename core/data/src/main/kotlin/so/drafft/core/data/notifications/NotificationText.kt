@@ -3,8 +3,6 @@ package so.drafft.core.data.notifications
 import java.text.BreakIterator
 import so.drafft.core.model.AppLanguage
 
-// Ports Drafft/Services/NotificationText.swift.
-
 /**
  * Every notification's words, in the app's languages: the same phrases as the server's pushes
  * (drafft-backend `supabase/functions/_shared/texts.ts`), so one event reads the same whichever sends it.
@@ -115,7 +113,7 @@ object NotificationText {
             nl = "Reageerde met $e op ‘$t’")
     }
 
-    /** The quoted message in a reaction notification: one line's worth (counted in visible characters, like Swift). */
+    /** The quoted message in a reaction notification: one line's worth (counted in visible characters). */
     private fun short(text: String): String {
         val t = text.replace("\n", " ")
         val breaks = BreakIterator.getCharacterInstance().apply { setText(t) }

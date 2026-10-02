@@ -41,8 +41,6 @@ import so.drafft.core.ui.components.DrafftSheet
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.Motion
 
-// Port of Drafft/Features/Auth/ResetPasswordView.swift.
-
 /**
  * Forgot password, all in the app: the email, then the 6-digit code sent to it, then the new password,
  * and the person is logged in. No link. The code step never says whether the address has an account

@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.junit.Test
 
-// Ports DrafftTests/ServerMessageTests.swift (the codes added with the offline-aware text).
+// The codes added with the offline-aware text.
 class ServerMessageTest {
     @Test
     fun sessionAndTargetCodesHaveWords() {

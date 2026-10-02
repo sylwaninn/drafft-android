@@ -41,10 +41,7 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/CalendarSheet.swift.
-//
-// The iPhone opens the system "New Event" sheet, prefilled with the session, and the person saves it
-// there (`AddToCalendarSheet`). Android has no such sheet that hands the saved event back, so the event
+// Android has no system "New Event" sheet that hands the saved event back, so the event
 // is written by `SessionCalendar.add` (same title, time, 90 minutes, note and reminder an hour before)
 // and linked to the session at once; tapping "In your calendar" then shows it in the calendar app to
 // review or edit it.

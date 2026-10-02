@@ -109,8 +109,6 @@ import java.math.MathContext
 import java.time.Duration
 import kotlin.math.roundToInt
 
-// Port of Drafft/Features/Discover/ExtrasSheet.swift.
-
 /** `ExtrasSheet.Tab`: which extra the sheet sells. */
 object ExtrasSheet {
     enum class Tab(val rawValue: String) {

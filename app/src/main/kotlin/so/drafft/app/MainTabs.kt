@@ -96,8 +96,6 @@ import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
 
-// Port of MainTabs (Drafft/App/DrafftApp.swift).
-
 private data class TabItem(val tab: AppModel.Tab, val title: () -> String, val symbol: String, val filled: String)
 
 private val tabs = listOf(
@@ -311,7 +309,7 @@ fun MainTabs(
 }
 
 /**
- * What the iPhone shows in its own window above the app (TopOverlayWindow.swift), in every phase:
+ * What shows above the app, in every phase:
  * sign-up included (a photo refused on the photos step), and over a moderation hold. Placed once, at
  * the root, with the explanation sheets those banners open.
  */

@@ -5,7 +5,7 @@ import so.drafft.core.ui.R
 
 /**
  * The photos shipped in the app (welcome slideshow, sport posters, the pack photos, the launch
- * wordmark), by the name the iPhone asset catalog gives them. Models and the server refer to them by
+ * wordmark), by name. Models and the server refer to them by
  * name ("hero_1", `Sport.posterImage`, `PackPhotos`); this turns a name into the drawable.
  */
 object BundledImages {

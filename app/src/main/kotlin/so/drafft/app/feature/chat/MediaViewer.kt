@@ -86,8 +86,6 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/MediaViewer.swift.
-
 /** A photo, video or file from a chat, opened full screen. */
 data class MediaItem(
     /** The message it belongs to. */
@@ -120,7 +118,7 @@ data class MediaItem(
 /**
  * Full-screen viewer: swipe between the chat's photos and videos, pinch or double-tap to zoom (and pan
  * while zoomed), swipe down to close when not zoomed, share. Videos play in the design system's
- * player. A file opens in the app that handles it (the iPhone shows it in Quick Look).
+ * player. A file opens in the app that handles it.
  */
 @Composable
 fun MediaViewer(

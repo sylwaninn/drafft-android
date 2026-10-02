@@ -3,7 +3,7 @@ package so.drafft.core.data.platform
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Small values kept on the phone across launches: the iPhone's `UserDefaults`. Structured values are
+ * Small values kept on the phone across launches. Structured values are
  * stored as JSON strings. Implemented on Android by SharedPreferences (`SharedPreferencesKeyValueStore`);
  * [InMemoryKeyValueStore] serves tests.
  */

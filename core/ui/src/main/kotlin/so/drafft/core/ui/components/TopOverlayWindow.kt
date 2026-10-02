@@ -26,8 +26,6 @@ import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.Motion
 
-// Port of Drafft/DesignSystem/TopOverlayWindow.swift.
-
 /**
  * A window above the app's own, for banners that must show over everything: sheets, covers, the
  * keyboard. Touches only land on the banner itself; everywhere else they pass to the app (the

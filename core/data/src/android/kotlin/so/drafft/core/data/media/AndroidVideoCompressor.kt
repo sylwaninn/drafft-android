@@ -30,8 +30,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
 /**
- * [VideoCompressor.Engine] on Media3 Transformer, with the iPhone's targets: HEVC (H.264 where the phone
- * has no HEVC encoder: `setEnableFallback`), long edge 1280, ~1.6 Mb/s video with a keyframe every 2 s,
+ * [VideoCompressor.Engine] on Media3 Transformer: HEVC (H.264 where the phone has no HEVC encoder:
+ * `setEnableFallback`), long edge 1280, ~1.6 Mb/s video with a keyframe every 2 s,
  * AAC 96 kb/s, cut to the settings' length. HDR is tone-mapped to SDR, the rotation is baked into the
  * pixels (Transformer outputs upright frames), and the MP4 index goes at the front (the in-app muxer),
  * so playback starts on the first bytes. The poster is the first frame of the result

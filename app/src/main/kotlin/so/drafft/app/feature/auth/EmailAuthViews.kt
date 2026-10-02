@@ -72,8 +72,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/EmailAuthViews.swift.
-
 /** Pushed from sign-up or log-in: the 6-digit code for [email]. */
 internal data class ConfirmEmailRoute(val email: String)
 

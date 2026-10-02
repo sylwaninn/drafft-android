@@ -60,8 +60,6 @@ import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.medium
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/LocationRequiredView.swift.
-
 /**
  * Blocking screen when drafft can't use the location: it shows people near you, so it can't be used
  * without it. Precise or approximate doesn't matter; "while using the app" is enough. No close button:

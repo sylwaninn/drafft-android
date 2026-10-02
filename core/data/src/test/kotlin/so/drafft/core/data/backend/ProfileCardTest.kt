@@ -8,9 +8,8 @@ import kotlin.test.assertTrue
 import org.junit.Test
 import so.drafft.core.data.media.MediaPreviews
 
-// Ports DrafftTests/ProfileCardTests.swift: the cards `discover`, `liked_me`, `my_matches` and
-// `get_cards` send, decoded as the server shapes them (`private.rebuild_card` and `private.sign_card`
-// in drafft-backend).
+// The cards `discover`, `liked_me`, `my_matches` and `get_cards` send, decoded as the server shapes
+// them (`private.rebuild_card` and `private.sign_card` in drafft-backend).
 class ProfileCardTest {
     private val id = "0B7C1E2A-6D3F-4C55-9E7A-1F2B3C4D5E6F"
 

@@ -25,8 +25,6 @@ import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 
-// Port of Drafft/DesignSystem/EmptyState.swift.
-
 /**
  * An empty tab: its sign as a sticker on the page ([EmptyStateSticker]), a title, one line of
  * text, and an action if there is one to take. Sits in the middle of the space it is given.

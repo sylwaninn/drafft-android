@@ -67,7 +67,7 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.semibold
 
-// Port of Drafft/Features/Auth/WelcomeView.swift (Wordmark lives in core:ui).
+// Wordmark lives in core:ui.
 
 /** The welcome screen: the session photos full bleed, the wordmark, and the way in (sign up or log in). */
 @Composable

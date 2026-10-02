@@ -35,8 +35,8 @@ import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import kotlinx.coroutines.launch
 
-// Port of Drafft/Features/Chat/SessionFailureBanner.swift. The notice itself (`SessionFailureNotice`,
-// what the banner says and when it leaves) is core:data's (so.drafft.core.data.sessions).
+// The notice itself (`SessionFailureNotice`, what the banner says and when it leaves) is core:data's
+// (so.drafft.core.data.sessions).
 
 /**
  * A session change the server turned down or couldn't receive: the card is already back as it was
