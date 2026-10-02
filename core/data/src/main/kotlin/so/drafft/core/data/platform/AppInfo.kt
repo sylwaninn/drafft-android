@@ -10,7 +10,7 @@ interface AppInfo {
     /** The build number (`versionCode`). */
     val build: String
 
-    /** "" for production, "staging" or "local" (the build flavor's `ENVIRONMENT`). */
+    /** "" for production, "staging" (the build flavor's `ENVIRONMENT`). */
     val environment: String
 
     /** A debug build (installed from the IDE): development push and device attestation environments. */
