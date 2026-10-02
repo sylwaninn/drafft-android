@@ -28,10 +28,12 @@ import java.time.LocalDate
 import org.koin.compose.koinInject
 import so.drafft.core.data.notifications.NotificationService
 import so.drafft.core.data.platform.PermissionStatus
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.Brand
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.NightBlock
 import so.drafft.core.ui.components.PermissionButton
 import so.drafft.core.ui.theme.DS
@@ -46,6 +48,7 @@ import so.drafft.core.ui.theme.semibold
 /** Settings › Notifications: the system permission first, then what to be notified about. Present it in a `DrafftSheet`. */
 @Composable
 fun NotificationsSettingsView(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.NOTIFICATION_SETTINGS)
     val app = LocalAppModel.current
     val notifications = koinInject<NotificationService>()
     val scroll = rememberScrollState()

@@ -50,6 +50,7 @@ val sessionsStoreNotificationsModule = module {
             appInfo = get(),
             sessions = get(),
             photoModeration = get(),
+            lifecycle = get(),
             chat = { getOrNull<ChatService>() },
             scope = mainScope(),
         )

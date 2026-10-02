@@ -85,6 +85,9 @@ enum class Sport(
     EQUESTRIAN("equestrian", "Horse riding", "horseshoe", "riding", "sport_hike"),
     ARCHERY("archery", "Archery", "target", "at the range", "sport_hike");
 
+    /** The sport as a code for an event (`mountain_biking`): the id is camelCase, which isn't one. */
+    val telemetryID: String get() = id.replace(Regex("([a-z])([A-Z])"), "$1_$2").lowercase()
+
     val displayName: String get() = L(nameKey)
 
     /** "running", "on the bike"... for sentences like "you're usually out running". */

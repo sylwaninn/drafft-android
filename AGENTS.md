@@ -242,6 +242,39 @@ is:
 | kept on the iPhone (`UserDefaults`) | `KeyValueStore` |
 | App Store screenshots, subtitle (iOS) | Play Store screenshots, short description |
 
+## Telemetry (Sentry and PostHog): part of every change
+
+[docs/telemetry.md](docs/telemetry.md) is the plan (events, screens, errors, alerts); the code is
+`so.drafft.core.data.telemetry`. The iPhone app is the reference: same events, same names.
+
+**Every feature, change or task finishes with a telemetry pass. The pull request's "Notes" says what was
+done, or "Telemetry: none, because ..." (a refactor, a copy change).** The checklist:
+
+1. **Events.** What the person did and whether it worked: a factory in `AnalyticsEvent` (`object_action`, snake_case,
+   past tense, typed properties: numbers, booleans, codes, never free text), fired where the model knows
+   the outcome (after success; a `*_failed` event with a `reason` code on failure). Same name and
+   properties on the iPhone app (the reference: it goes first), in the same change or its twin pull request. Never rename an event or a
+   property: add a new one.
+2. **Screens.** A new screen, sheet or cover gets `TrackScreen(Screen.X)` at the top (a paywall `TrackPaywall(kind)`), with its `Screen` entry.
+3. **Errors.** A `catch` that swallows or rethrows something unexpected calls
+   `Telemetry.unexpected(error, area, action)`: only what needs a fix alerts (not offline, not a refusal
+   the screen explains). Log with a `java.util.logging` logger named `so.drafft.<area>` (the ones `TelemetryLogHandler` sends to Sentry), never `android.util.Log` directly.
+4. **Alerts.** A flow that costs money, accounts or safety (sign-up and sign-in, purchases, deletion,
+   moderation, push, chat send) gets its alert, not only its event: a Sentry alert rule filtered on
+   `environment:production` (and the `area` tag), and a PostHog alert or insight on the failure event.
+   Write it in the "Alerts" part of `docs/telemetry.md`; create it through the PostHog MCP / Sentry when
+   asked.
+5. **Conventions, always.** One PostHog project for the two apps and the website, one Sentry project per
+   app, each shared by production and staging: every insight, funnel, alert and experiment filters `app_environment = production`
+   (PostHog; the project's test-account filter already does) and `environment:production` (Sentry).
+   Never switch the privacy rules off to get a number: consent, `PrivacyGuard`, no screenshots or replay
+   (docs/telemetry.md).
+6. **Docs and tests.** The event goes in the doc's table and in the catalog test (`everyEventPassesThePrivacyGuardUntouched`).
+
+Never put what people typed, their sensitive answers (gender, who they want to meet, lifestyle), their
+location or another person's id in an event, a tag or a log line. `PrivacyGuard` drops it anyway, and unit
+tests fail on it.
+
 ## State and data
 
 - `AppModel` (core:data) is the app's single observable state, like the iPhone's. Screens read it

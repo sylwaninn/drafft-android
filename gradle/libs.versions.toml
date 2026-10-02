@@ -29,6 +29,9 @@ streamChat = "6.24.0"
 revenuecat = "9.7.2"
 libphonenumber = "9.0.15"
 mlkitFaceDetection = "16.1.7"
+sentry = "8.59.0"
+sentryPlugin = "6.23.0"
+posthog = "3.71.4"
 junit = "4.13.2"
 
 [libraries]
@@ -93,6 +96,9 @@ stream-chat-state = { module = "io.getstream:stream-chat-android-state", version
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "revenuecat" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
 mlkit-face-detection = { module = "com.google.mlkit:face-detection", version.ref = "mlkitFaceDetection" }
+sentry-android-core = { module = "io.sentry:sentry-android-core", version.ref = "sentry" }
+sentry-android-ndk = { module = "io.sentry:sentry-android-ndk", version.ref = "sentry" }
+posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -105,3 +111,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+sentry-android = { id = "io.sentry.android.gradle", version.ref = "sentryPlugin" }

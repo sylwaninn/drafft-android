@@ -64,6 +64,8 @@ import so.drafft.app.feature.me.PurchaseCreditBanner
 import so.drafft.app.feature.me.PurchaseHelpPresenter
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.store.PurchaseCredit
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.ui.components.LocalTabBarVisibility
 import so.drafft.core.ui.components.TabBarVisibility
 import so.drafft.core.ui.components.LocalTabIsCurrent
@@ -237,8 +239,14 @@ fun MainTabs(
                 MatchView(
                     profile = match,
                     me = app.publicMe,
-                    onChat = { app.openChatWith(match.id) },
-                    onClose = { app.matchScreen = null },
+                    onChat = {
+                        Telemetry.track(AnalyticsEvent.MatchScreenAction("chat"))
+                        app.openChatWith(match.id)
+                    },
+                    onClose = {
+                        Telemetry.track(AnalyticsEvent.MatchScreenAction("keep_swiping"))
+                        app.matchScreen = null
+                    },
                 )
             }
         }

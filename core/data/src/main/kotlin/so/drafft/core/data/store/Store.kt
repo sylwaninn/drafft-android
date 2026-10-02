@@ -85,6 +85,11 @@ interface Store {
     sealed class StoreError(message: String) : Exception(message) {
         data object NotLinked : StoreError("not linked") { private fun readResolve(): Any = NotLinked }
 
+        /** RevenueCat or Google Play unreachable: the phone's connection, not a bug (`RevenueCatStore`). */
+        class Offline(cause: Throwable? = null) : StoreError("offline") {
+            init { cause?.let(::initCause) }
+        }
+
         /** Google Play or RevenueCat refused or couldn't confirm the purchase (`RevenueCatStore`). */
         class Failed(val problem: PurchaseProblem, cause: Throwable? = null) : StoreError(problem.name) {
             init { cause?.let(::initCause) }

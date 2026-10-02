@@ -67,6 +67,8 @@ import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.store.PurchaseCredit
 import so.drafft.core.data.store.Store
 import so.drafft.core.data.store.TempoSubscription
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.data.verification.PhoneCountry
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.model.AppLanguage
@@ -223,6 +225,7 @@ class AppModel(
             // Kept on the phone so the first screen of the next launch is already in it.
             defaults.putString(LANGUAGE_KEY, value.code)
             notifications.language = value
+            if (value != languageState) Telemetry.track(AnalyticsEvent.LanguageChanged(value.code, during = phase.name.lowercase()))
             languageState = value
         }
 
@@ -452,6 +455,7 @@ class AppModel(
     fun toggleMute(id: String) {
         if (conversations.none { it.id == id }) return
         conversations = conversations.map { if (it.id == id) it.copy(muted = !it.muted) else it }
+        Telemetry.track(AnalyticsEvent.ChatMuted(muted = conversation(id)?.muted == true))
         chat.toggleMute(id)
     }
 
@@ -500,14 +504,36 @@ class AppModel(
     fun markUnread(id: String) {
         if (conversations.none { it.id == id }) return
         conversations = conversations.map { if (it.id == id) it.copy(markedUnread = true) else it }
+        Telemetry.track(AnalyticsEvent.ChatMarkedUnread())
         chat.markUnread(id)
     }
 
     /** Sent at once: the bubble shows before the server has it, the ticks catch up. */
     fun send(content: MessageContent, id: String, replyTo: String? = null) {
-        if (conversation(id) == null) return
+        val conversation = conversation(id) ?: return
         Haptics.tap()
+        val duration = when (content) {
+            is MessageContent.Voice -> content.duration.toInt()
+            is MessageContent.Video -> content.duration.toInt()
+            else -> null
+        }
+        Telemetry.track(
+            AnalyticsEvent.MessageSent(
+                kind = AnalyticsEvent.kind(content), isReply = replyTo != null,
+                isFirst = isFirstMessage(conversation), durationSeconds = duration,
+            ),
+        )
         chat.send(content, id, replyTo)
+    }
+
+    /**
+     * Whether this is the person's first message in the chat. Only the latest page of messages is on the
+     * phone: with a full page and none of theirs, it can't be told (null).
+     */
+    private fun isFirstMessage(conversation: Conversation): Boolean? = when {
+        conversation.messages.any { it.fromMe } -> false
+        conversation.messages.size < ChatService.PAGE -> true
+        else -> null
     }
 
     /** Your reaction on one of their messages (never on your own: WhatsApp-style, minus self-reactions). */
@@ -515,17 +541,20 @@ class AppModel(
         val message = conversation(id)?.messages?.firstOrNull { it.id == messageID } ?: return
         if (message.fromMe) return
         Haptics.select()
+        Telemetry.track(AnalyticsEvent.MessageReacted(removed = emoji == null))
         chat.react(emoji, messageID, message.reaction, id)
     }
 
     fun delete(messageID: String, id: String) {
         if (conversation(id)?.messages?.firstOrNull { it.id == messageID }?.fromMe != true) return
+        Telemetry.track(AnalyticsEvent.MessageDeleted())
         chat.delete(messageID, id)
     }
 
     /** A message that couldn't be sent, tapped: sent again. */
     fun retry(messageID: String, id: String) {
         Haptics.tap()
+        Telemetry.track(AnalyticsEvent.MessageRetried())
         chat.retry(messageID, id)
     }
 
@@ -655,7 +684,12 @@ class AppModel(
         } catch (e: Exception) {
             // Refused by Auth (session revoked, user gone): ended. Offline or a server hiccup: the
             // saved session is the best we know.
-            if (Backend.refusesSession(e) && session == sessionID) endSession()
+            if (Backend.refusesSession(e) && session == sessionID) {
+                endSession()
+            } else {
+                Telemetry.unexpected(e, "account", "load_account")
+                accountLog.warning("The account couldn't be read: $e")
+            }
         }
     }
 
@@ -719,6 +753,7 @@ class AppModel(
                     // However the session ended, the next sign-in registers this device's token again.
                     notifications.forgetPushTokenRegistration()
                     if (phase == Phase.WELCOME || leavingOnPurpose) return@collect
+                    Telemetry.track(AnalyticsEvent.SessionEnded(reason = "not_authenticated"))
                     resetAccountState()
                     sessionEndedNotice = true
                 }
@@ -739,7 +774,10 @@ class AppModel(
                     serverRefusedPaused()
                     scope.launch { moderation.load() }
                 }
-                Backend.Event.ACCOUNT_HELD_BY_SERVER -> scope.launch { moderation.load() }
+                Backend.Event.ACCOUNT_HELD_BY_SERVER -> {
+                    Telemetry.track(AnalyticsEvent.AccountHeld())
+                    scope.launch { moderation.load() }
+                }
             }
         }
     }
@@ -765,6 +803,7 @@ class AppModel(
     }
 
     fun signOut() {
+        Telemetry.track(AnalyticsEvent.LoggedOut())
         leavingOnPurpose = true
         sessionEndedNotice = false
         scope.launch {
@@ -787,8 +826,11 @@ class AppModel(
             backend.function("delete-account")
         } catch (e: Exception) {
             leavingOnPurpose = false
+            Telemetry.track(AnalyticsEvent.AccountDeleteFailed(Telemetry.reason(e)))
+            Telemetry.unexpected(e, "account", "delete")
             throw e
         }
+        Telemetry.track(AnalyticsEvent.AccountDeleted())
         store.unlink()
         onboarding.clear()
         resetAccountState()
@@ -873,6 +915,8 @@ class AppModel(
                 throw e
             } catch (e: Exception) {
                 if (session != sessionID) return@async null
+                Telemetry.unexpected(e, "account", "refresh")
+                accountLog.warning("The account couldn't be read: $e")
                 if (profileLoad != ProfileLoad.LOADED) {
                     profileLoadFailure = ServerMessage.text(e, offline = L("Check your connection and try again."))
                     profileLoad = ProfileLoad.FAILED
@@ -1011,6 +1055,7 @@ class AppModel(
         } catch (e: Exception) {
             readLanded(read, ok = false)
             if (read.session != sessionID) return
+            Telemetry.unexpected(e, "likes", "load")
             if (isPremium == premium) likesFailed(e)
             return
         }
@@ -1085,6 +1130,7 @@ class AppModel(
         } catch (e: Exception) {
             readLanded(read, ok = false)
             if (read.session != sessionID) return
+            Telemetry.unexpected(e, "matches", "load")
             if (matchesLoad != ListLoad.Loaded) matchesLoad = ListLoad.Failed(offline = ServerMessage.isOffline(e))
         }
     }
@@ -1108,6 +1154,7 @@ class AppModel(
         if (!announce) return
         val first = new.firstOrNull { it.profile.id !in discovery.swiped } ?: return
         if (matchScreen?.id == first.profile.id) return
+        Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.THEIR_LIKE))
         Haptics.success()
         if (lifecycle.isActive()) banner = MatchBanner(profile = first.profile)
         // In the background, the server's push says it.
@@ -1116,7 +1163,10 @@ class AppModel(
     /** `match_ended` on the channel (an unmatch or a block, either side): the match and its chat go. */
     suspend fun matchEnded(matchID: String) {
         val id = matchID.lowercase()
-        matches.firstOrNull { it.id == id }?.let(::endLocally)
+        matches.firstOrNull { it.id == id }?.let {
+            Telemetry.track(AnalyticsEvent.MatchEnded())
+            endLocally(it)
+        }
         loadMatches()
     }
 
@@ -1134,6 +1184,7 @@ class AppModel(
      */
     fun unmatch(profile: Profile) {
         val match = matches.firstOrNull { it.profile.id == profile.id } ?: return
+        Telemetry.track(AnalyticsEvent.Unmatched())
         endLocally(match)
         scope.launch {
             try {
@@ -1143,6 +1194,7 @@ class AppModel(
             } catch (e: Exception) {
                 // Already over (the other person unmatched or blocked meanwhile).
                 if (ServerMessage.code(e) == "not_found") return@launch
+                Telemetry.unexpected(e, "matches", "unmatch")
                 if (matches.none { it.id == match.id }) matches = listOf(match) + matches
                 ensureConversations()
                 Haptics.warning()
@@ -1299,6 +1351,7 @@ class AppModel(
             readLanded(read, ok)
             discovery.load = null
             apply(outcome, filters, limit)
+            trackDeck(outcome, mode, seconds = clock.seconds() - read.read.startedAt)
         }
     }
 
@@ -1360,6 +1413,20 @@ class AppModel(
         }
     }
 
+    private fun trackDeck(outcome: DeckOutcome, mode: DeckLoad, seconds: Double) {
+        when (outcome) {
+            is DeckOutcome.Cards -> {
+                Telemetry.track(AnalyticsEvent.DeckLoaded(queue.size, mode.name.lowercase(), discovery.exhausted, Math.round(seconds * 100) / 100.0))
+                if (queue.isEmpty()) Telemetry.track(AnalyticsEvent.DeckEmptyShown(exhausted = discovery.exhausted))
+            }
+            is DeckOutcome.Refused -> Telemetry.track(AnalyticsEvent.DeckLoadFailed(outcome.code.lowercase()))
+            is DeckOutcome.Failed -> {
+                Telemetry.track(AnalyticsEvent.DeckLoadFailed(Telemetry.reason(outcome.error)))
+                Telemetry.unexpected(outcome.error, "discover", "load_deck", mapOf("mode" to mode))
+            }
+        }
+    }
+
     /** The deck on screen, for the next launch. */
     private fun saveDeck(filters: DiscoverFilters) {
         val data = DeckCache.encode(filters = DeckCache.key(filters), cards = queue.mapNotNull { discovery.raw[it.id] })
@@ -1368,6 +1435,11 @@ class AppModel(
 
     /** New filters: a new deck, from scratch. */
     fun filtersChanged() {
+        Telemetry.track(
+            AnalyticsEvent.FiltersChanged(
+                maxDistanceKm = filters.maxDistanceKm.toInt(), sports = filters.sportIds.size, sharedSportsOnly = filters.sharedSportsOnly,
+            ),
+        )
         loadDeck(DeckLoad.RESTART)
     }
 
@@ -1388,6 +1460,13 @@ class AppModel(
         val deckIndex = queue.indexOfFirst { it.id == profile.id }.takeIf { it >= 0 }
         val likesIndex = likedMe.indexOfFirst { it.id == profile.id }.takeIf { it >= 0 }
         if (deckIndex == null && likesIndex == null) return
+        Telemetry.track(
+            AnalyticsEvent.ProfileSwiped(
+                action = swipeAction(liked, superLike),
+                source = if (deckIndex != null) AnalyticsEvent.SwipeSource.DECK else AnalyticsEvent.SwipeSource.LIKES,
+                withOpener = opener != null, premium = isPremium, likesLeft = likesLeft, deckSize = queue.size,
+            ),
+        )
         queue = queue.filterNot { it.id == profile.id }
         likedMe = likedMe.filterNot { it.id == profile.id }
         discovery.swiped += profile.id
@@ -1428,6 +1507,7 @@ class AppModel(
         val i = history.indexOfLast { it.profile.id == profile.id }
         if (i >= 0) history = history.toMutableList().also { it[i] = it[i].copy(matched = true) }
         discovery.knownMatches += matchID
+        Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.MY_SWIPE))
         if (matches.none { it.id == matchID }) matches = listOf(Match(id = matchID, profile = profile, matchedAt = Instant.now())) + matches
         ensureConversations()
         Haptics.success()
@@ -1438,6 +1518,9 @@ class AppModel(
     private fun swipeFailed(swipe: Swiped, deckIndex: Int?, likesIndex: Int?, error: Exception) {
         val profile = swipe.profile
         val code = ServerMessage.code(error)
+        Telemetry.track(AnalyticsEvent.SwipeRefused(swipeAction(swipe.liked, swipe.superLike), Telemetry.reason(error)))
+        if (code == "daily_like_limit") Telemetry.track(AnalyticsEvent.DailyLikeLimitReached())
+        Telemetry.unexpected(error, "discover", "swipe")
         history = history.filterNot { it.profile.id == profile.id }
         // Not available any more (or swiped on another device): it stays gone, quietly.
         if (code == "not_eligible" || code == "not_found" || code == "already_swiped") return
@@ -1471,6 +1554,7 @@ class AppModel(
         if (profilePaused || !canUndo) return
         val last = history.lastOrNull() ?: return
         history = history.dropLast(1)
+        Telemetry.track(AnalyticsEvent.SwipeUndone(swipeAction(last.liked, last.superLike)))
         discovery.swiped -= last.profile.id
         if (last.fromLikes) likedMe = listOf(last.profile) + likedMe else queue = listOf(last.profile) + queue
         if (last.superLike) {
@@ -1491,6 +1575,7 @@ class AppModel(
                 queue = queue.filterNot { it.id == last.profile.id }
                 likedMe = likedMe.filterNot { it.id == last.profile.id }
                 val code = ServerMessage.code(e)
+                Telemetry.unexpected(e, "discover", "undo")
                 if (code != "paused" && code != "moderated") {
                     Haptics.warning()
                     say(e)
@@ -1515,6 +1600,7 @@ class AppModel(
     /** A refusal or failure, above the tabs, in the person's language. */
     fun say(error: Throwable) {
         val text = ServerMessage.text(error, offline = L("Couldn't connect. Check your connection and try again."))
+        Telemetry.breadcrumb("ui", "notice shown", Telemetry.Level.WARNING, mapOf("reason" to Telemetry.reason(error)))
         notice = Notice(text = text)
     }
 
@@ -1547,6 +1633,7 @@ class AppModel(
         val beforeEndsAt = boostEndsAt
         boosts -= 1
         boostEndsAt = Instant.now().plusSeconds(BOOST_DURATION_SECONDS)
+        Telemetry.track(AnalyticsEvent.BoostStarted(left = boosts))
         Haptics.success()
         boostBanner = UUID.randomUUID()
         scope.launch {
@@ -1559,6 +1646,8 @@ class AppModel(
                 boosts = beforeBoosts
                 boostEndsAt = beforeEndsAt
                 boostBanner = null
+                Telemetry.track(AnalyticsEvent.BoostFailed(Telemetry.reason(e)))
+                Telemetry.unexpected(e, "discover", "boost")
                 val code = ServerMessage.code(e)
                 if (code != "paused" && code != "moderated") {
                     Haptics.warning()
@@ -1601,6 +1690,7 @@ class AppModel(
     /** Sends an invite in a chat (`chatID` is the match's id). */
     fun proposeSession(proposal: SessionProposal, chatID: String) {
         Haptics.tap()
+        Telemetry.track(AnalyticsEvent.SessionProposed(sport = proposal.sport.telemetryID, options = proposal.options.size))
         chat.showPending(proposal, chatID)
         scope.launch {
             if (sessionStore.propose(proposal, chatID)) return@launch
@@ -1611,6 +1701,7 @@ class AppModel(
     /** Other times for an invite: the old card turns to "Other times suggested", the new one follows. */
     fun counterSession(sessionID: UUID, chatID: String, proposal: SessionProposal) {
         Haptics.tap()
+        Telemetry.track(AnalyticsEvent.SessionCountered(options = proposal.options.size))
         chat.showPending(proposal, chatID)
         scope.launch {
             if (sessionStore.counter(sessionID, proposal)) return@launch
@@ -1621,12 +1712,14 @@ class AppModel(
     /** Accept one of the proposed times, or decline. */
     fun respondToSession(sessionID: UUID, accept: Boolean, pick: Instant? = null) {
         if (accept) Haptics.success() else Haptics.tap()
+        Telemetry.track(AnalyticsEvent.SessionResponded(if (accept) AnalyticsEvent.SessionResponse.ACCEPTED else AnalyticsEvent.SessionResponse.DECLINED))
         scope.launch { sessionStore.respond(sessionID, accept, pick) }
     }
 
     /** Calls a pending or confirmed session off, for both people. */
     fun cancelSession(sessionID: UUID) {
         Haptics.tap()
+        Telemetry.track(AnalyticsEvent.SessionCancelled())
         scope.launch { sessionStore.cancel(sessionID) }
     }
 
@@ -1752,6 +1845,7 @@ class AppModel(
         pauseSaves += 1
         try {
             backend.updateMyProfile(jsonOf("paused" to paused))
+            Telemetry.track(AnalyticsEvent.ProfilePaused(paused))
             // Resumed: discovery reads the deck again (nothing was read while paused). Only once the
             // server has it: asked sooner, it answers "paused" and the pause came back on.
             if (!paused && edit == pauseEdits) refreshDiscovery(DiscoveryFreshness.Moment.ENTERED)
@@ -1761,6 +1855,7 @@ class AppModel(
         } catch (e: Exception) {
             // A later flip is on its way: it decides.
             if (edit != pauseEdits) return null
+            Telemetry.unexpected(e, "account", "pause")
             Haptics.warning()
             applyServerPause(!paused)
             val offline = generateSequence<Throwable>(e) { it.cause }.any { it is java.io.IOException }
@@ -1801,6 +1896,7 @@ class AppModel(
      */
     fun block(profile: Profile) {
         if (blocked.any { it.id == profile.id }) return
+        Telemetry.track(AnalyticsEvent.UserBlocked())
         hide(profile)
         queueSafety(SafetyOutbox.Action.BLOCK, profile)
     }
@@ -1810,6 +1906,7 @@ class AppModel(
      * next batch); the old chat doesn't come back.
      */
     fun unblock(profile: Profile) {
+        Telemetry.track(AnalyticsEvent.UserUnblocked())
         blocked = blocked.filterNot { it.id == profile.id }
         discovery.swiped -= profile.id
         queueSafety(SafetyOutbox.Action.UNBLOCK, profile)
@@ -1865,9 +1962,13 @@ class AppModel(
             } catch (e: Exception) {
                 if (Safety.isFinal(e)) {
                     safetyLog.warning("${entry.action} refused: $e")
+                    // Reported before the entry goes (a refusal the server meant stays a breadcrumb, a contract bug alerts).
+                    Telemetry.unexpected(e, "safety", entry.action.name.lowercase())
                     safetyOutbox.remove(entry, id, user)
                     continue
                 }
+                // Every retry lands here: Telemetry reports the same failure once per 5 minutes at most.
+                Telemetry.unexpected(e, "safety", entry.action.name.lowercase())
                 if (announce) {
                     notice = Notice(
                         text = if (entry.action == SafetyOutbox.Action.BLOCK) {
@@ -1926,7 +2027,8 @@ class AppModel(
     }
 
     companion object {
-        private val safetyLog = java.util.logging.Logger.getLogger("safety")
+        private val safetyLog = java.util.logging.Logger.getLogger("so.drafft.safety")
+        private val accountLog = java.util.logging.Logger.getLogger("so.drafft.account")
 
         /** The language picked last, read at launch before the first screen (`DrafftApplication`). */
         const val LANGUAGE_KEY = "appLanguage"
@@ -1959,6 +2061,12 @@ class AppModel(
 
         /** Cards on screen (the stack shows 4) that a fresh batch doesn't reorder. */
         private const val DECK_KEEP = 4
+
+        private fun swipeAction(liked: Boolean, superLike: Boolean) = when {
+            superLike -> AnalyticsEvent.SwipeAction.SUPER_LIKE
+            liked -> AnalyticsEvent.SwipeAction.LIKE
+            else -> AnalyticsEvent.SwipeAction.PASS
+        }
 
         /** Postgres timestamps (`2026-10-24T10:00:00.123456+00:00`), to the second. */
         fun serverDate(text: String?): Instant? {

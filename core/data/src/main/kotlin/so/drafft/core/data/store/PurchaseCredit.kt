@@ -28,6 +28,8 @@ import so.drafft.core.data.AppModel
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 
 /**
  * Ports Drafft/Services/PurchaseCredit.swift.
@@ -87,6 +89,9 @@ class PurchaseCredit(
     /** What the top banner shows, if anything. */
     var banner: Banner? by mutableStateOf(null)
         private set
+
+    /** Read back from the phone (not bought in this launch): their age includes the time the app was away. */
+    private var restored: Set<Pending> = emptySet()
 
     /** Swiped away: it shows again at the next launch only. */
     private var dismissedThisLaunch = false
@@ -154,7 +159,9 @@ class PurchaseCredit(
         val app = app?.get() ?: return
         if (pending.isEmpty()) return
         val before = pending.size
-        pending = pending.filterNot { it.isCredited(app) }
+        val credited = pending.filter { it.isCredited(app) }
+        credited.forEach(::trackCredited)
+        pending = pending - credited.toSet()
         if (pending.size == before) return
         save()
         if (pending.isEmpty()) {
@@ -177,6 +184,7 @@ class PurchaseCredit(
         userID?.let { defaults.remove(key(it)) }
         userID = null
         pending = emptyList()
+        restored = emptySet()
         banner = null
         dismissedThisLaunch = false
     }
@@ -241,10 +249,14 @@ class PurchaseCredit(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Backend.BackendError.Http) {
+            // Too many asks, or the store is slow to answer: the webhook credits it meanwhile. Expected,
+            // so not an error report.
+            val throttled = isThrottled(e)
+            if (!throttled) Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
-            // Too many asks, or the store is slow to answer: the webhook credits it meanwhile.
-            if (e.status == 429 || e.status == 503) THROTTLED_RETRY else null
+            if (throttled) THROTTLED_RETRY else null
         } catch (e: Exception) {
+            Telemetry.unexpected(e, "purchase", "purchase_sync")
             app.loadWallet()
             null
         }
@@ -271,6 +283,7 @@ class PurchaseCredit(
 
     /** The server credited [purchase]: it leaves the list, whatever the balances say. */
     private fun markCredited(purchase: Pending) {
+        if (purchase in pending) trackCredited(purchase)
         pending = pending - purchase
         walletChanged()
         save()
@@ -280,9 +293,19 @@ class PurchaseCredit(
         }
     }
 
+    private fun trackCredited(purchase: Pending) {
+        val seconds = ((System.currentTimeMillis() - purchase.date) / 1000).coerceAtLeast(0)
+        Telemetry.track(AnalyticsEvent.PurchaseCredited(seconds.toInt()))
+        // Paid and only credited long after: the webhook or purchase-sync is late, worth a look. Not for
+        // a purchase read back from the phone after the app was away: that time isn't the server's.
+        if (isLate(seconds, restored = purchase in restored)) {
+            Telemetry.problem("purchase credited late", area = "purchase", extra = mapOf("seconds_to_credit" to seconds))
+        }
+    }
+
     private fun load(userID: String): List<Pending> = runCatching {
         defaults.getString(key(userID))?.let { json.decodeFromString(listSerializer, it) } ?: emptyList()
-    }.getOrDefault(emptyList())
+    }.getOrDefault(emptyList()).also { restored = it.toSet() }
 
     private fun save() {
         val id = userID ?: return
@@ -303,6 +326,12 @@ class PurchaseCredit(
 
         /** Throttled or down: the webhook will credit it, ask again no sooner than this. */
         private val THROTTLED_RETRY = 60.seconds
+
+        /** `purchase-sync` is throttled (429) or the store is slow (503): expected, the webhook credits it. */
+        internal fun isThrottled(error: Backend.BackendError.Http): Boolean = error.status == 429 || error.status == 503
+
+        /** Credited long after the purchase is a problem to look at, unless the app was away meanwhile. */
+        internal fun isLate(seconds: Long, restored: Boolean): Boolean = !restored && seconds > slowAfter.inWholeSeconds
 
         private val json = Json { ignoreUnknownKeys = true }
         private val listSerializer = ListSerializer(Pending.serializer())

@@ -63,10 +63,14 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import kotlin.math.roundToInt
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.audio.VoiceRecorder
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.PermissionPrompter
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.clock
 import so.drafft.core.ui.components.DrafftButton
@@ -307,7 +311,10 @@ fun VoiceIntroRecorder(
 
     fun stop() {
         Haptics.success()
-        recorder.finish()?.let { setResult(it) }
+        recorder.finish()?.let {
+            Telemetry.track(AnalyticsEvent.VoiceIntroRecorded(it.duration.roundToInt(), ScreenTracker.currentID))
+            setResult(it)
+        }
     }
 
     /** Starts a take; the first time, Android's microphone prompt comes first. */

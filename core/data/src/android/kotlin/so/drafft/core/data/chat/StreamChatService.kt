@@ -60,11 +60,14 @@ import so.drafft.core.data.notifications.NotificationService
 import so.drafft.core.data.notifications.NotificationText
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.sessions.SessionStore
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.DeliveryState
 import so.drafft.core.model.Message
 import so.drafft.core.model.MessageContent
 import so.drafft.core.model.SessionProposal
 import io.getstream.chat.android.models.Message as StreamMessage
+import io.getstream.result.Error as StreamError
 
 /**
  * The chat, on Stream (low-level client, drafft's own screens). One connection per signed-in account.
@@ -190,6 +193,7 @@ class StreamChatService(
                 throw e
             } catch (e: Exception) {
                 log.log(Level.WARNING, "chat connect failed: ${e.message}")
+                Telemetry.unexpected(e, "chat", "connect")
                 delay(pause)
                 pause = minOf(pause * 2, 60.seconds)
             }
@@ -402,6 +406,8 @@ class StreamChatService(
                 throw e
             } catch (e: Exception) {
                 log.log(Level.WARNING, "send failed: ${e.message}")
+                Telemetry.track(AnalyticsEvent.MessageFailed(AnalyticsEvent.MessageKind.TEXT, Telemetry.reason(e)))
+                Telemetry.unexpected(e, "chat", "send_text")
                 false
             }
             threads.textSent(upload, sent)
@@ -601,14 +607,25 @@ class StreamChatService(
 
     private companion object {
         const val TYPE = "messaging"
-        const val PAGE = 30
+        const val PAGE = ChatService.PAGE
     }
 }
 
 /** The SDK's call, awaited: its value, or its error thrown. */
 private suspend fun <T : Any> Call<T>.value(): T = when (val result = await()) {
     is Result.Success -> result.value
-    is Result.Failure -> throw StreamException(result.value.message)
+    is Result.Failure -> throw StreamException(result.value)
 }
 
-private class StreamException(message: String) : Exception(message)
+/**
+ * Stream's error, with its cause when it has one. A network error without an HTTP status never reached
+ * Stream (offline): it carries an IOException, so it counts as offline, not as a bug.
+ */
+private class StreamException(error: StreamError) : Exception(
+    error.message,
+    when (error) {
+        is StreamError.ThrowableError -> error.cause
+        is StreamError.NetworkError -> error.cause ?: java.io.IOException(error.message).takeIf { error.statusCode !in 400..599 }
+        else -> null
+    },
+)

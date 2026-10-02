@@ -50,11 +50,13 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.Audience
 import so.drafft.core.model.DiscoverFilters
 import so.drafft.core.model.L
 import so.drafft.core.model.Sport
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.AdaptiveRow
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.EdgeBars
@@ -85,6 +87,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun FiltersSheet(filters: DiscoverFilters, modifier: Modifier = Modifier) {
+    TrackScreen(Screen.FILTERS)
     val app = LocalAppModel.current
     val dismiss = LocalSheetDismiss.current
     var draft by rememberSaveable(stateSaver = FiltersSaver) { mutableStateOf(filters) }

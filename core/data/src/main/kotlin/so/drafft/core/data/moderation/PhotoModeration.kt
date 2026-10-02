@@ -32,6 +32,9 @@ import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.platform.NetworkMonitor
 import so.drafft.core.data.backend.ProfileSync
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.ScreenTracker
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 
@@ -217,6 +220,7 @@ class PhotoModeration(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Telemetry.unexpected(e, "photos", "verdict")
             unresolved.add(path)
             return
         }
@@ -244,6 +248,9 @@ class PhotoModeration(
         return null
     }
 
+    /** Photos whose upload started in this launch: another start is a retry. */
+    private val attempted = mutableSetOf<String>()
+
     /** Clears a failed attempt and sends the photo again. */
     fun retry(path: String) {
         states.remove(slot(path))
@@ -261,6 +268,8 @@ class PhotoModeration(
     fun submit(path: String) {
         if (states[slot(path)] != null) return
         states[slot(path)] = State.Uploading
+        Telemetry.track(AnalyticsEvent.PhotoUploadStarted(where = ScreenTracker.currentID, retry = path in attempted))
+        attempted += path
         scope.launch {
             try {
                 val data = withContext(Dispatchers.IO) { File(path).readBytes() }
@@ -268,7 +277,10 @@ class PhotoModeration(
                     backend.config.functionsURL,
                     onAccountHeld = { backend.post(Backend.Event.ACCOUNT_HELD_BY_SERVER) },
                 ) { backend.accessToken() }
-                val uploaded = MediaUploads.photo(data, tickets = tickets)
+                val uploaded = Telemetry.trace("media.upload", "profile photo") { span ->
+                    span.setData("bytes", data.size)
+                    MediaUploads.photo(data, tickets = tickets)
+                }
                 // The session exists now: this device can receive the "refused" push.
                 syncPushToken()
                 states[slot(path)] = State.Checking
@@ -294,6 +306,8 @@ class PhotoModeration(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Telemetry.track(AnalyticsEvent.PhotoUploadFailed(Telemetry.reason(e)))
+                Telemetry.unexpected(e, "photos", "upload")
                 states[slot(path)] = State.Failed(failure(e))
             }
         }
@@ -325,6 +339,7 @@ class PhotoModeration(
         // Not uploaded (yet): nothing the team could look at, so never say it was sent.
         val id = id(path) ?: throw Backend.BackendError.Http(404, "not_found")
         backend.rpc("request_media_review", JsonObject(mapOf("p_media" to JsonPrimitive(id))))
+        Telemetry.track(AnalyticsEvent.PhotoReviewRequested())
         states[slot(path)] = State.InReview
     }
 
@@ -333,6 +348,7 @@ class PhotoModeration(
      * while a screen still holds it (a photo that's gone never passes for an approved one).
      */
     fun remove(path: String) {
+        Telemetry.track(AnalyticsEvent.PhotoRemoved())
         removeRequest = path
         id(path)?.let { id ->
             scope.launch { deleteOnServer(id) }
@@ -392,6 +408,14 @@ class PhotoModeration(
     private fun settle(path: String, state: State, announce: Boolean = true) {
         val was = states[slot(path)]
         states[slot(path)] = state
+        if (was != state) {
+            when (state) {
+                State.Approved -> Telemetry.track(AnalyticsEvent.PhotoModerated("approved"))
+                State.Refused -> Telemetry.track(AnalyticsEvent.PhotoModerated("refused"))
+                State.InReview -> Telemetry.track(AnalyticsEvent.PhotoModerated("in_review"))
+                else -> Unit
+            }
+        }
         if (state == State.Refused && was != State.Refused && announce) announceRefusal(path)
     }
 

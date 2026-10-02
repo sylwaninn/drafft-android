@@ -43,7 +43,9 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import so.drafft.core.data.location.LocationGate
 import so.drafft.core.data.platform.LocationProvider.Authorization
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.EmptyStateArt
 import so.drafft.core.ui.components.EmptyStateIllustration
@@ -67,6 +69,7 @@ import so.drafft.core.ui.theme.semibold
  */
 @Composable
 fun LocationRequiredView(modifier: Modifier = Modifier) {
+    TrackScreen(Screen.LOCATION_REQUIRED)
     val location = koinInject<LocationGate>()
     val status by location.authorization.collectAsState()
     val servicesOff by location.servicesOff.collectAsState()

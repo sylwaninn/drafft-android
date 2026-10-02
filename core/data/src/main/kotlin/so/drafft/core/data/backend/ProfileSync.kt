@@ -24,6 +24,8 @@ import so.drafft.core.data.media.MediaUploads
 import so.drafft.core.data.moderation.PhotoModeration
 import so.drafft.core.data.notifications.NotificationSettings
 import so.drafft.core.data.platform.Coordinate
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Audience
 import so.drafft.core.model.Icebreaker
@@ -163,11 +165,11 @@ class ProfileSync(
     /** What to do after [acceptTerms] threw: the code or error never reaches the screen. */
     fun termsFailure(error: Throwable): TermsConsent.Failure {
         if (error is Backend.BackendError.SignedOut) {
-            log.severe("accept_terms without a session")
+            log.warning("accept_terms without a session")
             return TermsConsent.Failure.SignOut
         }
         val code = ServerMessage.code(error)
-        log.severe("accept_terms failed: ${code ?: error}")
+        log.warning("accept_terms failed: ${code ?: error}")
         return TermsConsent.failure(
             code = code,
             offline = error is java.io.IOException,
@@ -180,6 +182,32 @@ class ProfileSync(
 
     /** Saves Edit profile's changes (the birthday stays as set at sign-up). */
     suspend fun save(p: Profile, previous: Profile, voice: Voice?) {
+        // Which parts changed, by name only, for analytics.
+        val changed = buildList {
+            if (p.name != previous.name) add("name")
+            if (p.bio != previous.bio) add("bio")
+            if (p.goal != previous.goal) add("goal")
+            if (p.favoriteSpot != previous.favoriteSpot) add("favorite_spot")
+            if (p.icebreaker != previous.icebreaker) add("icebreaker")
+            if (p.vitals != previous.vitals) add("lifestyle")
+            if (voice != null) add("voice_intro")
+            if (p.sports != previous.sports) add("sports")
+            if (p.prompts != previous.prompts) add("prompts")
+            if (p.allPhotos != previous.allPhotos) add("photos")
+        }
+        try {
+            saveChanges(p, previous, voice)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.ProfileEditFailed(Telemetry.reason(e)))
+            Telemetry.unexpected(e, "profile", "save")
+            throw e
+        }
+        if (changed.isNotEmpty()) Telemetry.track(AnalyticsEvent.ProfileEdited(changed))
+    }
+
+    private suspend fun saveChanges(p: Profile, previous: Profile, voice: Voice?) {
         requireLoaded()
         val fields = linkedMapOf<String, Any?>(
             "name" to p.name,
@@ -265,6 +293,7 @@ class ProfileSync(
             // A backend from before the consent columns (42703, the column doesn't exist): the
             // account is read without them, and the consent stays unknown until it has them.
             if (e.status != 400 || consentColumns.none { it in e.serverMessage }) throw e
+            log.severe("The profile has no consent columns (drafft-backend #48 not deployed): ${e.serverMessage}")
             read(withConsent = false)
         }
         val keys = mediaKeys(data)

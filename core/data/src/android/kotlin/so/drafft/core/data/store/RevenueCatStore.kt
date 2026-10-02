@@ -27,6 +27,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import so.drafft.core.data.backend.Backend
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.appLocale
 import com.revenuecat.purchases.CustomerInfo as RCCustomerInfo
 import com.revenuecat.purchases.Offering as RCOffering
@@ -86,6 +88,7 @@ class RevenueCatStore(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            report(e, "link")
             linkedUserID = null
             return false
         }
@@ -129,6 +132,8 @@ class RevenueCatStore(
                 throw e
             } catch (e: Exception) {
                 state = Store.LoadState.FAILED
+                Telemetry.track(AnalyticsEvent.ProductsLoadFailed())
+                report(e, "load_offerings")
                 return
             }
         }
@@ -137,6 +142,28 @@ class RevenueCatStore(
     }
 
     override suspend fun purchase(pkg: Package): Store.Outcome {
+        val productID = pkg.storeProduct.productIdentifier
+        val kind = AnalyticsEvent.ProductKind.of(productID)
+        Telemetry.track(AnalyticsEvent.PurchaseStarted(kind, productID))
+        val outcome = try {
+            purchaseLinked(pkg)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.PurchaseFailed(kind, productID, Store.PurchaseProblem.from(e).name.lowercase()))
+            Telemetry.unexpected(e, "purchase", "purchase", mapOf("product_id" to productID))
+            throw e
+        }
+        Telemetry.track(
+            when (outcome) {
+                is Store.Outcome.Purchased -> AnalyticsEvent.PurchaseCompleted(kind, productID, pkg.storeProduct.currencyCode)
+                Store.Outcome.Cancelled -> AnalyticsEvent.PurchaseCancelled(kind, productID)
+            },
+        )
+        return outcome
+    }
+
+    private suspend fun purchaseLinked(pkg: Package): Store.Outcome {
         if (!link()) throw Store.StoreError.NotLinked
         val native = pkg.native as RCPackage
         // No purchase sheet without an activity on screen: nothing was asked of Google Play.
@@ -146,13 +173,28 @@ class RevenueCatStore(
             // Google Play's order id (GPA.…): the reference support asks for, like the App Store's transaction id.
             Store.Outcome.Purchased(result.customerInfo.toInfo(), result.storeTransaction.orderId)
         } catch (e: PurchasesTransactionException) {
-            if (e.userCancelled) Store.Outcome.Cancelled else throw Store.StoreError.Failed(problem(e.code), e)
+            if (e.userCancelled) Store.Outcome.Cancelled else throw failure(e)
         } catch (e: PurchasesException) {
-            if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
-                Store.Outcome.Cancelled
-            } else {
-                throw Store.StoreError.Failed(problem(e.code), e)
-            }
+            if (e.code == PurchasesErrorCode.PurchaseCancelledError) Store.Outcome.Cancelled else throw failure(e)
+        }
+    }
+
+    /** RevenueCat unreachable: the phone's connection, not a purchase that went wrong (the iPhone's `offlineConnectionError` has no Android code). */
+    private fun isOffline(code: PurchasesErrorCode) = code == PurchasesErrorCode.NetworkError
+
+    /** What a failed purchase throws: offline stays offline, anything else is the store's own outcome. */
+    private fun failure(e: PurchasesException): Store.StoreError =
+        if (isOffline(e.code)) Store.StoreError.Offline(e) else Store.StoreError.Failed(problem(e.code), e)
+
+    /** RevenueCat unreachable (offline) is a breadcrumb; a cancel is nothing; anything else is reported. */
+    private fun report(e: Exception, action: String) {
+        val code = (e as? PurchasesException)?.code
+        if (code != null && isOffline(code)) {
+            Telemetry.breadcrumb("purchase", "$action offline", Telemetry.Level.WARNING)
+        } else if (code == PurchasesErrorCode.PurchaseCancelledError) {
+            return
+        } else {
+            Telemetry.unexpected(e, "purchase", action)
         }
     }
 
@@ -168,8 +210,18 @@ class RevenueCatStore(
     }
 
     override suspend fun restore(): CustomerInfo {
-        if (!link()) throw Store.StoreError.NotLinked
-        return purchases.awaitRestore().toInfo()
+        try {
+            if (!link()) throw Store.StoreError.NotLinked
+            val info = purchases.awaitRestore().toInfo()
+            Telemetry.track(AnalyticsEvent.PurchasesRestored(found = info.entitlements[Store.TEMPO_ENTITLEMENT]?.isActive == true))
+            return info
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.track(AnalyticsEvent.RestoreFailed())
+            report(e, "restore")
+            throw e
+        }
     }
 
     override suspend fun customerInfo(): CustomerInfo = purchases.awaitCustomerInfo().toInfo()

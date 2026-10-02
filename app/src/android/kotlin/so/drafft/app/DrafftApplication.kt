@@ -19,6 +19,8 @@ import so.drafft.core.data.di.sessionsStoreNotificationsModule
 import so.drafft.core.data.platform.ForegroundReturns
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
+import so.drafft.core.data.telemetry.AndroidTelemetry
+import so.drafft.core.data.telemetry.TelemetryConfig
 import so.drafft.core.model.AppLanguage
 import so.drafft.core.model.Localization
 import so.drafft.core.ui.platform.installDrafftUi
@@ -29,6 +31,9 @@ import so.drafft.core.ui.theme.LanguageObservation
 class DrafftApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Crash reporting first: a crash anywhere in the launch below is caught.
+        val telemetry = telemetryConfig()
+        AndroidTelemetry.startCrashReporting(this, telemetry)
         val koin = startKoin {
             androidContext(this@DrafftApplication)
             modules(
@@ -47,9 +52,24 @@ class DrafftApplication : Application() {
         Haptics.engine = AndroidHaptics(this)
         installDrafftUi()
         installImages(this)
+        AndroidTelemetry.startAnalytics(this, telemetry, koin.get())
         koin.get<Diagnostics>().start()
         // Starts the foreground refresh and the push token fetch.
         koin.get<so.drafft.core.data.notifications.NotificationService>()
+    }
+
+    /** Never throws: a package lookup that fails only leaves the version blank, the app starts all the same. */
+    private fun telemetryConfig(): TelemetryConfig {
+        val info = runCatching { packageManager.getPackageInfo(packageName, 0) }.getOrNull()
+        return TelemetryConfig(
+            sentryDSN = BuildConfig.SENTRY_DSN,
+            postHogKey = BuildConfig.POSTHOG_API_KEY,
+            postHogHost = BuildConfig.POSTHOG_HOST,
+            environment = TelemetryConfig.environmentID(BuildConfig.ENVIRONMENT.ifEmpty { "production" }),
+            version = info?.versionName ?: "",
+            build = info?.longVersionCode?.toString() ?: "0",
+            isDebugBuild = BuildConfig.DEBUG,
+        )
     }
 
     private fun currentLocales(): List<java.util.Locale> {

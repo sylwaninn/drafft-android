@@ -57,11 +57,15 @@ import so.drafft.app.feature.auth.LegalDoc
 import so.drafft.app.feature.verification.HelpTopics
 import so.drafft.app.feature.verification.SupportSheet
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Screen
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.SessionProposal
 import so.drafft.core.ui.LocalAppModel
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.ConfirmAction
 import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftButtonKind
@@ -149,6 +153,7 @@ fun MeInfoSheet(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    TrackScreen(Screen.INFO)
     val scroll = rememberScrollState()
     SheetPage(title, scroll, modifier) { bars ->
         Column(
@@ -515,6 +520,7 @@ fun LegalDocsListSheet(modifier: Modifier = Modifier) {
                             .defaultMinSize(minHeight = 44.dp)
                             .clickable(remember { MutableInteractionSource() }, indication = null, role = Role.Button) {
                                 Haptics.tap()
+                                Telemetry.track(AnalyticsEvent.LegalDocOpened(doc.rawValue))
                                 uriHandler.openUri(doc.url())
                             }
                             .padding(vertical = DS.Space.md),

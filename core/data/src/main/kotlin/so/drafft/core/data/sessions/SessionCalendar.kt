@@ -19,6 +19,8 @@ import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.CalendarWriter
 import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.platform.PermissionStatus
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.Sport
@@ -115,6 +117,7 @@ class SessionCalendar(
     /** The person saved the event: remembered, with what drafft wrote in it. */
     fun added(eventID: String, session: UUID, chatID: String, partner: String, title: String, start: Instant) {
         if (eventID.isEmpty()) return
+        Telemetry.track(AnalyticsEvent.SessionAddedToCalendar())
         links = links + (session to Link(eventID, null, chatID, partner, title, start.toEpochMilli()))
         save()
     }
@@ -148,6 +151,7 @@ class SessionCalendar(
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (e: Exception) {
+            Telemetry.unexpected(e, "sessions", "calendar_refresh")
             return
         }
         val byID = rows.groupBy { it.id }.mapValues { it.value.first() }

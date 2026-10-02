@@ -15,6 +15,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.AnalyticsEvent
+import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.SessionProposal
 import so.drafft.core.model.Sport
 
@@ -149,7 +151,7 @@ class SessionStore(
             edit { fail(token) }
             throw e
         } catch (e: Exception) {
-            fail(token, e)
+            fail(token, e, action = "propose")
             false
         }
     }
@@ -172,7 +174,7 @@ class SessionStore(
             edit { fail(token) }
             throw e
         } catch (e: Exception) {
-            fail(token, e)
+            fail(token, e, action = if (accept) "accept" else "decline")
             false
         }
     }
@@ -200,7 +202,7 @@ class SessionStore(
             edit { fail(token) }
             throw e
         } catch (e: Exception) {
-            fail(token, e)
+            fail(token, e, action = "counter")
             false
         }
     }
@@ -218,7 +220,7 @@ class SessionStore(
             edit { fail(token) }
             throw e
         } catch (e: Exception) {
-            fail(token, e)
+            fail(token, e, action = "cancel")
             false
         }
     }
@@ -242,6 +244,7 @@ class SessionStore(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
+        Telemetry.unexpected(e, "sessions", "read")
         null
     }
 
@@ -249,7 +252,9 @@ class SessionStore(
      * Refused or unreachable: the change is undone and the reason said. A refusal also means this
      * phone's copy may be behind (answered elsewhere, cancelled by the other person): read again.
      */
-    private fun fail(token: UUID, error: Throwable) {
+    private fun fail(token: UUID, error: Throwable, action: String) {
+        Telemetry.track(AnalyticsEvent.SessionActionFailed(action, Telemetry.reason(error)))
+        Telemetry.unexpected(error, "sessions", action)
         edit { fail(token) }
         Haptics.warning()
         failureNotice.show(error)

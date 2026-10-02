@@ -73,8 +73,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
+import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SuperLikeMark
@@ -112,6 +114,7 @@ fun SuperLikeComposer(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    TrackScreen(Screen.SUPER_LIKE_COMPOSER)
     val reduceMotion = LocalReduceMotion.current
     val scope = rememberCoroutineScope()
     val focus = LocalFocusManager.current
