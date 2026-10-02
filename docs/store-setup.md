@@ -20,7 +20,7 @@ RevenueCat events) are not set up yet.
 
 ## Google Play
 
-One app, `so.drafft.app`. Nine products, active: three subscriptions (base plan `base`) and six
+One app, `so.drafft.app`. Nine products, active: three subscriptions (one base offer each, id `base`) and six
 consumables, created through the Play Developer API (`subscriptions`, `onetimeproducts`). Prices match the
 App Store's wherever the currency does (127 of 174 regions).
 

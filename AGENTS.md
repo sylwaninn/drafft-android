@@ -151,7 +151,7 @@ line above. The i18n lint wants all 7 languages, matching placeholders, lowercas
 the wording WORDING.md forbids (its `wording-forbidden` block). It runs on the synced tables, the
 Android variants (`i18n/android/`) and `NotificationText.kt`.
 
-### Environments
+### Flavors
 
 Three flavors, each with its values in `config/<flavor>.properties`, committed:
 - **production** (`drafft`, production backend),
@@ -160,12 +160,12 @@ Three flavors, each with its values in `config/<flavor>.properties`, committed:
   only: there is no local release build).
 
 Values: Supabase URL and publishable key, RevenueCat public SDK key (`goog_...`), Turnstile site key,
-SMS code lifetime, launcher name, image resizing. `app/build.gradle.kts` reads them into `BuildConfig`
-and `app_name`. A new value goes in the three files and in `flavorFields`.
+SMS code lifetime, launcher name, Sentry DSN, PostHog key and host (the full list:
+[docs/configuration.md](docs/configuration.md)). `app/build.gradle.kts` reads them into `BuildConfig` and
+`app_name`. A new value goes in the three files and in `flavorFields`.
 
-Only public keys, ever. The build stops at configuration on two things:
-- anything that looks like a secret (`sb_secret_`, `service_role`, a private key);
-- a production or staging URL that isn't https.
+Only public keys, ever. The build stops at configuration on anything that looks like a secret, a remote
+Supabase URL that isn't https, and telemetry outside the EU (details in docs/configuration.md).
 
 CI greps for the same secrets, and gitleaks allows only publishable and `goog_` keys by value. A
 release build lacking a Supabase or RevenueCat value fails.
@@ -302,7 +302,7 @@ Comments say why (they carry the product decisions), never what the code plainly
 
 ### Shared rules on Android
 
-DESIGN.md, WORDING.md and PRODUCT.md name iOS APIs and places. The rule stays, and its Android form
+DESIGN.md and WORDING.md name iOS APIs and places. The rule stays, and its Android form
 is:
 
 | In the shared docs | Here |
@@ -313,7 +313,7 @@ is:
 | Liquid Glass, `.glassEffect(.regular)` | `Modifier.glass` |
 | `VariableBlurView`, `ProgressiveBlur` | `Modifier.progressiveBlur` |
 | `.sheet` + `.sheetSurface()` | `DrafftSheet` + `SheetSurface { }` |
-| `ViewThatFits` | `FirstThatFits` |
+| `ViewThatFits` | `FirstThatFits`, a small helper in `PaywallView` and `SuperLikeComposer` (not in core:ui) |
 | `DS.Palette` | `DS.palette` in core:ui |
 | `Image("name")` (Icons catalog) | `Symbols` / `DrafftIcon("name")` |
 | keyboard safe area | IME insets (`WindowInsets.ime`, `imePadding`) |
@@ -325,7 +325,7 @@ is:
 
 ## Telemetry (Sentry and PostHog): part of every change
 
-[docs/telemetry.md](docs/telemetry.md) is the plan (events, screens, errors, alerts); the code is
+[docs/telemetry.md](docs/telemetry.md) is the reference (events, screens, errors, alerts); the code is
 `so.drafft.core.data.telemetry`. Both apps send the same events, with the same names and properties.
 
 **Every feature, change or task finishes with a telemetry pass. The pull request's "Notes" says what was
