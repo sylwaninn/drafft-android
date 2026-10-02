@@ -49,7 +49,7 @@ import so.drafft.core.ui.theme.Motion
  * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives.
  */
 @Composable
-internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
+internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority, detail: Boolean = false) {
     BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
         val boundedWidth = if (constraints.hasBoundedWidth) constraints.maxWidth else 0
         val boundedHeight = if (constraints.hasBoundedHeight) constraints.maxHeight else 0
@@ -58,7 +58,7 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
         val height = boundedHeight.takeIf { it > 0 } ?: fallback
         val large = blur == 0f && min(maxWidth, maxHeight) >= 200.dp
         val context = LocalPlatformContext.current
-        val request = rememberPhotoRequest(name, width, height, priority, blur)
+        val request = rememberPhotoRequest(name, width, height, priority, blur, detail = detail)
         val photo = request?.diskCacheKey
         LaunchedEffect(photo, priority) { if (photo != null) PhotoDownloads.shared.prioritize(photo, priority.ordinal) }
         val painter = if (request != null) rememberAsyncImagePainter(request, contentScale = ContentScale.Crop) else null
@@ -86,7 +86,7 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority) {
  * The request for a photo drawn in a frame of [width] × [height] pixels ([ImageStore.remoteRequest]): at
  * once when its copy is in memory (or it's a file on this phone), otherwise once the disk was asked, off
  * the main thread (null until then). Not keyed by [priority]: a card moving up the deck keeps its download
- * running, raised.
+ * running, raised. [detail]: an open profile's photo, which may take a copy wider than the everyday one.
  */
 @Composable
 fun rememberPhotoRequest(
@@ -97,13 +97,14 @@ fun rememberPhotoRequest(
     blur: Float = 0f,
     variant: String? = null,
     fill: Boolean = true,
+    detail: Boolean = false,
 ): ImageRequest? {
     val context = LocalPlatformContext.current
-    val request = remember(name, width, height, blur, variant, fill) {
-        mutableStateOf(ImageStore.cachedRequest(context, name, width, height, priority, blur, variant, fill))
+    val request = remember(name, width, height, blur, variant, fill, detail) {
+        mutableStateOf(ImageStore.cachedRequest(context, name, width, height, priority, blur, variant, fill, detail))
     }
     LaunchedEffect(request) {
-        if (request.value == null) request.value = ImageStore.remoteRequest(context, name, width, height, priority, blur, variant, fill)
+        if (request.value == null) request.value = ImageStore.remoteRequest(context, name, width, height, priority, blur, variant, fill, detail)
     }
     return request.value
 }
