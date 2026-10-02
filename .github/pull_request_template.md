@@ -37,5 +37,5 @@ Delete these comments and any section that doesn't apply.
 - **Wording:** <!-- strings added or changed in the 7 languages after WORDING.md section 10, or "no user-facing text" -->
 - **Privacy:** <!-- new personal data, third party or retention change (legal pages in drafft-web), or "none" -->
 - **Companion pull requests:** <!-- the other drafft repositories, or "none" -->
-- **Parity with the iPhone app:** <!-- the Swift file(s) this ports or follows, or why Android only -->
+- **Both apps:** <!-- drafft-ios already behaves this way, its companion pull request, or why Android only -->
 - **Breaking change:** <!-- what a client or the backend must do, or "none" -->

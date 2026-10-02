@@ -1,26 +1,29 @@
 # drafft Android: instructions for agents and contributors
 
-drafft for Android is a port of the iPhone app (repository `sylwaninn/drafft-ios`, SwiftUI). Same features,
-same behaviour, same wording, same look, built with Kotlin and Jetpack Compose. When the two apps
-disagree, the iPhone app is right: read its source before changing behaviour here.
+drafft for Android is a native Android app, built with Kotlin and Jetpack Compose. It shares the backend, the
+product, the design system, the wording and the string catalog with drafft-ios, and the two apps keep the same
+features and behaviour.
 
 - Product: [PRODUCT.md](PRODUCT.md). Design rules: [DESIGN.md](DESIGN.md) (binding, including the
   "Drafft app rules" section). Wording: [WORDING.md](WORDING.md) (binding for any text people see).
-  DESIGN.md and WORDING.md are shared with drafft-ios (the reference): see "Shared docs" before
-  changing them. They're written for the iPhone:
-  "Android forms of the iPhone rules" below says how each iOS term applies here.
-- The iPhone sources: `Drafft/` in drafft-ios (next to this checkout locally; on the web,
-  `gh repo clone sylwaninn/drafft-ios` into a temporary folder). Each Kotlin file says which Swift file it ports.
-- Backend: the `drafft-backend` repository (Supabase), shared with the iPhone app.
+  DESIGN.md and WORDING.md are shared with drafft-ios, which holds their source: see "Shared docs" before
+  changing them. They name iOS APIs and places: "Shared rules on Android" below gives the Android form of each.
+- A feature both apps have behaves the same in both: check drafft-ios (next to this checkout locally; on the
+  web, `gh repo clone sylwaninn/drafft-ios` into a temporary folder) before changing it here.
+- Backend: the `drafft-backend` repository (Supabase), shared by both apps.
+- **A standalone app.** Never describe this app as a port, a copy, a mirror or a translation of the iPhone app,
+  in code, comments, docs, commits or pull requests, and never point a comment to a Swift file.
+- **Who drafft is for stays in PRODUCT.md.** The audience (age above all, city, how often people train) is
+  never written in a README or any other doc. A README never details what a session proposal holds.
 
 ## User-facing text: WORDING.md first (priority rule)
 
 Before writing or changing any text people see (UI strings in any of the 7 languages, CTAs, errors,
 empty states, push, email, paywall, Play Store listing, screenshots, marketing), read and apply
 [WORDING.md](WORDING.md), then run its review checklist (section 10). The `wording` skill (`.claude/skills/wording/`) walks through it. Never write "plan" in any sense or language, and never
-present a match as turning into something. App strings come from the iPhone catalog (see "Text" below):
-a new or changed string is written there first. The only text written here is the Android wording of the
-iPhone's platform sentences (`core/model/src/main/resources/i18n/android/`).
+present a match as turning into something. App strings live in the shared catalog, whose source is drafft-ios's
+`Localizable.xcstrings` (see "Text" below): a new or changed string is written there first. The only text
+written here is the Android wording of platform sentences (`core/model/src/main/resources/i18n/android/`).
 
 ## Working with the user
 
@@ -96,9 +99,9 @@ request. Compile-only checks are the exception.
 
 ### Work that spans repositories
 
-A product feature usually runs backend, then iOS, then Android (then the website for legal or marketing
+A product feature usually runs backend, then the two apps (then the website for legal or marketing
 copy): one session and one pull request per repository, backend first since the apps call its RPCs and
-functions. iOS is the reference; Android ports it with the same names, behaviour and strings. The first
+functions. Both apps ship it with the same names, behaviour and strings. The first
 pull request states the contract (RPCs, payloads, event names) and the next ones link it. Another
 repository is read on GitHub (`gh repo clone sylwaninn/<repo>` into a temporary folder), never edited
 from here, except the shared docs below when the user agrees.
@@ -134,7 +137,7 @@ CI (`.github/workflows/app.yml`) runs all of them on every pull request, plus gi
 the asset size and build-key checks. The last line needs the Android SDK and Google's Maven. Without
 them, run the others and say that the Android build wasn't checked.
 
-The two lints are ports of drafft's. The design lint encodes DESIGN.md's rules in their Compose
+The design lint encodes DESIGN.md's rules in their Compose
 form:
 - no gradients except photo scrims and blur masks;
 - no '·';
@@ -150,8 +153,7 @@ Android variants (`i18n/android/`) and `NotificationText.kt`.
 
 ### Environments
 
-Three flavors, like the iPhone's schemes, each with its values in `config/<flavor>.properties`
-(the iPhone's `Config/*.xcconfig`), committed:
+Three flavors, each with its values in `config/<flavor>.properties`, committed:
 - **production** (`drafft`, production backend),
 - **staging** (`drafft β`, staging backend),
 - **local** (`drafft local`, the local Supabase of drafft-backend with its staging services, debug
@@ -170,7 +172,7 @@ release build lacking a Supabase or RevenueCat value fails.
 
 The local Supabase depends on the machine: run `supabase start` in drafft-backend, then
 `scripts/local-backend.sh`. It writes the URL and key to the gitignored `local.private.properties`
-(the iPhone's `Local.private.xcconfig`; emulator `10.0.2.2`, `--device` for a phone on the same
+(emulator `10.0.2.2`, `--device` for a phone on the same
 Wi-Fi). Without it the local app stops at launch and says what's missing. The app reads no dotenv
 file.
 
@@ -233,53 +235,46 @@ for the few Android-only Compose APIs used from shared code (`painterResource(In
 
 The full Android build (`./gradlew assembleProductionDebug`) needs the Android SDK and Google's Maven.
 
-## Porting rules (Swift to Kotlin)
+## Kotlin conventions
 
-Names mirror the Swift ones so a reader can go from one app to the other: same type names, same
-function and property names (lowerCamelCase), same parameter names and order. Enum cases become
-UPPER_SNAKE (`case superLike` → `SUPER_LIKE`), with the Swift raw value kept as `id`/`rawValue`.
+Shared concepts carry the same names in both apps (types, functions, properties, parameters, event names,
+payload fields), so a contract reads the same everywhere. Enum cases are UPPER_SNAKE (`SUPER_LIKE`), with the
+backend's raw value kept as `id`/`rawValue`.
 
-| Swift | Kotlin |
+| Need | Kotlin |
 |---|---|
-| `struct` value type | `data class` with `val`s (copy to change) |
-| `enum` with associated values | `sealed interface` + `data class`es |
-| `@Observable final class` (AppModel, services' state) | a class whose observed properties are `var x by mutableStateOf(...)` (Compose snapshot state), read directly by composables like SwiftUI reads `@Observable` |
-| `@ObservationIgnored var` | plain `var` |
-| `@State private var` in a view | `var x by remember { mutableStateOf(...) }` (`rememberSaveable` for what should survive rotation) |
-| `@Binding var x: T` | two parameters: `x: T, onXChange: (T) -> Unit` |
-| `@Environment(AppModel.self)` | `val app = LocalAppModel.current` |
-| `@Environment(\.dismiss)` | an `onDismiss: () -> Unit` parameter, or `LocalNavStack.current.pop()` |
-| `Task { ... }` | `scope.launch { ... }` (`rememberCoroutineScope()` in UI, `AppModel.scope` in the model) |
-| `.task { }` / `.task(id:)` | `LaunchedEffect(Unit) { }` / `LaunchedEffect(id) { }` |
-| `.onChange(of: x)` | `LaunchedEffect(x) { }` (skip the first run when the Swift code does) |
-| `async throws` | `suspend` + exceptions |
-| `Date` / `TimeInterval` | `java.time.Instant` / `Double` seconds (or `kotlin.time.Duration` where clearer) |
-| `URL` | `String` |
-| `Data` | `ByteArray` |
-| `[String: Any]` JSON | `kotlinx.serialization.json.JsonObject` |
-| `NotificationCenter` posts | a `SharedFlow` on the owner |
-| `UserDefaults` | `KeyValueStore` (platform) |
+| A value type | `data class` with `val`s (copy to change) |
+| A choice that carries data | `sealed interface` + `data class`es |
+| Observed state (AppModel, services' state) | a class whose observed properties are `var x by mutableStateOf(...)` (Compose snapshot state), read directly by composables |
+| A field nothing observes | plain `var` |
+| State local to a screen | `var x by remember { mutableStateOf(...) }` (`rememberSaveable` for what should survive rotation) |
+| A two-way value | two parameters: `x: T, onXChange: (T) -> Unit` |
+| The app's state in a screen | `val app = LocalAppModel.current` |
+| Closing a screen | an `onDismiss: () -> Unit` parameter, or `LocalNavStack.current.pop()` |
+| Async work | `scope.launch { ... }` (`rememberCoroutineScope()` in UI, `AppModel.scope` in the model) |
+| Work tied to a screen or a key | `LaunchedEffect(Unit) { }` / `LaunchedEffect(id) { }` |
+| Reacting to a change | `LaunchedEffect(x) { }` (skip the first run when only changes matter) |
+| Failure | `suspend` + exceptions |
+| Times | `java.time.Instant` / `Double` seconds (or `kotlin.time.Duration` where clearer) |
+| Links, bytes, free JSON | `String`, `ByteArray`, `kotlinx.serialization.json.JsonObject` |
+| Broadcast events | a `SharedFlow` on the owner |
+| Small values kept on the phone | `KeyValueStore` (platform) |
 
-A SwiftUI `View` becomes a `@Composable fun` with the same name and the same parameters in the same
-order, then `modifier: Modifier = Modifier`. A view model class keeps its name.
+A screen is a `@Composable fun` named after it, its parameters first, then `modifier: Modifier = Modifier`.
 
-**Behaviour and wording follow the iPhone; the look may adapt.** Features, flows and copy stay aligned
-with iOS. Where the platform works differently (iOS backdrop variable blur against Compose's
-self-blur, footer layouts), adapt the look on Android rather than porting it literally. A fix that is
-a real improvement for both apps goes into both repositories.
+**Same behaviour and wording in both apps; the look follows the platform.** Features, flows and copy stay
+aligned. Where Android works differently (Compose's self-blur, footer layouts), adapt the look. A fix that
+improves both apps goes into both repositories.
 
-Keep the iPhone code's comments when they explain why: they carry the product decisions. Don't add
-comments that say what the code plainly does.
+Comments say why (they carry the product decisions), never what the code plainly does.
 
 ### Text
 
 - Every string people see comes from the shared catalog: `L("English text", args...)`. The key is the
-  English source string exactly as in the Swift code, with Swift interpolation turned into Java
-  placeholders the way the catalog has them: `"\(n)× a week"` (catalog `%lld× a week`) →
-  `L("%d× a week", n)`; `"\(name) session"` (`%@ session`) → `L("%s session", name)`. Look keys up in
+  catalog's English source string, its placeholders as Java format specifiers: catalog `%lld× a week` →
+  `L("%d× a week", n)`; `%@ session` → `L("%s session", name)`. Look keys up in
   `core/model/src/main/resources/i18n/keys.txt`. Run `scripts/check-strings.py`.
-- SwiftUI localizes `Text("literal")` on its own: in Kotlin that is `Text(L("literal"))`.
-  `Text(verbatim:)` and people's own content are never passed to `L`.
+- Interface text is `Text(L("literal"))`; people's own content is never passed to `L`.
 - Never write new user-facing text without checking WORDING.md. Never use "…" to cut interface copy,
   never a middle dot `·`, brand always lowercase `drafft` (see `branded(...)`).
 - Dates: `DateText` (ICU skeletons, app language). Numbers: `String.format(appLocale, ...)`.
@@ -291,23 +286,21 @@ comments that say what the code plainly does.
   `canvasSoft` flip inside `SheetSurface { }`; accent-aware components read `LocalIsNightSurface`
   (`NightSurface { }`). No gradients except photo scrims and blur masks.
 - Type: `display(size)` (Inter Display Black), `displayBold(size)`, `TextStyles.body/.subheadline/...`
-  (the iPhone text styles, in sp) with `.semibold`, `.bold`, `.heavy`.
+  (the shared type scale, in sp) with `.semibold`, `.bold`, `.heavy`.
 - Spacing `DS.Space.*`, radius `DS.Radius.*`, motion `Motion.snappy()/bouncy()/gentle()/select()`.
-- Icons: `DrafftIcon("heart")` / `Symbols.vector(name)`, by the same Solar names as the iPhone app
-  (`Assets.xcassets/Icons`). Each name is a vector drawable `core/ui/res/drawable/ic_<name>.xml`
-  listed in `Symbols`; a new icon comes from the iOS symbol's source, drawable and table entry
-  together (rules in DESIGN.md, Icons).
+- Icons: `DrafftIcon("heart")` / `Symbols.vector(name)`, by their Solar names. Each name is a vector
+  drawable `core/ui/res/drawable/ic_<name>.xml` listed in `Symbols`; a new icon comes with its drawable and
+  its table entry together (rules in DESIGN.md, Icons).
 - Photos: bundled ones by name through `BundledImages`, remote ones through the design system's photo
   component (Coil), sized to where they're drawn.
 - Haptics: `Haptics.tap()/thump()/success()/warning()/select()`.
-- iPhone idioms and their Android form: sheets → `DrafftSheet` (a bottom sheet with the iPhone sheet's
-  shape and surface); `.fullScreenCover` → `FullScreenCover`; `.drafftConfirm` → `DrafftConfirm`;
-  `NavigationStack` → `NavStack` + `NavStackHost`; Liquid Glass → the design system's glass surface
-  (a translucent fill with a hairline; real blur where the platform allows); `ProgressiveBlur` → the
-  design system's version (RenderEffect on Android 12+, a soft scrim below). Android's system back
-  always does what the iPhone's back or close does.
+- Components: sheets → `DrafftSheet` (a bottom sheet with drafft's sheet shape and surface); full-screen
+  covers → `FullScreenCover`; confirmations → `DrafftConfirm`; navigation → `NavStack` + `NavStackHost`;
+  glass → the design system's glass surface (a translucent fill with a hairline; real blur where the
+  platform allows); progressive blur → `Modifier.progressiveBlur` (RenderEffect on Android 12+, a soft scrim
+  below). Android's system back always does what the screen's back or close does.
 
-### Android forms of the iPhone rules
+### Shared rules on Android
 
 DESIGN.md, WORDING.md and PRODUCT.md name iOS APIs and places. The rule stays, and its Android form
 is:
@@ -321,19 +314,19 @@ is:
 | `VariableBlurView`, `ProgressiveBlur` | `Modifier.progressiveBlur` |
 | `.sheet` + `.sheetSurface()` | `DrafftSheet` + `SheetSurface { }` |
 | `ViewThatFits` | `FirstThatFits` |
-| `Tokens.swift` (`DS.Palette`) | `DS.palette` in core:ui |
+| `DS.Palette` | `DS.palette` in core:ui |
 | `Image("name")` (Icons catalog) | `Symbols` / `DrafftIcon("name")` |
 | keyboard safe area | IME insets (`WindowInsets.ime`, `imePadding`) |
 | App Store, Apple Account, Apple ID, "Apple emails your receipt" | Google Play, Google account. The wording is in `i18n/android/` |
 | `manageSubscriptionsSheet`, App Store subscriptions | Google Play's subscriptions page (`play.google.com/store/account/subscriptions`) |
 | iPhone Settings | the phone's settings (the app's notification settings screen) |
-| kept on the iPhone (`UserDefaults`) | `KeyValueStore` |
+| `UserDefaults` | `KeyValueStore` |
 | App Store screenshots, subtitle (iOS) | Play Store screenshots, short description |
 
 ## Telemetry (Sentry and PostHog): part of every change
 
 [docs/telemetry.md](docs/telemetry.md) is the plan (events, screens, errors, alerts); the code is
-`so.drafft.core.data.telemetry`. The iPhone app is the reference: same events, same names.
+`so.drafft.core.data.telemetry`. Both apps send the same events, with the same names and properties.
 
 **Every feature, change or task finishes with a telemetry pass. The pull request's "Notes" says what was
 done, or "Telemetry: none, because ..." (a refactor, a copy change).** The checklist:
@@ -341,7 +334,7 @@ done, or "Telemetry: none, because ..." (a refactor, a copy change).** The check
 1. **Events.** What the person did and whether it worked: a factory in `AnalyticsEvent` (`object_action`, snake_case,
    past tense, typed properties: numbers, booleans, codes, never free text), fired where the model knows
    the outcome (after success; a `*_failed` event with a `reason` code on failure). Same name and
-   properties on the iPhone app (the reference: it goes first), in the same change or its twin pull request. Never rename an event or a
+   properties in drafft-ios, in the same change or its twin pull request. Never rename an event or a
    property: add a new one.
 2. **Screens.** A new screen, sheet or cover gets `TrackScreen(Screen.X)` at the top (a paywall `TrackPaywall(kind)`), with its `Screen` entry.
 3. **Errors.** A `catch` that swallows or rethrows something unexpected calls
@@ -365,10 +358,10 @@ tests fail on it.
 
 ## State and data
 
-- `AppModel` (core:data) is the app's single observable state, like the iPhone's. Screens read it
-  through `LocalAppModel.current` and call its methods; it's a Koin singleton.
-- Services mirror the iPhone's `.shared` singletons as Koin singletons with constructor injection.
-- All model mutation happens on the main thread (`Dispatchers.Main.immediate`), like `@MainActor`.
-- The backend is Supabase (supabase-kt for Auth and Realtime, Ktor for the raw REST/RPC/Functions
-  calls the iPhone makes with `URLSession`), chat is Stream (low-level client only, every screen is
+- `AppModel` (core:data) is the app's single observable state. Screens read it through
+  `LocalAppModel.current` and call its methods; it's a Koin singleton.
+- Services are Koin singletons with constructor injection.
+- All model mutation happens on the main thread (`Dispatchers.Main.immediate`).
+- The backend is Supabase (supabase-kt for Auth and Realtime, Ktor for the raw REST, RPC and Edge
+  Function calls), chat is Stream (low-level client only, every screen is
   ours), purchases are RevenueCat (Google Play).

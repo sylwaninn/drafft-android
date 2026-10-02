@@ -38,7 +38,7 @@ no macOS on the web), run the rest and say in the pull request what was left to 
   request ("Legal pages in drafft-web need an update: ...") and tell the user.
 - **Telemetry**: the pull request's Notes say what was added, or "Telemetry: none, because ...".
 - **User-facing text**: the `wording` skill was applied.
-- **Android**: name the Swift file(s) the change ports or follows, and whether the iPhone app already behaves this way; an Android-only change says why. A change to `WORDING.md` or `DESIGN.md` follows AGENTS.md "Shared docs" (ask, then one pull request per repository); the i18n catalog changes only through drafft-ios.
+- **Both apps**: say whether drafft-ios already behaves this way, and link its pull request when it changes too; an Android-only change says why. A change to `WORDING.md` or `DESIGN.md` follows AGENTS.md "Shared docs" (ask, then one pull request per repository); the i18n catalog changes only through drafft-ios.
 
 ## 5. Push and open
 

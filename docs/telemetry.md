@@ -72,7 +72,7 @@ long as the privacy policy says so and people can object.
 ## Errors: what alerts and what doesn't
 
 `Telemetry.unexpected(error, area, action)` is called in a `catch` that swallows or rethrows a
-failure the app didn't expect. Best-effort upkeep written `attempt { }` (the Swift `try?`: realtime
+failure the app didn't expect. Best-effort upkeep written `attempt { }` (realtime
 joins, wallet and block-list reads that run again) is not reported, unless a call asks for it with its
 own area and action. It classifies the error (`ErrorKind`):
 
@@ -109,7 +109,7 @@ level: INFO is a breadcrumb (it comes with the next error report), WARNING is al
 (searchable, never an issue), SEVERE is a Sentry issue (something that should never happen, like a
 backend that isn't deployed). Lower levels stay on the phone.
 
-System exit diagnostics (what MetricKit gives the iPhone): crashes and ANRs reach Sentry on their own;
+System exit diagnostics: crashes and ANRs reach Sentry on their own;
 `Diagnostics` keeps why past runs ended (`ApplicationExitInfo`) on the phone and sends their daily
 summary as a Sentry log line. PostHog's queue is sent when the app leaves the front.
 
@@ -174,7 +174,7 @@ production.
    none).
 2. Call `Telemetry.track(...)` where the thing happened, preferably in the model (`AppModel`, a
    service) rather than a button: the model knows whether it worked.
-3. Add it to the table above, and to the iPhone app with the same name and properties.
+3. Add it to the table above, and to drafft-ios with the same name and properties.
 4. Never rename an event or a property: dashboards depend on them. Add a new one.
 
 ## Setup
@@ -188,7 +188,7 @@ production.
 | `POSTHOG_HOST` | `https://eu.i.posthog.com` |
 
 Empty values turn the service off. Production and staging share the Sentry project (the
-`environment` tag separates them) and the PostHog project too, with the iPhone app and the website:
+`environment` tag separates them) and the PostHog project too, with drafft-ios and the website:
 filter every insight, funnel, alert and experiment on `app_environment = production` (local builds send
 nothing: empty key). Staging events count in the same quota. The app and the build both refuse a non-EU host (anything but exactly
 `https://eu.i.posthog.com`) or DSN (anything but `https://<key>@o<org>.ingest.de.sentry.io/<project>`),
@@ -225,9 +225,9 @@ the mapping can be uploaded later with `sentry-cli`.
 
 ## What remains to do outside this repository
 
-- **Consent switch (first, in the iPhone app):** a switch in You › Privacy & data ("Share usage
+- **Consent switch (in both apps):** a switch in You › Privacy & data ("Share usage
   analytics", off by default, with one line on what it means), and optionally a one-time question after
-  sign-up. Its words go in the iPhone catalog first (WORDING.md), then `TelemetrySession.setConsent`
+  sign-up. Its words go in the shared catalog first (WORDING.md), then `TelemetrySession.setConsent`
   wires it. Until then everyone is in anonymous mode.
 - **Privacy policy (drafft-web):** add PostHog (EU) to `/privacy#data` with the purpose, the anonymous
   mode, the consent for linking to the account, and how to object; Sentry is already listed.
