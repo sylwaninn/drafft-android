@@ -12,7 +12,7 @@ data class TelemetryConfig(
     val postHogKey: String,
     /** PostHog's EU cloud (`https://eu.i.posthog.com`): the data stays in the EU, like the backend. */
     val postHogHost: String,
-    /** "production", "staging" or "local" ([environmentID] never gives anything else). */
+    /** "production" or "staging" ([environmentID] never gives anything else). */
     val environment: String,
     /** "0.1.0" */
     val version: String,
@@ -30,7 +30,7 @@ data class TelemetryConfig(
     val hasPostHog: Boolean get() = postHogKey.isNotBlank() && isEUHost(postHogHost)
 
     /**
-     * Share of traces kept (performance): every one in staging and local, where traffic is small and
+     * Share of traces kept (performance): every one in staging, where traffic is small and
      * each slow request matters; 20% in production, enough for percentiles at a fraction of the quota.
      */
     val tracesSampleRate: Double get() = if (environment == "production") 0.2 else 1.0
@@ -46,10 +46,10 @@ data class TelemetryConfig(
 
     companion object {
         /**
-         * The three environments a build can be. Anything else (a typo, a flavor added later) is "unknown":
+         * The two environments a build can be. Anything else (a typo, a flavor added later) is "unknown":
          * a misconfigured build never counts as production in the dashboards.
          */
-        fun environmentID(raw: String): String = if (raw in setOf("production", "staging", "local")) raw else "unknown"
+        fun environmentID(raw: String): String = if (raw in setOf("production", "staging")) raw else "unknown"
 
         private val euDSN = Regex("^https://[0-9a-f]+@o[0-9]+\\.ingest\\.de\\.sentry\\.io/[0-9]+$")
 

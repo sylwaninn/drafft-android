@@ -39,7 +39,7 @@ written here is the Android wording of platform sentences (`core/model/src/main/
   wording (within WORDING.md) and say what you chose in the summary, instead of a round of questions.
   Lean modern: rich motion and micro-interactions.
 - **Never check screens yourself**: no screenshots, no visual review by a subagent.
-  Build, install and launch the app on the emulator (`installLocalDebug`), then hand over.
+  Build, install and launch the app on the emulator (`installStagingDebug`), then hand over.
   The user checks the result themselves.
 - **On the user's phone, launch only on their go.** Install, then launch or relaunch only once the user
   says "ok" or "prêt": they set the phone up first.
@@ -93,9 +93,9 @@ reads.
 
 ### Environments
 
-Apps an agent installs or launches always target the local Supabase. Never build, install, deploy or run
-mutations against staging or production unless the user asks for that environment in the current
-request. Compile-only checks are the exception.
+Apps an agent installs or launches target staging by default: the user works only against staging, and
+there is no local backend. Never build, install, deploy or run mutations against production unless the
+user asks for production in the current request. Compile-only checks are the exception.
 
 ### Work that spans repositories
 
@@ -130,7 +130,7 @@ release, see `scripts/ci/release.sh`). Store builds are made by hand, from the r
 ./gradlew -p tools/jvmcheck compileKotlin test   # platform-neutral code on the JVM, unit tests
 python3 scripts/check-strings.py                 # every L("...") key exists in the catalog
 python3 scripts/ci/design_lint.py && python3 scripts/ci/i18n_lint.py
-./gradlew assembleLocalDebug                     # the Android build (needs the Android SDK)
+./gradlew assembleStagingDebug                   # the Android build (needs the Android SDK)
 ```
 
 CI (`.github/workflows/app.yml`) runs all of them on every pull request, plus gitleaks, actionlint and
@@ -153,38 +153,29 @@ Android variants (`i18n/android/`) and `NotificationText.kt`.
 
 ### Flavors
 
-Three flavors, each with its values in `config/<flavor>.properties`, committed:
+Two flavors, each with its values in `config/<flavor>.properties`, committed:
 - **production** (`drafft`, production backend),
-- **staging** (`drafft β`, staging backend),
-- **local** (`drafft local`, the local Supabase of drafft-backend with its staging services, debug
-  only: there is no local release build).
+- **staging** (`drafft β`, staging backend).
 
 Values: Supabase URL and publishable key, RevenueCat public SDK key (`goog_...`), Turnstile site key,
 SMS code lifetime, launcher name, Sentry DSN, PostHog key and host (the full list:
 [docs/configuration.md](docs/configuration.md)). `app/build.gradle.kts` reads them into `BuildConfig` and
-`app_name`. A new value goes in the three files and in `flavorFields`.
+`app_name`. A new value goes in the two files and in `flavorFields`.
 
-Only public keys, ever. The build stops at configuration on anything that looks like a secret, a remote
+Only public keys, ever. The build stops at configuration on anything that looks like a secret, a
 Supabase URL that isn't https, and telemetry outside the EU (details in docs/configuration.md).
 
 CI greps for the same secrets, and gitleaks allows only publishable and `goog_` keys by value. A
 release build lacking a Supabase or RevenueCat value fails.
 
-The local Supabase depends on the machine: run `supabase start` in drafft-backend, then
-`scripts/local-backend.sh`. It writes the URL and key to the gitignored `local.private.properties`
-(emulator `10.0.2.2`, `--device` for a phone on the same
-Wi-Fi). Without it the local app stops at launch and says what's missing. The app reads no dotenv
-file.
-
-**Run the app on the local backend, always.** Every build an agent installs or launches (emulator
-or phone) is the local flavor: `./gradlew installLocalDebug`. NEVER build, install or launch
-production or staging (`installProductionDebug`, `installStagingDebug`, any `*Release`) unless the
-user explicitly asks for that environment in the current request. All flavors share the application
-id `so.drafft.app`, so any other build silently replaces the local app. It then sends real actions
-(sign-ups, likes, messages) to that backend. Before installing, check
-`app/build/generated/source/buildConfig/local/debug/so/drafft/app/BuildConfig.java`: `SUPABASE_URL`
-must be the local machine's address. Compile-only checks (the verify commands above, no install, no
-launch) are the one exception.
+**Run the app on staging, always.** Every build an agent installs or launches (emulator or phone) is the
+staging flavor: `./gradlew installStagingDebug`. NEVER build, install or launch production
+(`installProductionDebug`, any `*Release`) unless the user explicitly asks for production in the current
+request. All flavors share the application id `so.drafft.app`, so any other build silently replaces the
+staging app. It then sends real actions (sign-ups, likes, messages) to the production backend. Before
+installing, check `app/build/generated/source/buildConfig/staging/debug/so/drafft/app/BuildConfig.java`:
+`SUPABASE_URL` must be staging's. Compile-only checks (the verify commands above, no install, no launch)
+are the one exception.
 
 ## Modules
 

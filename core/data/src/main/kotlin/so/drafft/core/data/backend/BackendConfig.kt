@@ -1,7 +1,7 @@
 package so.drafft.core.data.backend
 
 /**
- * The drafft backend (Supabase, EU): production, staging or local, picked by the build flavor (the
+ * The drafft backend (Supabase, EU): production or staging, picked by the build flavor (the
  * app's `BuildConfig`, provided through Koin). The publishable key is public by design: it only
  * identifies the project, and row-level security decides what each person can do.
  * Never put a secret key (sb_secret_..., service_role) in the app.
@@ -15,7 +15,7 @@ data class BackendConfig(
     val smsCodeLifetime: Double = 600.0,
     /** Cloudflare Turnstile public site key, for the support form sent signed out (`TURNSTILE_SITE_KEY`). */
     val turnstileSiteKey: String = "",
-    /** "" for production, "staging", "local". */
+    /** "" for production, "staging". */
     val environment: String = "",
 ) {
     /** How long an email code works (Auth's email OTP expiry, 1 hour everywhere). */
@@ -23,15 +23,10 @@ data class BackendConfig(
 
     val functionsURL: String get() = url.trimEnd('/') + "/functions/v1"
 
-    /**
-     * What this build lacks to reach a backend: the
-     * local flavor needs its machine's URL and key in local.private.properties
-     * (scripts/local-backend.sh), the others config/<flavor>.properties. Empty when configured.
-     */
+    /** What this build lacks to reach a backend (config/<flavor>.properties). Empty when configured. */
     val missing: List<String>
         get() = buildList {
-            val file = if (environment == "local") "local.private.properties, run scripts/local-backend.sh"
-            else "config/${environment.ifEmpty { "production" }}.properties"
+            val file = "config/${environment.ifEmpty { "production" }}.properties"
             if (url.isBlank()) add("SUPABASE_URL ($file)")
             if (publishableKey.isBlank()) add("SUPABASE_PUBLISHABLE_KEY ($file)")
         }

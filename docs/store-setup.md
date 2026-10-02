@@ -15,7 +15,7 @@ account (`FCM_SERVICE_ACCOUNT`, drafft-backend).
 
 Projects `drafft` (`proj3dc1aebd`, Play app `app5a04674ede`) and `drafft staging` (`proje5eb803d`, Play app
 `app24119c5a87`), one Google service account for both. The public `goog_` keys are in
-`config/*.properties`; the local flavor uses the staging key. Pub/Sub notifications (real-time
+`config/*.properties`. Pub/Sub notifications (real-time
 RevenueCat events) are not set up yet.
 
 ## Google Play

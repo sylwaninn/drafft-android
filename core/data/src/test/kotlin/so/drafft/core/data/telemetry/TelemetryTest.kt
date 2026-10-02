@@ -980,8 +980,8 @@ class TelemetryTest {
 
     @Test
     fun anUnknownEnvironmentNeverCountsAsProduction() {
-        for (known in listOf("production", "staging", "local")) assertEquals(known, TelemetryConfig.environmentID(known))
-        for (odd in listOf("", "\$(ENVIRONMENT)", "Production", "prod", "debug")) assertEquals("unknown", TelemetryConfig.environmentID(odd), odd)
+        for (known in listOf("production", "staging")) assertEquals(known, TelemetryConfig.environmentID(known))
+        for (odd in listOf("", "\$(ENVIRONMENT)", "Production", "prod", "debug", "local")) assertEquals("unknown", TelemetryConfig.environmentID(odd), odd)
     }
 
     @Test

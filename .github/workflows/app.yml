@@ -30,7 +30,7 @@ jobs:
         run: ./gradlew -p tools/jvmcheck compileKotlin test
 
   android:
-    name: android (assembleLocalDebug)
+    name: android (assembleStagingDebug)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -40,11 +40,10 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      # The runner image ships the Android SDK. No local.private.properties and no
-      # google-services.json: the build still succeeds (the local app would stop at launch saying
-      # what's missing, push stays off).
+      # The runner image ships the Android SDK. No google-services.json: the build still succeeds
+      # (push stays off).
       - name: Build
-        run: ./gradlew assembleLocalDebug
+        run: ./gradlew assembleStagingDebug
 
   design:
     name: design (DESIGN.md rules)

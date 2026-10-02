@@ -73,7 +73,6 @@ class PostHogAnalytics private constructor() : Telemetry.Analytics {
                 errorTrackingConfig.autoCapture = false
                 errorTrackingConfig.captureNativeCrashes = false
                 releaseIdentifier = config.release
-                debug = config.isDebugBuild && config.environment == "local"
                 // Small batches: a session is short and the app may be killed in the background.
                 flushAt = 10
                 flushIntervalSeconds = 30
