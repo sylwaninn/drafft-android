@@ -159,7 +159,7 @@ Three flavors, each with its values in `config/<flavor>.properties`, committed:
 - **local** (`drafft local`, the local Supabase of drafft-backend with its staging services, debug
   only: there is no local release build).
 
-Values: Supabase URL and publishable key, RevenueCat public SDK key (`goog_...`), Turnstile site key,
+Values: Supabase URL and publishable key, RevenueCat public SDK key (`goog_...`), Turnstile site key, Play Integrity cloud project number,
 SMS code lifetime, launcher name, Sentry DSN, PostHog key and host (the full list:
 [docs/configuration.md](docs/configuration.md)). `app/build.gradle.kts` reads them into `BuildConfig` and
 `app_name`. A new value goes in the three files and in `flavorFields`.

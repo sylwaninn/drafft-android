@@ -9,6 +9,7 @@ Each flavor has one file of public values, read into `BuildConfig`:
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | The Supabase project (publishable key only) |
 | `REVENUECAT_API_KEY` | RevenueCat public SDK key for Google Play (`goog_...`) |
 | `TURNSTILE_SITE_KEY` | Cloudflare Turnstile public site key |
+| `PLAY_INTEGRITY_PROJECT_NUMBER` | Number of the Google Cloud project linked in Play Console (App integrity), public: Play Integrity asks Google for its token with it. Empty: the device is not attested |
 | `SMS_CODE_LIFETIME` | Auth's SMS OTP expiry, in seconds |
 | `APP_DISPLAY_NAME` | Launcher name |
 | `SENTRY_DSN` | Sentry DSN, EU region (crashes, errors, performance). Empty: off |
