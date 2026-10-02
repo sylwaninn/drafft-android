@@ -36,17 +36,21 @@ fun flavorConfig(flavor: String): Map<String, String> {
         ?: throw GradleException("config/$flavor.properties is missing.")
     val machine = if (flavor == "local") readProperties("local.private.properties").orEmpty().filterKeys { it in machineKeys } else emptyMap()
     val values = committed + machine
-    // Refused at configuration, before anything builds: a secret in the app, or a remote backend over http.
+    // Refused at configuration, before anything builds: a secret in the app, a remote backend over http, or a
+    // Play Integrity project that isn't a number (production must have one: without it nothing is attested).
     values.forEach { (key, value) ->
         if (secretLike.containsMatchIn(value)) throw GradleException("$key ($flavor) looks like a secret: only public keys go in the app.")
-    }
-    val playProject = values["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty()
-    if (playProject.isNotEmpty() && !playProject.all(Char::isDigit)) {
-        throw GradleException("PLAY_INTEGRITY_PROJECT_NUMBER ($flavor) must be the number of the Google Cloud project, digits only.")
     }
     val url = values["SUPABASE_URL"].orEmpty()
     if (flavor != "local" && url.isNotEmpty() && !url.startsWith("https://")) {
         throw GradleException("SUPABASE_URL ($flavor) must be https.")
+    }
+    val playProject = values["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty()
+    if (playProject.isNotEmpty() && !Regex("^\\d{1,18}$").matches(playProject)) {
+        throw GradleException("PLAY_INTEGRITY_PROJECT_NUMBER ($flavor) must be the number of the Google Cloud project: 1 to 18 digits.")
+    }
+    if (flavor == "production" && playProject.isEmpty()) {
+        throw GradleException("PLAY_INTEGRITY_PROJECT_NUMBER (production) is empty: the device would not be attested.")
     }
     // Telemetry stays in the EU, like the backend: PostHog's EU cloud, Sentry's EU region (ingest.de.sentry.io).
     val postHogHost = values["POSTHOG_HOST"].orEmpty()
@@ -77,9 +81,9 @@ fun com.android.build.api.dsl.VariantDimension.flavorFields(flavor: String) {
     buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", v["SUPABASE_PUBLISHABLE_KEY"].orEmpty().quoted())
     buildConfigField("String", "REVENUECAT_API_KEY", v["REVENUECAT_API_KEY"].orEmpty().quoted())
     buildConfigField("String", "TURNSTILE_SITE_KEY", v["TURNSTILE_SITE_KEY"].orEmpty().quoted())
+    buildConfigField("String", "PLAY_INTEGRITY_PROJECT_NUMBER", v["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty().quoted())
     buildConfigField("int", "SMS_CODE_LIFETIME", (v["SMS_CODE_LIFETIME"]?.toIntOrNull() ?: 600).toString())
     buildConfigField("String", "ENVIRONMENT", (if (flavor == "production") "" else flavor).quoted())
-    buildConfigField("String", "PLAY_INTEGRITY_PROJECT_NUMBER", v["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty().quoted())
     buildConfigField("String", "SENTRY_DSN", v["SENTRY_DSN"].orEmpty().quoted())
     buildConfigField("String", "POSTHOG_API_KEY", v["POSTHOG_API_KEY"].orEmpty().quoted())
     buildConfigField("String", "POSTHOG_HOST", (v["POSTHOG_HOST"] ?: "https://eu.i.posthog.com").quoted())

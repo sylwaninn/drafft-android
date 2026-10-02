@@ -35,8 +35,9 @@ val androidDataModule = module {
     single { AndroidLocationProvider(androidContext(), get()) } bind LocationProvider::class
     single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
     single<DeviceIntegrityProvider> {
-        val project = get<BackendConfig>().playIntegrityProjectNumber.toLongOrNull()
-        if (project == null) UnsupportedDeviceIntegrity else PlayDeviceIntegrity(androidContext(), project)
+        get<BackendConfig>().playIntegrityProjectNumber
+            ?.let { projectNumber -> PlayDeviceIntegrity(androidContext(), projectNumber) }
+            ?: UnsupportedDeviceIntegrity
     }
     single<DiagnosticsSource> { ExitReasonDiagnostics(androidContext(), get()) }
 }

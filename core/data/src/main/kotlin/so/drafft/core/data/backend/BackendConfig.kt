@@ -17,8 +17,11 @@ data class BackendConfig(
     val turnstileSiteKey: String = "",
     /** "" for production, "staging", "local". */
     val environment: String = "",
-    /** Number of the Google Cloud project linked in Play Console (App integrity), for Play Integrity. Empty: no device attestation. */
-    val playIntegrityProjectNumber: String = "",
+    /**
+     * Number of the Google Cloud project linked in Play Console (App integrity), for Play Integrity
+     * (`PLAY_INTEGRITY_PROJECT_NUMBER`). Null: no device attestation.
+     */
+    val playIntegrityProjectNumber: Long? = null,
 ) {
     /** How long an email code works (Auth's email OTP expiry, 1 hour everywhere). */
     val emailCodeLifetime: Double get() = 3600.0
