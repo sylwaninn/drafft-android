@@ -10,6 +10,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -386,9 +387,9 @@ class Backend(
         }
 
         /**
-         * The Supabase client of the app: Auth, with the session kept in [store] across launches, and
-         * Realtime. An unconfigured build (see [BackendConfig.missing]) gets a placeholder address, so
-         * the app can start and say what's missing instead of crashing.
+         * The Supabase client of the app: Auth, with the session kept in [store] across launches, Realtime
+         * and Storage (the selfie upload). An unconfigured build (see [BackendConfig.missing]) gets a
+         * placeholder address, so the app can start and say what's missing instead of crashing.
          */
         fun createClient(config: BackendConfig, store: KeyValueStore): SupabaseClient = createSupabaseClient(
             supabaseUrl = config.url.ifBlank { "https://unconfigured.invalid" },
@@ -398,6 +399,7 @@ class Backend(
                 sessionManager = KeyValueSessionManager(store)
             }
             install(Realtime)
+            install(Storage)
         }
     }
 }

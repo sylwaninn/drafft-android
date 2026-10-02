@@ -55,6 +55,12 @@ flowchart LR
   Push["Firebase Cloud Messaging<br/>pushes"] --> App
   App --> RevenueCat["RevenueCat<br/>Google Play billing"]
   App --> Telemetry["Sentry, PostHog<br/>crashes and events, EU"]
+  Supabase -. "presigns PUT,<br/>reads, deletes" .-> R2
+  Supabase -. "signs GET links" .-> Worker
+  Worker -.-> R2
+  Supabase <-. "token, channels,<br/>webhook" .-> Stream
+  Supabase -.-> Push
+  RevenueCat -. "webhook" .-> Supabase
 ```
 
 ### The app
@@ -177,18 +183,15 @@ Versions are pinned in `gradle/libs.versions.toml`.
 
 ## Getting started
 
-Needs Android Studio (AGP 8.13), JDK 17+ and Android SDK 36; for the local backend, Docker and the Supabase CLI.
+Needs Android Studio (AGP 8.13), JDK 17+ and Android SDK 36.
 
 ```sh
 git config core.hooksPath .agents/git-hooks
-(cd ../drafft-backend && supabase start)       # local backend
-scripts/local-backend.sh                       # --device for a phone on the same Wi-Fi
-./gradlew assembleLocalDebug                   # "drafft local"
+./gradlew assembleStagingDebug                 # "drafft β"
 ```
 
 | Flavor | Backend | Launcher name |
 |---|---|---|
-| `local` (debug only) | Supabase of drafft-backend on your machine | drafft local |
 | `staging` | Supabase branch `staging` | drafft β |
 | `production` | production | drafft |
 
@@ -210,7 +213,7 @@ python3 scripts/ci/i18n_lint.py                # 7 languages, placeholders, WORD
 
 | When | CI |
 |---|---|
-| Pull request | `app.yml`: the checks above, `assembleLocalDebug`, gitleaks, actionlint, media and fonts under 1 MB, public keys only; `pr.yml`: base branch, title, description, commit authors, no AI attribution, a warning for unsigned commits |
+| Pull request | `app.yml`: the checks above, `assembleStagingDebug`, gitleaks, actionlint, media and fonts under 1 MB, public keys only; `pr.yml`: base branch, title, description, commit authors, no AI attribution, a warning for unsigned commits |
 | Merge into `staging` | `app.yml` again |
 | Release (**Actions > release**) | `main` fast-forwards to `staging`, a `vX.Y.Z` tag and a GitHub release; store builds are made by hand from the tag |
 
@@ -235,7 +238,7 @@ longer matches a catalog key.
 | [PRODUCT.md](PRODUCT.md) | need the users, the principles, the privacy rules |
 | [DESIGN.md](DESIGN.md) | touch anything on screen |
 | [WORDING.md](WORDING.md) | write any text people read, in any language |
-| [docs/configuration.md](docs/configuration.md) | add a build key, set up push or the local backend |
+| [docs/configuration.md](docs/configuration.md) | add a build key or set up push |
 | [docs/telemetry.md](docs/telemetry.md) | add an event, a screen or an error; set up Sentry and PostHog |
 | [docs/store-setup.md](docs/store-setup.md) | touch Google Play, Firebase or RevenueCat setup |
 | [AGENTS.md](AGENTS.md) | run a coding agent, or need the repository rules |

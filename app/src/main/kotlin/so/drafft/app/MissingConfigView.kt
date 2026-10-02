@@ -14,7 +14,7 @@ import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.display
 
 /**
- * A build that can't reach a backend (the local flavor without its machine's URL and key)
+ * A build that can't reach a backend (a flavor whose config file lacks the Supabase URL or key)
  * stops here and says what's missing. Developer-facing: not translated.
  */
 @Composable

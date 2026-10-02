@@ -26,7 +26,7 @@ logic, UI, i18n, refactors, config/CI, fixes. For each:
 
 ## 3. Verify
 
-Run `./gradlew -p tools/jvmcheck compileKotlin test`, `python3 scripts/check-strings.py`, `python3 scripts/ci/design_lint.py && python3 scripts/ci/i18n_lint.py`, `./gradlew assembleLocalDebug`. Zero errors. If a tool is missing (Android SDK, local Supabase not running,
+Run `./gradlew -p tools/jvmcheck compileKotlin test`, `python3 scripts/check-strings.py`, `python3 scripts/ci/design_lint.py && python3 scripts/ci/i18n_lint.py`, `./gradlew assembleStagingDebug`. Zero errors. If a tool is missing (Android SDK,
 no macOS on the web), run the rest and say in the pull request what was left to CI.
 
 ## 4. Docs, legal, parity

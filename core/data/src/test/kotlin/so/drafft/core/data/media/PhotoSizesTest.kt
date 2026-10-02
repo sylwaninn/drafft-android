@@ -24,9 +24,9 @@ class PhotoSizesTest {
 
     @Test
     fun otherLinksAreLeftAlone() {
-        // A signed link wherever it points (locally, the app-config host isn't the signed links' host).
-        val local = "http://10.0.2.2:8787/$key?exp=1790000000&sig=deadbeef"
-        assertEquals("$local&w=640", Images.sized(local, 640))
+        // A signed link wherever it points (the app-config host isn't always the signed links' host).
+        val other = "https://cdn.example.com/$key?exp=1790000000&sig=deadbeef"
+        assertEquals("$other&w=640", Images.sized(other, 640))
         assertEquals("$base/$key", Images.sized("$base/$key", 256))
         assertEquals("$base/logo.png?exp=1&sig=2", Images.sized("$base/logo.png?exp=1&sig=2", 256))
     }

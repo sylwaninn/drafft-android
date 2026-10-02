@@ -293,7 +293,7 @@ fun MeView(modifier: Modifier = Modifier) {
     }
 }
 
-/** "drafft 1.0 (12)", with the environment in the name off production ("drafft β", "drafft local"). */
+/** "drafft 1.0 (12)", with the environment in the name off production ("drafft β"). */
 private fun buildLabel(info: AppInfo): String {
     val name = when (info.environment) {
         "" -> Brand.NAME

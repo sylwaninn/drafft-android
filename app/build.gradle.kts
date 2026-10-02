@@ -11,16 +11,13 @@ plugins {
 
 // Push (FCM) needs the Firebase project's google-services.json, per environment
 // (app/src/<flavor>/google-services.json). Without it the app builds and runs, push stays off.
-val hasFirebaseConfig = listOf("production", "staging", "local").any { file("src/$it/google-services.json").exists() } ||
+val hasFirebaseConfig = listOf("production", "staging").any { file("src/$it/google-services.json").exists() } ||
     file("google-services.json").exists()
 if (hasFirebaseConfig) apply(plugin = libs.plugins.google.services.get().pluginId)
 
 // Each flavor's values live in config/<flavor>.properties, committed: public keys only (Supabase
 // publishable key, RevenueCat public SDK key, Turnstile site key, Sentry DSN, PostHog project key).
-// The local Supabase depends on the machine: scripts/local-backend.sh writes its URL and key to
-// local.private.properties (gitignored).
-val flavors = listOf("production", "staging", "local")
-val machineKeys = setOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY")
+val flavors = listOf("production", "staging")
 // Supabase secret keys, Sentry auth tokens (sntrys_/sntryu_), PostHog personal API keys (phx_).
 val secretLike = Regex("sb_secret_|service_role|PRIVATE KEY|sntrys_|sntryu_|phx_")
 
@@ -34,15 +31,14 @@ fun readProperties(path: String): Map<String, String>? {
 fun flavorConfig(flavor: String): Map<String, String> {
     val committed = readProperties("config/$flavor.properties")
         ?: throw GradleException("config/$flavor.properties is missing.")
-    val machine = if (flavor == "local") readProperties("local.private.properties").orEmpty().filterKeys { it in machineKeys } else emptyMap()
-    val values = committed + machine
-    // Refused at configuration, before anything builds: a secret in the app, a remote backend over http, or a
+    val values = committed
+    // Refused at configuration, before anything builds: a secret in the app, a backend over http, or a
     // Play Integrity project that isn't a number (production must have one: without it nothing is attested).
     values.forEach { (key, value) ->
         if (secretLike.containsMatchIn(value)) throw GradleException("$key ($flavor) looks like a secret: only public keys go in the app.")
     }
     val url = values["SUPABASE_URL"].orEmpty()
-    if (flavor != "local" && url.isNotEmpty() && !url.startsWith("https://")) {
+    if (url.isNotEmpty() && !url.startsWith("https://")) {
         throw GradleException("SUPABASE_URL ($flavor) must be https.")
     }
     val playProject = values["PLAY_INTEGRITY_PROJECT_NUMBER"].orEmpty()
@@ -106,7 +102,7 @@ android {
 
     flavorDimensions += "env"
     productFlavors {
-        // Production, staging and local backends. Values: config/<flavor>.properties.
+        // Production and staging backends. Values: config/<flavor>.properties.
         flavors.forEach { flavor ->
             create(flavor) {
                 dimension = "env"
@@ -159,8 +155,6 @@ android {
 }
 
 androidComponents {
-    // The local flavor talks to a machine on the network over http: debug only, never shipped.
-    beforeVariants(selector().withFlavor("env" to "local").withBuildType("release")) { it.enable = false }
     // A release build whose config lacks a required value fails before compiling anything.
     onVariants(selector().withBuildType("release")) { variant ->
         val flavor = variant.flavorName.orEmpty()
