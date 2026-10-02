@@ -13,7 +13,7 @@ interface AppInfo {
     /** "" for production, "staging" (the build flavor's `ENVIRONMENT`). */
     val environment: String
 
-    /** A debug build (installed from the IDE): development push and device attestation environments. */
+    /** A debug build (installed from the IDE): the sandbox push environment and the SDKs' debug logging. */
     val isDebugBuild: Boolean
 
     /** The hardware model ("Pixel 9"), not a marketing name. */
@@ -54,12 +54,12 @@ fun interface PlaybackControl {
 }
 
 /**
- * A device attestation token for the server. Null when the device can't give one. On Android this would be
- * Play Integrity, not wired yet: [isSupported] is false and nothing is sent.
+ * A device attestation token for the server (Play Integrity on Android). Null when this build doesn't
+ * attest; an exception when the device couldn't give one (the caller sends nothing and tries again at the
+ * next opening). [requestHash] binds the token to the account: the server compares it with its own.
  */
 interface DeviceIntegrityProvider {
-    val isSupported: Boolean
-    suspend fun token(): String?
+    suspend fun token(requestHash: String): String?
 }
 
 /**

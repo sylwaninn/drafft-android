@@ -46,7 +46,7 @@ val dataModule = module {
     single { ProfileSync(get(), get()) }
     single { Safety(get()) }
     single { AppOpens(get(), get()) }
-    single { DeviceIntegrity(get(), get(), get()) }
+    single { DeviceIntegrity(get(), get()) }
     single { AccountModeration(get(), getOrNull<PlaybackControl>()) }
     single { OnboardingStore(get(), get(), get()) }
     single { LocationOnce(get(), get()) }

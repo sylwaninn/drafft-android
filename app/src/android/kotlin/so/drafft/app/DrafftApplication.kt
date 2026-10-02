@@ -88,6 +88,10 @@ val appModule = module {
             smsCodeLifetime = BuildConfig.SMS_CODE_LIFETIME.toDouble(),
             turnstileSiteKey = BuildConfig.TURNSTILE_SITE_KEY,
             environment = BuildConfig.ENVIRONMENT,
+            // Checked at configuration (digits only): a value that doesn't parse here stops the app, not the attestation.
+            playIntegrityProjectNumber = BuildConfig.PLAY_INTEGRITY_PROJECT_NUMBER.takeIf { it.isNotEmpty() }?.let {
+                it.toLongOrNull() ?: error("PLAY_INTEGRITY_PROJECT_NUMBER is not a number")
+            },
         )
     }
     single<ForegroundReturns> { ProcessForegroundReturns() }

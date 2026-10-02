@@ -19,6 +19,7 @@ media3 = "1.8.0"
 camerax = "1.5.0"
 workManager = "2.10.5"
 playServicesLocation = "21.3.0"
+playIntegrity = "1.6.0"
 firebaseBom = "34.3.0"
 googleServices = "4.4.3"
 koin = "4.1.1"
@@ -69,6 +70,7 @@ compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-animation = { module = "androidx.compose.animation:animation" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 
+play-integrity = { module = "com.google.android.play:integrity", version.ref = "playIntegrity" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }

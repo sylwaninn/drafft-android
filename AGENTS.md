@@ -158,8 +158,8 @@ Two flavors, each with its values in `config/<flavor>.properties`, committed:
 - **staging** (`drafft β`, staging backend).
 
 Values: Supabase URL and publishable key, RevenueCat public SDK key (`goog_...`), Turnstile site key,
-SMS code lifetime, launcher name, Sentry DSN, PostHog key and host (the full list:
-[docs/configuration.md](docs/configuration.md)). `app/build.gradle.kts` reads them into `BuildConfig` and
+Play Integrity cloud project number, SMS code lifetime, launcher name, Sentry DSN, PostHog key and host
+(the full list: [docs/configuration.md](docs/configuration.md)). `app/build.gradle.kts` reads them into `BuildConfig` and
 `app_name`. A new value goes in the two files and in `flavorFields`.
 
 Only public keys, ever. The build stops at configuration on anything that looks like a secret, a
