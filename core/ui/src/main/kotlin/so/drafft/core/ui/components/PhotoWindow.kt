@@ -24,7 +24,8 @@ import so.drafft.core.model.Profile
  * (`SwipeCard`'s priority); the window covers what comes after them:
  *
  * - on a good connection, the portraits of the cards on screen and of the next 6, to disk, at the copy
- *   their card needs, then the other photos of the card in play (its profile, if opened);
+ *   their card needs, then the other photos of the card in play (its profile, if opened, at the copy it
+ *   asks for);
  * - on a limited one ([NetworkQuality]), a small copy of the portraits on screen and of the next 8
  *   instead ([ImageStore.preview], about 20 kB each): a full copy can't keep up with fast swipes on a
  *   slow line, a small one can, so no card shows only its blurred preview. They come ahead of the card in
@@ -92,7 +93,7 @@ class PhotoWindow private constructor() {
                         emptyList()
                     } else {
                         deck.firstOrNull()?.photos.orEmpty().mapNotNull {
-                            ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW)
+                            ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW, detail = true)
                         }
                     },
                 )

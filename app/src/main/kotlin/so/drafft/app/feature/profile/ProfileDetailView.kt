@@ -366,7 +366,7 @@ private fun Gallery(profile: Profile, pager: androidx.compose.foundation.pager.P
             .semantics { contentDescription = L("Photos of %s, %d total", profile.name, photos.size) },
     ) {
         HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { i ->
-            Photo(photos[i], Modifier.fillMaxSize())
+            Photo(photos[i], Modifier.fillMaxSize(), detail = true)
         }
         // Page steps centered on the photo, like a system page control; the heart keeps the corner.
         // Both share one bottom line so they read as one row, not two stray pieces.
