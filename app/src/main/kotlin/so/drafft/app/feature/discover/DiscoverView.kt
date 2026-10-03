@@ -228,7 +228,7 @@ fun DiscoverView(modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxSize()
-            // The screen's width: an open profile's gallery, until it's been measured (`ProfileGallery`).
+            // Discover's width: an open profile's gallery's, until the gallery has been measured.
             .onSizeChanged { ProfileGallery.guess(it.width, density) }
             .background(DS.palette.canvasSoft)
             .windowInsetsPadding(WindowInsets.statusBars)
@@ -277,6 +277,7 @@ fun DiscoverView(modifier: Modifier = Modifier) {
                         onSize = { deckSize = it },
                         onCommit = { p, liked -> commit(p, liked) },
                         onSuperLike = ::askSuperLike,
+                        profileOpen = detail != null,
                         // Its first photo starts downloading at the gallery's size: the sheet's rise gives it
                         // a head start, and the card's own copy stands in until it's there.
                         onOpen = { p ->
@@ -406,6 +407,7 @@ private fun Deck(
     onCommit: (Profile, Boolean) -> Unit,
     onSuperLike: (Profile) -> Unit,
     onOpen: (Profile) -> Unit,
+    profileOpen: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val app = LocalAppModel.current
@@ -449,12 +451,14 @@ private fun Deck(
             }
         }
         DisposableEffect(Unit) { onDispose { PhotoWindow.deck.clear() } }
-        // A card looked at for a while is likelier to be opened: its profile's first photo starts, under the
-        // deck's own. A swipe cancels it; never ahead of every card, most are never opened.
+        // A card looked at for a while is likelier to be opened: its profile's first photo starts, at the
+        // window's look-ahead priority (LOW). A swipe or the tap that opens it ends the wait; never on a
+        // limited line, never ahead of every card: most are never opened.
         val top = app.deck.firstOrNull()
-        LaunchedEffect(top?.id, onScreen) {
-            if (top == null || !onScreen || NetworkQuality.shared.isLimited) return@LaunchedEffect
+        LaunchedEffect(top?.id, onScreen, profileOpen) {
+            if (top == null || !onScreen || profileOpen) return@LaunchedEffect
             delay(1_500)
+            if (NetworkQuality.shared.isLimited) return@LaunchedEffect
             ProfileGallery.warm(context, top.portrait, Images.Priority.LOW)
         }
     }

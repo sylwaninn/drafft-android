@@ -33,9 +33,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.NetworkQuality
 import so.drafft.core.data.media.PhotoDownloads
@@ -47,9 +45,9 @@ import so.drafft.core.ui.theme.Motion
  * frame needs, decoded in the background at the frame's size, capped caches. A copy already in memory
  * shows on the first frame; otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile,
  * stands in until it's there. On a slow connection a large frame first shows a small copy
- * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives. An open profile's
- * photo ([detail]) wider than the copy already on this phone shows that copy at once ([ImageStore.standIn],
- * the deck card's, typically) while the wider one arrives, instead of a loader.
+ * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives. A large photo of an
+ * open profile ([detail]) whose copy isn't on this phone yet first shows a narrower one that is
+ * ([ImageStore.standIn], the deck card's, typically), decoded from disk, while it downloads.
  */
 @Composable
 internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority, detail: Boolean = false) {
@@ -126,13 +124,13 @@ private fun rememberStandIn(name: String, width: Int, height: Int, sharp: Boolea
     val sharpNow by rememberUpdatedState(sharp)
     LaunchedEffect(name, width, height) {
         if (sharpNow) return@LaunchedEffect
-        val found = withContext(Dispatchers.IO) { ImageStore.standIn(context, name, width, height) }
+        val found = ImageStore.standIn(context, name, width, height)
         // The sharp copy came first: nothing to stand in for.
         if (!sharpNow) standIn.value = found
     }
     LaunchedEffect(sharp) {
         if (!sharp || standIn.value == null) return@LaunchedEffect
-        // Past the sharp copy's 0.2 s fade, the stand-in under it goes.
+        // Past FadingImage's 0.2 s fade, the stand-in under it goes.
         delay(300)
         standIn.value = null
     }

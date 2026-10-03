@@ -13,6 +13,7 @@ import coil3.memory.MemoryCache
 import coil3.network.NetworkHeaders
 import coil3.network.httpHeaders
 import coil3.request.CachePolicy
+import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
@@ -224,8 +225,9 @@ object ImageStore {
 
     /**
      * Fetches to disk the copy a frame of [width] × [height] pixels shows ([prefetchRequest]), and returns
-     * once it's there, or failed (the photo asks again when it's drawn). A download of it already running
-     * is joined (`SharedFetches`) and raised to [priority]. Cancelling the caller stops it.
+     * whether it's there (false: failed, offline). A download of it already running is joined
+     * (`SharedFetches`) and raised to [priority], never lowered ([PhotoDownloads.raise]). Cancelling the
+     * caller stops its wait, and the download if it started it (a request still waiting downloads it again).
      */
     suspend fun fetch(
         context: PlatformContext,
@@ -234,24 +236,27 @@ object ImageStore {
         height: Int,
         priority: Images.Priority,
         detail: Boolean = false,
-    ) {
-        val request = withContext(Dispatchers.IO) { prefetchRequest(context, name, width, height, priority, detail) } ?: return
-        request.diskCacheKey?.let { PhotoDownloads.shared.prioritize(it, priority.ordinal) }
-        SingletonImageLoader.get(context).execute(request)
+    ): Boolean {
+        val request = withContext(Dispatchers.IO) { prefetchRequest(context, name, width, height, priority, detail) } ?: return true
+        request.diskCacheKey?.let { PhotoDownloads.shared.raise(it, priority.ordinal) }
+        return SingletonImageLoader.get(context).execute(request) !is ErrorResult
     }
 
     /**
-     * A copy already on this phone, smaller than the one an open profile's photo will download for a frame
-     * of [width] × [height] pixels ([Renditions.standIn]): shown at once, decoded from disk and cropped
-     * alike, while the right copy arrives. The deck card's everyday copy, typically, when the gallery wants
-     * a wider one. Looks on disk: off the main thread.
+     * A copy already on this phone, narrower than the one an open profile's photo will download for a frame
+     * of [width] × [height] pixels ([Renditions.standIn]): decoded from disk at the sharp copy's size and
+     * crop, and shown while the right copy arrives. The deck card's everyday copy, typically, when the
+     * gallery wants a wider one. Looks on disk, off the main thread.
      */
-    fun standIn(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
+    suspend fun standIn(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
         if (!name.startsWith("http")) return null
         val pixels = PixelSize(width, height)
-        val onDisk = { w: Int -> Images.sized(name, w)?.takeIf { isOnDisk(context, cacheID(it, null)) } }
-        val copy = Renditions.standIn(fullWidth(name, pixels, detail = true)) { onDisk(it) != null } ?: return null
-        val url = onDisk(copy) ?: return null
+        val copy = withContext(Dispatchers.IO) {
+            Renditions.standIn(fullWidth(name, pixels, detail = true)) { w ->
+                Images.sized(name, w)?.let { isOnDisk(context, cacheID(it, null)) } == true
+            }
+        } ?: return null
+        val url = Images.sized(name, copy) ?: return null
         return make(context, url, Renditions.decodeSize(pixels), Images.Priority.VERY_HIGH, blur = 0f, variant = null, fill = true)
     }
 

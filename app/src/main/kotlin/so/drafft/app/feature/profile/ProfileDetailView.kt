@@ -362,15 +362,17 @@ fun ProfileDetailView(
 private fun Gallery(profile: Profile, pager: androidx.compose.foundation.pager.PagerState, discover: Boolean, onLikePhoto: (String) -> Unit) {
     val photos = profile.allPhotos
     val context = LocalPlatformContext.current
-    // The next two photos downloaded while this one is looked at, each once: a swipe never lands on a loader.
+    // The next two photos downloaded while this one is looked at, each once (again if it failed): a swipe
+    // usually lands on the photo, not a loader.
     val scope = rememberCoroutineScope()
     val fetched = remember(profile.id) { mutableSetOf<String>() }
-    LaunchedEffect(pager.currentPage, photos) {
-        val frame = ProfileGallery.size
+    val frame = ProfileGallery.size
+    LaunchedEffect(pager.currentPage, photos, frame) {
         if (frame.width <= 0 || frame.height <= 0) return@LaunchedEffect
         for (next in photos.drop(pager.currentPage + 1).take(2)) {
-            if (fetched.add(next)) {
-                scope.launch { ImageStore.fetch(context, next, frame.width, frame.height, Images.Priority.LOW, detail = true) }
+            if (!fetched.add(next)) continue
+            scope.launch {
+                if (!ImageStore.fetch(context, next, frame.width, frame.height, Images.Priority.LOW, detail = true)) fetched.remove(next)
             }
         }
     }
@@ -378,13 +380,19 @@ private fun Gallery(profile: Profile, pager: androidx.compose.foundation.pager.P
         Modifier
             .fillMaxWidth()
             .height(ProfileGallery.height)
-            // The sheet's real size, for the next profile's first photo (`ProfileGallery.warm`).
-            .onSizeChanged { ProfileGallery.size = it }
+            // The gallery's own size: the prefetch above and the next profile's first photo fetch for it.
+            .onSizeChanged(ProfileGallery::measured)
             .clip(RoundedCornerShape(bottomStart = DS.Radius.xl, bottomEnd = DS.Radius.xl))
             .semantics { contentDescription = L("Photos of %s, %d total", profile.name, photos.size) },
     ) {
         HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { i ->
-            Photo(photos[i], Modifier.fillMaxSize(), detail = true)
+            // The photo looked at keeps the priority its tap gave it.
+            Photo(
+                photos[i],
+                Modifier.fillMaxSize(),
+                priority = if (i == pager.currentPage) Images.Priority.HIGH else Images.Priority.NORMAL,
+                detail = true,
+            )
         }
         // Page steps centered on the photo, like a system page control; the heart keeps the corner.
         // Both share one bottom line so they read as one row, not two stray pieces.
