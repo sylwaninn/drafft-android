@@ -69,4 +69,27 @@ class RenditionsTest {
         assertEquals(sharp.width / sharp.height, small.width / small.height, 0.002)
         assertEquals(PixelSize(64, 64), Renditions.decodeSize(PixelSize(10, 0)))
     }
+
+    @Test
+    fun theCardsCopyStandsInForAnOpenProfilesWiderOne() {
+        // The gallery, 393 × 440 dp at 3x density, wants 1 440; the card left its 1 080 on this phone.
+        val needed = Renditions.neededWidth(PixelSize(1_179, 1_320), aspect = 0.8)
+        assertEquals(1_080, Renditions.standIn(needed) { it == 1_080 })
+        // The widest one below wins.
+        assertEquals(1_080, Renditions.standIn(needed) { it == 640 || it == 1_080 })
+    }
+
+    @Test
+    fun noStandInWhenTheRightCopyIsHereOrOnlyATinyOneIs() {
+        assertNull(Renditions.standIn(1_179.0) { it == 1_440 })
+        assertNull(Renditions.standIn(1_179.0) { it == 1_080 || it == 1_440 })
+        // A chat avatar's copy says no more than the blurred preview.
+        assertNull(Renditions.standIn(1_179.0) { it == 320 })
+        assertNull(Renditions.standIn(1_179.0) { false })
+    }
+
+    @Test
+    fun anyLadderCopyStandsInForTheOriginal() {
+        assertEquals(1_440, Renditions.standIn(1_800.0) { it == 1_440 })
+    }
 }

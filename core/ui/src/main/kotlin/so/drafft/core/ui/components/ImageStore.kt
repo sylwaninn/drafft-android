@@ -23,6 +23,7 @@ import so.drafft.core.data.media.Images
 import so.drafft.core.data.media.MediaPreviews
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.media.NetworkQuality
+import so.drafft.core.data.media.PhotoDownloads
 import so.drafft.core.data.media.PixelSize
 import so.drafft.core.data.media.Renditions
 import so.drafft.core.model.ThumbHash
@@ -219,6 +220,39 @@ object ImageStore {
             .size(Size(64, 64))
             .precision(Precision.INEXACT)
             .build()
+    }
+
+    /**
+     * Fetches to disk the copy a frame of [width] × [height] pixels shows ([prefetchRequest]), and returns
+     * once it's there, or failed (the photo asks again when it's drawn). A download of it already running
+     * is joined (`SharedFetches`) and raised to [priority]. Cancelling the caller stops it.
+     */
+    suspend fun fetch(
+        context: PlatformContext,
+        name: String,
+        width: Int,
+        height: Int,
+        priority: Images.Priority,
+        detail: Boolean = false,
+    ) {
+        val request = withContext(Dispatchers.IO) { prefetchRequest(context, name, width, height, priority, detail) } ?: return
+        request.diskCacheKey?.let { PhotoDownloads.shared.prioritize(it, priority.ordinal) }
+        SingletonImageLoader.get(context).execute(request)
+    }
+
+    /**
+     * A copy already on this phone, smaller than the one an open profile's photo will download for a frame
+     * of [width] × [height] pixels ([Renditions.standIn]): shown at once, decoded from disk and cropped
+     * alike, while the right copy arrives. The deck card's everyday copy, typically, when the gallery wants
+     * a wider one. Looks on disk: off the main thread.
+     */
+    fun standIn(context: PlatformContext, name: String, width: Int, height: Int): ImageRequest? {
+        if (!name.startsWith("http")) return null
+        val pixels = PixelSize(width, height)
+        val onDisk = { w: Int -> Images.sized(name, w)?.takeIf { isOnDisk(context, cacheID(it, null)) } }
+        val copy = Renditions.standIn(fullWidth(name, pixels, detail = true)) { onDisk(it) != null } ?: return null
+        val url = onDisk(copy) ?: return null
+        return make(context, url, Renditions.decodeSize(pixels), Images.Priority.VERY_HIGH, blur = 0f, variant = null, fill = true)
     }
 
     private fun make(

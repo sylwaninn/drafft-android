@@ -59,6 +59,20 @@ object Renditions {
         return ladder.filter { it >= start } + listOf(null)
     }
 
+    /** The narrowest copy worth standing in for a sharper one ([standIn]): below it, the blurred preview says as much. */
+    const val standInMinimum = 640
+
+    /**
+     * The copy to show at once while the one covering [covering] downloads: the widest already on this phone
+     * ([here]) below it, at least [standInMinimum] wide. Null when a copy covering it is already here (it
+     * decodes as fast) or no smaller one is.
+     */
+    fun standIn(covering: Double, here: (Int) -> Boolean): Int? {
+        if (candidates(covering).any { it != null && here(it) }) return null
+        val start = width(covering) ?: Int.MAX_VALUE
+        return ladder.lastOrNull { it >= standInMinimum && it < start && here(it) }
+    }
+
     /**
      * A small copy shown first on a slow connection, sharpened when the right one arrives: a quarter of
      * the width needed, at least 160 px.
