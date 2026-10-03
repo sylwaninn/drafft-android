@@ -65,8 +65,8 @@ class DrafftMessagingService : FirebaseMessagingService(), KoinComponent {
 /**
  * A notification's tap, from `MainActivity` (`onCreate` on a cold start, `onNewIntent` when the app was
  * running): its data goes to [NotificationService.didReceive], which parses where it leads ([PushTap]) and
- * keeps it until the tabs are on screen. Whether the intent came from a notification. The extras are
- * cleared once handled, and an intent relaunched from Recents (which carries the old extras again) is
+ * keeps it until the tabs are on screen. Returns whether the intent came from a notification. The extras
+ * are cleared once handled, and an intent relaunched from Recents (which carries the old extras again) is
  * ignored: a tap opens its place once.
  */
 fun NotificationService.handleNotificationTap(intent: Intent?): Boolean {

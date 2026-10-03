@@ -3,6 +3,7 @@ package so.drafft.core.data.notifications
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import java.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
@@ -31,7 +32,8 @@ import so.drafft.core.model.Localization
  * Notifications: permission, the per-type preferences, and the push plumbing (the FCM token). Session
  * reminders are the server's pushes (`session.reminder`, following `notify_session_*`): checked against
  * the session when they're sent, so a cancelled or changed one never reminds anyone. Tapping a
- * notification leaves its place in [pendingRoute] ([PushTap]), which the tabs take once they're on screen.
+ * notification leaves its place in [pendingRoute] ([PushTap]), which the tabs follow once they're on
+ * screen; a refused photo's explanation opens at once instead, above whatever phase the app is in.
  */
 class NotificationService(
     private val backend: Backend,
@@ -53,15 +55,39 @@ class NotificationService(
         private set
 
     /**
-     * Where the last tapped notification leads, until the tabs are on screen to open it ([takeRoute]).
-     * A tap at launch waits here through the splash, the session check and sign-in; a later tap
-     * replaces it.
+     * Where the last tapped notification leads, until the tabs are on screen to follow it (`AppModel.follow`,
+     * then [finish]). A tap at launch waits here through the splash, the session check and sign-in; a later
+     * tap replaces it, and one that waited over [PendingPush.LIFETIME] or whose account signed out or changed is
+     * dropped. Each of those counts `push_opened` with `routed` false.
      */
-    var pendingRoute: PushRoute? by mutableStateOf(null)
+    var pendingRoute: PendingPush? by mutableStateOf(null)
         private set
 
-    /** The route waiting, cleared: each tap opens its place once. */
-    fun takeRoute(): PushRoute? = pendingRoute.also { pendingRoute = null }
+    /** The tabs have been on screen once in this process: a tap before that launched the app. */
+    private var tabsSeen = false
+
+    /** The tap to follow now, or null (none waiting, or it waited too long: counted and dropped). */
+    fun pendingToFollow(now: Instant = Instant.now()): PendingPush? {
+        tabsSeen = true
+        val pending = pendingRoute ?: return null
+        if (!pending.isExpired(now)) return pending
+        dropPendingRoute()
+        return null
+    }
+
+    /** [pending] was followed (or failed): cleared, unless a newer tap already replaced it. */
+    fun finish(pending: PendingPush) {
+        if (pendingRoute === pending) pendingRoute = null
+    }
+
+    /** The account left: a tap meant for it goes nowhere, and is counted as such. */
+    fun dropPendingRoute() {
+        pendingRoute?.let(::countSkipped)
+        pendingRoute = null
+    }
+
+    private fun countSkipped(pending: PendingPush) =
+        Telemetry.track(AnalyticsEvent.PushOpened(pending.tap.kind.code, routed = false))
 
     // Preferences. Saved on the profile (the server's pushes follow them, and they come back on a new
     // device) and on the phone (right at launch, offline too). See `applyServer`.
@@ -392,17 +418,31 @@ class NotificationService(
         )
     }
 
-    /** A notification was tapped (from `MainActivity`, with the notification's data). */
-    fun didReceive(info: Map<String, String>) {
+    /**
+     * A notification was tapped (from `MainActivity`, with the notification's data). A refused photo
+     * opens its explanation at once and is counted here; every other tap waits in [pendingRoute], counted
+     * when the tabs follow it.
+     */
+    fun didReceive(info: Map<String, String>, now: Instant = Instant.now()) {
         val tap = PushTap.parse(info)
-        Telemetry.track(AnalyticsEvent.PushOpened(tap.kind, routed = tap.routed))
         // The session changed: the cards follow, whichever screen opens.
-        if (tap.kind == "session_cancelled") scope.launch { sessions.refresh() }
-        when (val route = tap.route) {
-            // Its own sheet, above whatever phase the app is in.
-            is PushRoute.PhotoRefusal -> photoModeration.openRefusal(mediaID = route.mediaID)
-            else -> pendingRoute = route
+        if (tap.kind == PushKind.SESSION_CANCELLED) scope.launch { sessions.refresh() }
+        val route = tap.route
+        if (route is PushRoute.PhotoRefusal) {
+            val opened = photoModeration.openRefusal(mediaID = route.mediaID)
+            Telemetry.track(AnalyticsEvent.PushOpened(tap.kind.code, routed = opened && !tap.fallsBack))
+            return
         }
+        val account = backend.userID?.toString()
+        pendingRoute?.let(::countSkipped)
+        pendingRoute = null
+        // Signed out in a running app: the push was for an account that left (its token is unregistered at
+        // sign-out), never for the next one to sign in.
+        if (account == null && tabsSeen) {
+            Telemetry.track(AnalyticsEvent.PushOpened(tap.kind.code, routed = false))
+            return
+        }
+        pendingRoute = PendingPush(tap, now, account)
     }
 
     /** The app's own notification's data: its chat, and the kind when it isn't a message (a tap on a like opens Likes). */

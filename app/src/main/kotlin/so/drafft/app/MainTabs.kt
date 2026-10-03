@@ -300,7 +300,7 @@ fun MainTabs(
     // splash, the welcome screen or sign-up (signing in lands on Discover and would cover it), nor under a hold.
     LaunchedEffect(notifications.pendingRoute, isActive, mayPrebuild) {
         if (!isActive || mayPrebuild) return@LaunchedEffect
-        notifications.takeRoute()?.let(app::open)
+        notifications.pendingToFollow()?.let { app.follow(it) }
     }
 }
 

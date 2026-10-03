@@ -419,11 +419,12 @@ class PhotoModeration(
 
     /**
      * From the push: shows the explanation for that photo, once the app is on screen (a tap on a push can
-     * launch it: its first screen takes a moment to exist).
+     * launch it: its first screen takes a moment to exist). Returns false when the app knows no photo by
+     * that id (nothing to explain).
      */
-    fun openRefusal(mediaID: String) {
+    fun openRefusal(mediaID: String): Boolean {
         val paths = paths(mediaID)
-        val path = paths.firstOrNull() ?: return
+        val path = paths.firstOrNull() ?: return false
         paths.forEach { states[slot(it)] = State.Refused }
         refusalBanner = null
         scope.launch {
@@ -437,6 +438,7 @@ class PhotoModeration(
                 delay(100.milliseconds)
             }
         }
+        return true
     }
 
     /** Open app: a banner. Closed or in the background: the server's push says it. */

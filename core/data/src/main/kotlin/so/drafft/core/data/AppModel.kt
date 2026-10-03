@@ -56,6 +56,7 @@ import so.drafft.core.data.chat.ChatService
 import so.drafft.core.data.location.LocationOnce
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.notifications.NotificationService
+import so.drafft.core.data.notifications.PendingPush
 import so.drafft.core.data.notifications.PushRoute
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
@@ -489,19 +490,56 @@ class AppModel(
         latestRequest = LatestRequest(chatID = id)
     }
 
-    /** A tapped notification's place, once the tabs are on screen (`MainTabs`, from `NotificationService.pendingRoute`). */
-    fun open(route: PushRoute) {
+    /**
+     * Follows a tapped notification once the tabs are on screen (`MainTabs`, from
+     * `NotificationService.pendingRoute`), then counts `push_opened`: `routed` only when the tap reached
+     * its own place. If this is cancelled (the tabs left the screen) the tap stays pending and is followed
+     * again; a failure is logged and counted as not routed, never kept to fail again.
+     */
+    suspend fun follow(pending: PendingPush) {
+        val tap = pending.tap
+        val opened = try {
+            // Bound to the account that tapped (null: the session wasn't read yet, whoever signed in).
+            if (pending.account != null && pending.account != backend.userID?.toString()) false else open(tap.route)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.unexpected(e, "push", "follow")
+            false
+        }
+        notifications.finish(pending)
+        Telemetry.track(AnalyticsEvent.PushOpened(tap.kind.code, routed = opened && !tap.fallsBack))
+    }
+
+    /** Whether the route's own place is what shows now: false when the chat can't be found or the account changed. */
+    private suspend fun open(route: PushRoute): Boolean {
         when (route) {
-            is PushRoute.Chat -> {
-                openChat(route.chatID)
-                // A match newer than the list (it just happened): read now, and the chat fills in when it lands.
-                if (conversation(route.chatID) == null) scope.launch { loadMatches() }
-            }
+            is PushRoute.Chat -> return openChatFromPush(route.chatID)
+            PushRoute.Chats -> showTab(Tab.CHATS)
             PushRoute.Likes -> showTab(Tab.LIKES)
             PushRoute.Sessions -> showTab(Tab.SESSIONS)
             PushRoute.Discover -> showTab(Tab.DISCOVER)
-            is PushRoute.PhotoRefusal -> photoModeration.openRefusal(route.mediaID)
+            PushRoute.Current -> Unit
+            // Opened at once by `NotificationService.didReceive`, never pending.
+            is PushRoute.PhotoRefusal -> return false
         }
+        return true
+    }
+
+    /**
+     * The chat list first, then the chat once it's there. A match made a moment ago may not be in the
+     * list yet: one fresh read. Still missing (the match ended, the read failed): the list stays, never
+     * an empty chat.
+     */
+    private suspend fun openChatFromPush(id: String): Boolean {
+        val session = sessionID
+        if (conversation(id) == null) {
+            showTab(Tab.CHATS)
+            loadMatches()
+        }
+        if (session != sessionID || conversation(id) == null) return false
+        openChat(id)
+        return true
     }
 
     private fun showTab(target: Tab) {
@@ -864,6 +902,8 @@ class AppModel(
      */
     private fun resetAccountState() {
         playback?.stop()
+        // A tapped notification meant for the account that left goes nowhere.
+        notifications.dropPendingRoute()
         // The chat disconnects, drops this device's push registration and its offline copy.
         scope.launch { chat.stop() }
         conversations = emptyList()
