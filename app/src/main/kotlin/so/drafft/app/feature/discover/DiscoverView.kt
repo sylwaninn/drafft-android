@@ -99,6 +99,7 @@ import so.drafft.core.ui.components.LocalTabBarInset
 import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.LocalTabsOnScreen
 import so.drafft.core.ui.components.PhotoWindow
+import so.drafft.core.ui.components.ProfileGallery
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.StillTempoSticker
@@ -160,6 +161,7 @@ private class DeckMotion {
 fun DiscoverView(modifier: Modifier = Modifier) {
     val app = LocalAppModel.current
     val scope = rememberCoroutineScope()
+    val context = LocalPlatformContext.current
     val density = LocalDensity.current
     val threshold = with(density) { Threshold.toPx() }
     val drag = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
@@ -226,6 +228,8 @@ fun DiscoverView(modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxSize()
+            // The screen's width: an open profile's gallery, until it's been measured (`ProfileGallery`).
+            .onSizeChanged { ProfileGallery.guess(it.width, density) }
             .background(DS.palette.canvasSoft)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(bottom = LocalTabBarInset.current)
@@ -273,7 +277,12 @@ fun DiscoverView(modifier: Modifier = Modifier) {
                         onSize = { deckSize = it },
                         onCommit = { p, liked -> commit(p, liked) },
                         onSuperLike = ::askSuperLike,
-                        onOpen = { detail = it },
+                        // Its first photo starts downloading at the gallery's size: the sheet's rise gives it
+                        // a head start, and the card's own copy stands in until it's there.
+                        onOpen = { p ->
+                            scope.launch { ProfileGallery.warm(context, p.portrait, Images.Priority.HIGH) }
+                            detail = p
+                        },
                         modifier = Modifier.fillMaxWidth().weight(1f).zIndex(1f),
                     )
                     // Same space above and below: centred between the cards and the tab bar.
@@ -440,6 +449,14 @@ private fun Deck(
             }
         }
         DisposableEffect(Unit) { onDispose { PhotoWindow.deck.clear() } }
+        // A card looked at for a while is likelier to be opened: its profile's first photo starts, under the
+        // deck's own. A swipe cancels it; never ahead of every card, most are never opened.
+        val top = app.deck.firstOrNull()
+        LaunchedEffect(top?.id, onScreen) {
+            if (top == null || !onScreen || NetworkQuality.shared.isLimited) return@LaunchedEffect
+            delay(1_500)
+            ProfileGallery.warm(context, top.portrait, Images.Priority.LOW)
+        }
     }
 }
 
