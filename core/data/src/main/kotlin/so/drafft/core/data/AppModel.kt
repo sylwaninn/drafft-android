@@ -56,6 +56,8 @@ import so.drafft.core.data.chat.ChatService
 import so.drafft.core.data.location.LocationOnce
 import so.drafft.core.data.media.MediaURL
 import so.drafft.core.data.notifications.NotificationService
+import so.drafft.core.data.notifications.PendingPush
+import so.drafft.core.data.notifications.PushRoute
 import so.drafft.core.data.platform.AppLifecycle
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.platform.KeyValueStore
@@ -488,6 +490,65 @@ class AppModel(
         latestRequest = LatestRequest(chatID = id)
     }
 
+    /**
+     * Follows a tapped notification once the tabs are on screen (`MainTabs`, from
+     * `NotificationService.pendingRoute`), then counts `push_opened`: `routed` only when the tap reached
+     * its own place. If this is cancelled (the tabs left the screen) the tap stays pending and is followed
+     * again; a failure is logged and counted as not routed, never kept to fail again.
+     */
+    suspend fun follow(pending: PendingPush) {
+        val tap = pending.tap
+        val opened = try {
+            // Bound to the account that tapped (null: the session wasn't read yet, whoever signed in).
+            val sameAccount = pending.account == null || pending.account == backend.userID?.toString()
+            sameAccount && open(tap.route)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Telemetry.unexpected(e, "push", "follow")
+            false
+        }
+        notifications.finish(pending)
+        Telemetry.track(AnalyticsEvent.PushOpened(tap.kind.code, routed = opened && !tap.fallsBack))
+    }
+
+    /** Whether the route's own place is what shows now: false when the chat can't be found or the account changed. */
+    private suspend fun open(route: PushRoute): Boolean {
+        when (route) {
+            is PushRoute.Chat -> return openChatFromPush(route.chatID)
+            PushRoute.Chats -> showTab(Tab.CHATS)
+            PushRoute.Likes -> showTab(Tab.LIKES)
+            PushRoute.Sessions -> showTab(Tab.SESSIONS)
+            PushRoute.Discover -> showTab(Tab.DISCOVER)
+            PushRoute.Current -> Unit
+            // Opened at once by `NotificationService.didReceive`, never pending.
+            is PushRoute.PhotoRefusal -> return false
+        }
+        return true
+    }
+
+    /**
+     * The chat list first, then the chat once it's there. A match made a moment ago may not be in the
+     * list yet: one fresh read. Still missing (the match ended, the read failed): the list stays, never
+     * an empty chat.
+     */
+    private suspend fun openChatFromPush(id: String): Boolean {
+        val session = sessionID
+        if (conversation(id) == null) {
+            showTab(Tab.CHATS)
+            loadMatches()
+        }
+        if (session != sessionID || conversation(id) == null) return false
+        openChat(id)
+        return true
+    }
+
+    private fun showTab(target: Tab) {
+        matchScreen = null
+        banner = null
+        tab = target
+    }
+
     // Chat
 
     fun conversation(id: String): Conversation? = conversations.firstOrNull { it.id == id }
@@ -842,6 +903,8 @@ class AppModel(
      */
     private fun resetAccountState() {
         playback?.stop()
+        // A tapped notification meant for the account that left goes nowhere.
+        notifications.dropPendingRoute()
         // The chat disconnects, drops this device's push registration and its offline copy.
         scope.launch { chat.stop() }
         conversations = emptyList()
@@ -1154,7 +1217,8 @@ class AppModel(
         if (matchScreen?.id == first.profile.id) return
         Telemetry.track(AnalyticsEvent.MatchCreated(AnalyticsEvent.MatchSource.THEIR_LIKE))
         Haptics.success()
-        if (lifecycle.isActive()) banner = MatchBanner(profile = first.profile)
+        // Not over its own chat (opened from the match's push before the list had it).
+        if (lifecycle.isActive() && openChatID != first.id) banner = MatchBanner(profile = first.profile)
         // In the background, the server's push says it.
     }
 

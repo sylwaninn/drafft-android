@@ -82,6 +82,15 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="messages" />
+        <!-- Pushes the system draws itself (app in the background) take the word mark, tinted anthracite
+             (ic_launcher_background), never the full-colour launcher icon, which the system caches and
+             draws as a blank shape. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background" />
         <!-- Sentry starts from DrafftApplication with the build's DSN and the app's privacy settings
              (SentryCrashReporter), not from its own provider with defaults. -->
         <meta-data

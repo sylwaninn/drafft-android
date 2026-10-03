@@ -11,7 +11,7 @@ import so.drafft.core.model.Brand
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.display
 
-/** The logo: "drafft" set in the display face, solid. Never a drafting trail behind it. */
+/** The logo: "drafft" set in the display face, solid. */
 @Composable
 fun Wordmark(
     modifier: Modifier = Modifier,

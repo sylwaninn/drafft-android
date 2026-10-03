@@ -1,10 +1,7 @@
 package so.drafft.app.feature.discover
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -13,11 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +29,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,26 +50,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import org.koin.compose.koinInject
-import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
 import so.drafft.core.data.media.Images
-import so.drafft.core.data.platform.Haptics
-import so.drafft.core.data.telemetry.AnalyticsEvent
-import so.drafft.core.data.telemetry.ScreenTracker
-import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
 import so.drafft.core.model.Sport
-import so.drafft.core.model.clock
 import so.drafft.core.ui.components.Photo
-import so.drafft.core.ui.components.PressScaleButton
-import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.SportChip
 import so.drafft.core.ui.components.SuperLikeMark
-import so.drafft.core.ui.components.glass
 import so.drafft.core.ui.theme.DS
-import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
 import so.drafft.core.ui.theme.Motion
 import so.drafft.core.ui.theme.NightSurface
@@ -81,7 +67,6 @@ import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.display
 import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.medium
-import so.drafft.core.ui.theme.monospacedDigits
 import kotlin.math.max
 
 /**
@@ -142,11 +127,10 @@ fun SwipeCard(
             ) {
                 ProfileIdentity(
                     profile = profile,
-                    showsSuperLike = true,
-                    superLikeActive = isTop,
                     modifier = Modifier.weight(1f).padding(top = DS.Space.sm),
                 )
-                VoicePill(profile)
+                // The corner keeps the super like visible at a glance, whatever the name's length.
+                if (profile.superLikedMe) CornerSuperLikeBadge(profile, active = isTop)
             }
 
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(DS.Space.xl)) {
@@ -163,55 +147,6 @@ fun SwipeCard(
 }
 
 // MARK: Pieces
-
-@Composable
-private fun VoicePill(profile: Profile) {
-    val url = remember(profile.voiceIntro) { profile.voiceIntro?.let(AudioPlayback::url) } ?: return
-    val audio = koinInject<AudioPlayback>()
-    val p = DS.palette
-    val playing = audio.isCurrent(url) && audio.isPlaying
-    val ink = if (playing) p.onAccentOnNight else Color.White
-    val pill: @Composable () -> Unit = {
-        Row(
-            Modifier
-                .defaultMinSize(minHeight = 36.dp)
-                // Glass over the photo; a dark tint keeps the white legible on bright shots.
-                // Accent while playing, so the active state reads at a glance.
-                .glass(CircleShape, tint = if (playing) p.accentOnNight else Color.Black.copy(alpha = 0.3f))
-                .padding(horizontal = DS.Space.md),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AnimatedContent(
-                targetState = playing,
-                transitionSpec = { fadeIn(Motion.gentle()) togetherWith fadeOut(Motion.gentle()) },
-                label = "voiceGlyph",
-            ) { on ->
-                DrafftIcon(if (on) "pause" else "soundwave", size = (13f * 1.2f).dp, tint = ink)
-            }
-            RollingText(
-                if (playing) audio.elapsed.clock else profile.voiceDuration.clock,
-                style = TextStyles.footnote.bold.monospacedDigits,
-                color = ink,
-                countsDown = false,
-                maxLines = 1,
-            )
-        }
-    }
-    if (!LocalCardInteractive.current) {
-        Box(Modifier.defaultMinSize(minHeight = 44.dp), contentAlignment = Alignment.Center) { pill() }
-        return
-    }
-    PressScaleButton(
-        onClick = {
-            Haptics.tap()
-            if (!playing) Telemetry.track(AnalyticsEvent.VoiceIntroPlayed(ScreenTracker.currentID))
-            audio.toggle(url)
-        },
-        modifier = Modifier.defaultMinSize(minHeight = 44.dp),
-        contentDescription = if (playing) L("Pause voice intro") else L("Play %s's voice intro", profile.name),
-    ) { pill() }
-}
 
 /**
  * False for cards that must let every touch through (`.allowsHitTesting(false)`): the cards
@@ -434,9 +369,9 @@ fun ProfileIdentity(
     profile: Profile,
     nameSize: Float = 34f,
     showsLocation: Boolean = true,
-    /** Deck only: a red super like disc right after the age when they super liked you. */
+    /** A red super like disc leading the name when they super liked you. */
     showsSuperLike: Boolean = false,
-    /** The super like disc pops in when this turns true (the card reaching the top of the deck). */
+    /** The super like disc pops in when this turns true. */
     superLikeActive: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -486,18 +421,7 @@ fun NameAgeLine(
     badgeActive: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
-    val reduceMotion = LocalReduceMotion.current
-    val pop = remember { Animatable(0f) }
-    val active by rememberUpdatedState(badgeActive)
-    LaunchedEffect(showsBadge, badgeActive) {
-        if (!showsBadge || !active || pop.value >= 1f || pop.isRunning) return@LaunchedEffect
-        if (reduceMotion) {
-            pop.snapTo(1f)
-        } else {
-            delay(120)
-            pop.animateTo(1f, Motion.springOf(0.34, 0.55f))
-        }
-    }
+    val pop = rememberBadgePop(showsBadge, badgeActive)
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val a11y = if (showsBadge) L("%s, %d, super liked you", profile.name, profile.age) else L("%s, %d", profile.name, profile.age)
@@ -551,14 +475,7 @@ fun NameAgeLine(
             mapOf(
                 BADGE to InlineTextContent(Placeholder(badge.sp, badge.sp, PlaceholderVerticalAlign.AboveBaseline)) {
                     val side = with(density) { badge.sp.toDp() }
-                    SuperLikeBadge(side, Modifier.graphicsLayer {
-                        val t = pop.value
-                        val s = 0.2f + 0.8f * t
-                        alpha = (t * 1.6f).coerceIn(0f, 1f)
-                        scaleX = s
-                        scaleY = s
-                        rotationZ = -30f * (1f - t)
-                    })
+                    SuperLikeBadge(side, Modifier.badgePop(pop))
                 },
             )
         } else {
@@ -568,10 +485,59 @@ fun NameAgeLine(
     }
 }
 
-/** The super like disc, drawn inline in a name line: the mark on a red disc. */
+/** The super like disc: the mark on a red disc, filling [size]. */
 @Composable
-private fun SuperLikeBadge(size: Dp, modifier: Modifier = Modifier) {
+private fun SuperLikeBadge(size: Dp, modifier: Modifier = Modifier, mark: Dp = size * 0.38f) {
     Box(modifier.fillMaxSize().background(DS.palette.negative, CircleShape), contentAlignment = Alignment.Center) {
-        SuperLikeMark(Modifier.offset(x = -size * 0.09f), size = size * 0.38f, color = Color.White)
+        SuperLikeMark(size = mark, color = Color.White)
     }
+}
+
+/** The deck card's corner super like disc. */
+private val CORNER_BADGE = 44.dp
+
+/** The heart inside the corner super like disc. */
+private val CORNER_MARK = 20.dp
+
+/** The deck card's super like disc, in the top-right corner; it pops in once the card reaches the top. */
+@Composable
+private fun CornerSuperLikeBadge(profile: Profile, active: Boolean) {
+    val pop = rememberBadgePop(shows = true, active = active)
+    val label = L("%s super liked you", profile.name)
+    Box(
+        Modifier
+            .size(CORNER_BADGE)
+            .badgePop(pop)
+            .shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.3f), spotColor = Color.Black.copy(alpha = 0.3f))
+            .clearAndSetSemantics { contentDescription = label },
+    ) {
+        SuperLikeBadge(CORNER_BADGE, mark = CORNER_MARK)
+    }
+}
+
+/** 0 to 1: the super like disc popping in, once [shows] and [active] (instantly under Remove animations). */
+@Composable
+private fun rememberBadgePop(shows: Boolean, active: Boolean): Animatable<Float, AnimationVector1D> {
+    val reduceMotion = LocalReduceMotion.current
+    val pop = remember { Animatable(0f) }
+    val isActive by rememberUpdatedState(active)
+    LaunchedEffect(shows, active) {
+        if (!shows || !isActive || pop.value >= 1f || pop.isRunning) return@LaunchedEffect
+        if (reduceMotion) {
+            pop.snapTo(1f)
+        } else {
+            delay(120)
+            pop.animateTo(1f, Motion.springOf(0.34, 0.55f))
+        }
+    }
+    return pop
+}
+
+private fun Modifier.badgePop(pop: Animatable<Float, AnimationVector1D>): Modifier = graphicsLayer {
+    val t = pop.value
+    val s = 0.2f + 0.8f * t
+    alpha = (t * 1.6f).coerceIn(0f, 1f)
+    scaleX = s
+    scaleY = s
+    rotationZ = -30f * (1f - t)
 }

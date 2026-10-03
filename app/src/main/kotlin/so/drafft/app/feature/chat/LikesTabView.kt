@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -28,7 +27,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import so.drafft.app.feature.me.PaywallView
@@ -51,7 +49,6 @@ import so.drafft.core.ui.components.LocalTabIsCurrent
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.TabHeader
 import so.drafft.core.ui.components.TabTitle
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.trackingScrollOffset
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
@@ -202,10 +199,7 @@ fun LikesTabView(modifier: Modifier = Modifier) {
 private fun UnlockButton(modifier: Modifier = Modifier, onUnlock: () -> Unit) {
     DrafftButton(
         onClick = onUnlock,
-        modifier = modifier
-            .padding(horizontal = DS.Space.lg, vertical = DS.Space.md)
-            .padding(start = 12.dp)
-            .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
+        modifier = modifier.padding(horizontal = DS.Space.lg, vertical = DS.Space.md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             DrafftIcon("user-heart", Modifier.padding(end = DS.Space.sm), size = 20.dp, tint = DS.palette.onLime)

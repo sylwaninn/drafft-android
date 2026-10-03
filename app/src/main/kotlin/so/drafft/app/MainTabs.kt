@@ -296,15 +296,11 @@ fun MainTabs(
         location.refresh()
         notifications.refresh()
     }
-    // Tapped notifications: open the chat, Discover for the weekly boost, or Sessions.
-    LaunchedEffect(notifications.openChatID) {
-        notifications.openChatID?.let { app.openChat(it); notifications.openChatID = null }
-    }
-    LaunchedEffect(notifications.openBoost) {
-        if (notifications.openBoost) { app.tab = AppModel.Tab.DISCOVER; notifications.openBoost = false }
-    }
-    LaunchedEffect(notifications.openSessions) {
-        if (notifications.openSessions) { app.tab = AppModel.Tab.SESSIONS; notifications.openSessions = false }
+    // A tapped notification's place, once the tabs are on screen: not while they're built unseen under the
+    // splash, the welcome screen or sign-up (signing in lands on Discover and would cover it), nor under a hold.
+    LaunchedEffect(notifications.pendingRoute, isActive, mayPrebuild) {
+        if (!isActive || mayPrebuild) return@LaunchedEffect
+        notifications.pendingToFollow()?.let { app.follow(it) }
     }
 }
 

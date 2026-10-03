@@ -63,13 +63,15 @@ class DrafftMessagingService : FirebaseMessagingService(), KoinComponent {
 }
 
 /**
- * A notification's tap, from `MainActivity` (`onCreate` and `onNewIntent`): its data goes to
- * [NotificationService.didReceive], which sets `openChatID`, `openBoost` or `openSessions`. Whether the
- * intent came from a notification. The extras are cleared once handled (a rotation doesn't open it
- * twice).
+ * A notification's tap, from `MainActivity` (`onCreate` on a cold start, `onNewIntent` when the app was
+ * running): its data goes to [NotificationService.didReceive], which parses where it leads ([PushTap]) and
+ * keeps it until the tabs are on screen. Returns whether the intent came from a notification. The extras
+ * are cleared once handled, and an intent relaunched from Recents (which carries the old extras again) is
+ * ignored: a tap opens its place once.
  */
 fun NotificationService.handleNotificationTap(intent: Intent?): Boolean {
-    val extras = intent?.extras ?: return false
+    if (intent == null || intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return false
+    val extras = intent.extras ?: return false
     val fromPush = extras.containsKey("google.message_id") || extras.containsKey(AndroidLocalNotifications.EXTRA_MARKER)
     if (!fromPush) return false
     val info = extras.keySet()

@@ -392,7 +392,7 @@ class TelemetryTest {
             AnalyticsEvent.LanguageChanged("some_code", "some_code"),
             AnalyticsEvent.PermissionRequested(AnalyticsEvent.Permission.entries.first(), AnalyticsEvent.PermissionResult.entries.first(), "some_code"),
             AnalyticsEvent.NotificationSettingChanged("some_code", true),
-            AnalyticsEvent.PushOpened("some_code"),
+            AnalyticsEvent.PushOpened("some_code", routed = false),
             AnalyticsEvent.PushReceived("some_code", true),
             AnalyticsEvent.LegalDocOpened("some_code"),
             AnalyticsEvent.SupportContacted("some_code", true),
@@ -418,6 +418,21 @@ class TelemetryTest {
             AnalyticsEvent.SwipeSource.entries.map { it.name } + AnalyticsEvent.SessionResponse.entries.map { it.name } +
             Screen.entries.map { it.id } + ErrorKind.entries.map { it.id }
         for (value in values) assertTrue(PrivacyGuard.isCode(value.lowercase()), value)
+    }
+
+    @Test
+    fun pushOpenedKeepsEveryKindCodeAndItsRoutedFlag() {
+        for (kind in so.drafft.core.data.notifications.PushKind.entries) {
+            assertTrue(PrivacyGuard.isCode(kind.code), kind.code)
+            for (routed in listOf(true, false)) {
+                val event = AnalyticsEvent.PushOpened(kind.code, routed)
+                assertEquals("push_opened", event.name)
+                assertEquals(
+                    mapOf("kind" to kind.code, "routed" to routed),
+                    PrivacyGuard.properties(event.name, event.properties),
+                )
+            }
+        }
     }
 
     @Test

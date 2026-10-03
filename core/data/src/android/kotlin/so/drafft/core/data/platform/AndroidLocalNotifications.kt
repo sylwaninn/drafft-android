@@ -28,7 +28,7 @@ import so.drafft.core.model.L
  *
  * A notification's tap opens the app's launcher activity with the notification's data as extras
  * ([EXTRA_MARKER] set); `MainActivity` hands them to `NotificationService.didReceive` (see
- * `NotificationIntents.handle`). FCM's own notifications (app in the background) open it the same way,
+ * `handleNotificationTap`). FCM's own notifications (app in the background) open it the same way,
  * with the push's data as extras.
  */
 class AndroidLocalNotifications(
@@ -100,6 +100,7 @@ class AndroidLocalNotifications(
         )
         val builder = NotificationCompat.Builder(context, notification.channel.id)
             .setSmallIcon(smallIcon())
+            .apply { accentColor()?.let { setColor(it) } }
             .setContentTitle(notification.title)
             .setContentText(notification.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.body))
@@ -141,6 +142,12 @@ class AndroidLocalNotifications(
     private fun smallIcon(): Int {
         val res = context.resources.getIdentifier("ic_notification", "drawable", context.packageName)
         return if (res != 0) res else context.applicationInfo.icon
+    }
+
+    /** The icon's tint, the same anthracite (`ic_launcher_background`) as the pushes the system draws (`default_notification_color`). */
+    private fun accentColor(): Int? {
+        val res = context.resources.getIdentifier("ic_launcher_background", "color", context.packageName)
+        return if (res != 0) context.getColor(res) else null
     }
 
     /**

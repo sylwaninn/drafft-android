@@ -56,7 +56,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -93,7 +92,6 @@ import so.drafft.core.ui.components.SheetDetent
 import so.drafft.core.ui.components.SparkPlus
 import so.drafft.core.ui.components.StillTempoSticker
 import so.drafft.core.ui.components.TopBar
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
@@ -434,10 +432,7 @@ private fun LoadedProfileCard(onEdit: () -> Unit, onPreview: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm), verticalAlignment = Alignment.CenterVertically) {
                 DrafftButton(
                     onClick = onEdit,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 12.dp)
-                        .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
+                    modifier = Modifier.weight(1f),
                 ) {
                     DrafftIcon("pen", size = symbolSize(TextStyles.body), tint = LocalContentColor.current)
                     Text(L("Edit profile"), maxLines = 2)

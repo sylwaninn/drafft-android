@@ -60,7 +60,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.ZoneOffset
 import kotlin.coroutines.cancellation.CancellationException
@@ -102,7 +101,6 @@ import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.SportPicker
 import so.drafft.core.ui.components.SportsLine
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.limited
 import so.drafft.core.ui.components.revealsOnFocus
 import so.drafft.core.ui.navigation.NavStack
@@ -899,9 +897,6 @@ private fun Footer(state: EditProfileState, save: () -> Unit) {
     ) {
         DrafftButton(
             onClick = save,
-            modifier = Modifier
-                .padding(start = 12.dp)
-                .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
             enabled = (state.canSave || state.saved) && !state.saving,
         ) {
             if (state.saving) {

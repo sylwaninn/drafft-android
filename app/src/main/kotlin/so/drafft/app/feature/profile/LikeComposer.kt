@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,7 +53,6 @@ import so.drafft.core.ui.components.DrafftButton
 import so.drafft.core.ui.components.DrafftButtonKind
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
@@ -197,9 +195,6 @@ fun LikeComposer(
                             val text = message.trim()
                             close { onSend(text) }
                         },
-                        modifier = Modifier
-                            .padding(start = 12.dp)
-                            .draftTrail(RoundedCornerShape(DS.Radius.xl), color = p.like, step = DpOffset((-6).dp, 0.dp)),
                         kind = DrafftButtonKind.LIKE,
                         enabled = !closing,
                     ) {

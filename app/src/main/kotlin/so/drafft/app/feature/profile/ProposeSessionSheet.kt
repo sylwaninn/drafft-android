@@ -61,7 +61,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
@@ -87,7 +86,6 @@ import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
 import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.SheetNavBar
-import so.drafft.core.ui.components.draftTrail
 import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.components.revealsOnFocus
 import so.drafft.core.ui.theme.DS
@@ -723,9 +721,6 @@ private fun Footer(
 
         DrafftButton(
             onClick = onSend,
-            modifier = Modifier
-                .padding(start = 12.dp)
-                .draftTrail(RoundedCornerShape(DS.Radius.xl), step = DpOffset((-6).dp, 0.dp)),
             enabled = canSend,
         ) {
             if (sending) {
