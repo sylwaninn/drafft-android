@@ -60,15 +60,16 @@ class PhotoDownloadsTest {
         val queue = PhotoDownloads(limit = 1)
         val order = Collections.synchronizedList(mutableListOf<String>())
         queue.acquire(Images.Priority.NORMAL.ordinal) { false }
-        fun start(name: String, priority: Images.Priority) = thread {
+        fun start(photo: Pair<String, Images.Priority>) = thread {
+            val (name, priority) = photo
             if (queue.acquire(priority.ordinal, photo = name) { false }) {
                 order += name
                 queue.release()
             }
         }
-        val a = start(first.first, first.second)
+        val a = start(first)
         waitFor { queue.waitingCount == 1 }
-        val b = start(second.first, second.second)
+        val b = start(second)
         waitFor { queue.waitingCount == 2 }
         between(queue)
         queue.release()
