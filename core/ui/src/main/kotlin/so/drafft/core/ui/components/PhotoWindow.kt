@@ -1,5 +1,6 @@
 package so.drafft.core.ui.components
 
+import androidx.compose.ui.unit.IntSize
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.request.ErrorResult
@@ -22,8 +23,8 @@ import so.drafft.core.model.Profile
  * (`SwipeCard`'s priority); the window covers what comes after them:
  *
  * - on a good connection, the portraits of the cards on screen and of the next 6, to disk, at the copy
- *   their card needs, then the other photos of the card in play (its profile, if opened, at the copy it
- *   asks for);
+ *   their card needs, then the other photos of the card in play (its profile, if opened, at the gallery's
+ *   size: [ProfileGallery]);
  * - on a limited one ([NetworkQuality]), a small copy of the portraits on screen and of the next 8
  *   instead ([ImageStore.preview], about 20 kB each): a full copy can't keep up with fast swipes on a
  *   slow line, a small one can, so no card shows only its blurred preview. They come ahead of the card in
@@ -73,6 +74,7 @@ class PhotoWindow private constructor() {
         building?.cancel()
         building = mainScope.launch {
             val limited = NetworkQuality.shared.isLimited
+            val gallerySize = ProfileGallery.size
             val (ahead, small, more) = withContext(Dispatchers.IO) {
                 // The cards ahead first, then the ones on screen (their own request shares the download,
                 // `SharedFetches`, so a prefetch is never cancelled as its card arrives): the permits go to
@@ -90,8 +92,10 @@ class PhotoWindow private constructor() {
                     if (limited) {
                         emptyList()
                     } else {
+                        // At the gallery's size when known: its own requests then join these downloads.
+                        val gallery = gallerySize.takeIf { it.width > 0 && it.height > 0 } ?: IntSize(width, height)
                         deck.firstOrNull()?.photos.orEmpty().mapNotNull {
-                            ImageStore.prefetchRequest(context, it, width, height, Images.Priority.VERY_LOW, detail = true)
+                            ImageStore.prefetchRequest(context, it, gallery.width, gallery.height, Images.Priority.VERY_LOW, detail = true)
                         }
                     },
                 )

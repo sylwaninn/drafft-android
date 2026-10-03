@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import coil3.compose.LocalPlatformContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -61,6 +63,7 @@ import so.drafft.app.feature.discover.SuperLikeComposer
 import so.drafft.app.feature.matches.UnmatchButton
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.location.LocationPrivacy
+import so.drafft.core.data.media.Images
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Screen
@@ -72,10 +75,12 @@ import so.drafft.core.model.ProfilePrompt
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.DrafftSheet
-import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.GlassCircleButton
+import so.drafft.core.ui.components.ImageStore
+import so.drafft.core.ui.components.InteractiveDismissDisabled
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.Photo
+import so.drafft.core.ui.components.ProfileGallery
 import so.drafft.core.ui.components.SuperLikeCountMark
 import so.drafft.core.ui.components.SuperLikeMark
 import so.drafft.core.ui.components.glass
@@ -356,15 +361,38 @@ fun ProfileDetailView(
 @Composable
 private fun Gallery(profile: Profile, pager: androidx.compose.foundation.pager.PagerState, discover: Boolean, onLikePhoto: (String) -> Unit) {
     val photos = profile.allPhotos
+    val context = LocalPlatformContext.current
+    // The next two photos downloaded while this one is looked at, each once (again if it failed): a swipe
+    // usually lands on the photo, not a loader.
+    val scope = rememberCoroutineScope()
+    val fetched = remember(profile.id) { mutableSetOf<String>() }
+    val frame = ProfileGallery.size
+    LaunchedEffect(pager.currentPage, photos, frame) {
+        if (frame.width <= 0 || frame.height <= 0) return@LaunchedEffect
+        for (next in photos.drop(pager.currentPage + 1).take(2)) {
+            if (!fetched.add(next)) continue
+            scope.launch {
+                if (!ImageStore.fetch(context, next, frame.width, frame.height, Images.Priority.LOW, detail = true)) fetched.remove(next)
+            }
+        }
+    }
     Box(
         Modifier
             .fillMaxWidth()
-            .height(440.dp)
+            .height(ProfileGallery.height)
+            // The gallery's own size: the prefetch above and the next profile's first photo fetch for it.
+            .onSizeChanged(ProfileGallery::measured)
             .clip(RoundedCornerShape(bottomStart = DS.Radius.xl, bottomEnd = DS.Radius.xl))
             .semantics { contentDescription = L("Photos of %s, %d total", profile.name, photos.size) },
     ) {
         HorizontalPager(pager, Modifier.fillMaxSize(), key = { it }) { i ->
-            Photo(photos[i], Modifier.fillMaxSize(), detail = true)
+            // The photo looked at keeps the priority its tap gave it.
+            Photo(
+                photos[i],
+                Modifier.fillMaxSize(),
+                priority = if (i == pager.currentPage) Images.Priority.HIGH else Images.Priority.NORMAL,
+                detail = true,
+            )
         }
         // Page steps centered on the photo, like a system page control; the heart keeps the corner.
         // Both share one bottom line so they read as one row, not two stray pieces.

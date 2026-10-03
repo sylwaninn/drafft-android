@@ -76,6 +76,18 @@ class PhotoDownloads(limit: Int = Images.downloads) {
         turn.signalAll()
     }
 
+    /**
+     * Like [prioritize], never lower: [photo]'s download keeps the higher of its priority and [rank]. For a
+     * fetch that joins a download a view may already have raised.
+     */
+    fun raise(photo: String, rank: Int) = lock.withLock {
+        val now = priorities[photo] ?: waiting.filter { it.photo == photo }.maxOfOrNull { it.rank }
+        if (now == null || rank > now) {
+            priorities[photo] = rank
+            turn.signalAll()
+        }
+    }
+
     private fun first(): Ticket? = waiting.maxWithOrNull(compareBy<Ticket> { it.current() }.thenByDescending { it.order })
 
     companion object {

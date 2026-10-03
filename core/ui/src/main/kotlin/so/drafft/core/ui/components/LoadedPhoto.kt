@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -44,7 +45,9 @@ import so.drafft.core.ui.theme.Motion
  * frame needs, decoded in the background at the frame's size, capped caches. A copy already in memory
  * shows on the first frame; otherwise its ThumbHash preview ([PhotoUrls.preview]), or a sage tile,
  * stands in until it's there. On a slow connection a large frame first shows a small copy
- * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives.
+ * ([ImageStore.preview]), sharp enough to read the photo, while the right one arrives. A large photo of an
+ * open profile ([detail]) whose copy isn't on this phone yet first shows a narrower one that is
+ * ([ImageStore.standIn], the deck card's, typically), decoded from disk, while it downloads.
  */
 @Composable
 internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority, detail: Boolean = false) {
@@ -63,6 +66,7 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority, d
         val sharp = painter != null && painter.state.collectAsState().value is AsyncImagePainter.State.Success
         val preview = remember(name) { PhotoUrls.preview(name) }
         val small = if (large) remember(name, width, height) { ImageStore.preview(context, name, width, height) } else null
+        val standIn = if (detail && large) rememberStandIn(name, width, height, sharp) else null
 
         // Layers stack, never swap: each sharper one fades in over the last, which stays underneath, so a
         // change of quality is a fade and never a flash of the empty tile. Each one fills exactly the frame
@@ -71,7 +75,9 @@ internal fun LoadedPhoto(name: String, blur: Float, priority: Images.Priority, d
         if (preview != null) {
             Image(preview, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
-        if (small != null && smallCopyApplies(context, small, sharp)) {
+        if (standIn != null) {
+            SmallCopy(standIn, sharpMissing = !sharp)
+        } else if (small != null && smallCopyApplies(context, small, sharp)) {
             SmallCopy(small, sharpMissing = !sharp)
         } else if (large && !sharp) {
             PhotoLoader(Modifier.align(Alignment.Center))
@@ -108,6 +114,30 @@ fun rememberPhotoRequest(
 }
 
 /**
+ * An open profile's stand-in ([ImageStore.standIn]), looked for on disk while the sharp copy is missing; kept
+ * under the sharp one until it has faded in, then let go.
+ */
+@Composable
+private fun rememberStandIn(name: String, width: Int, height: Int, sharp: Boolean): ImageRequest? {
+    val context = LocalPlatformContext.current
+    val standIn = remember(name, width, height) { mutableStateOf<ImageRequest?>(null) }
+    val sharpNow by rememberUpdatedState(sharp)
+    LaunchedEffect(name, width, height) {
+        if (sharpNow) return@LaunchedEffect
+        val found = ImageStore.standIn(context, name, width, height)
+        // The sharp copy came first: nothing to stand in for.
+        if (!sharpNow) standIn.value = found
+    }
+    LaunchedEffect(sharp) {
+        if (!sharp || standIn.value == null) return@LaunchedEffect
+        // Past FadingImage's 0.2 s fade, the stand-in under it goes.
+        delay(300)
+        standIn.value = null
+    }
+    return standIn.value
+}
+
+/**
  * The small copy: on a limited connection while the sharp one is missing, or whenever it's already in
  * memory (fetched ahead by the deck's window, or shown before the sharp one arrived, which then fades in
  * over it).
@@ -115,7 +145,10 @@ fun rememberPhotoRequest(
 private fun smallCopyApplies(context: PlatformContext, small: ImageRequest, sharp: Boolean): Boolean =
     ImageStore.isInMemory(context, small) || (!sharp && NetworkQuality.shared.isLimited)
 
-/** The small copy's layer, with the loader while it's on its way (and the sharp one too). */
+/**
+ * A lighter copy's layer (the small copy, or an open profile's stand-in), with the loader while it's on its
+ * way (and the sharp one too).
+ */
 @Composable
 private fun SmallCopy(request: ImageRequest, sharpMissing: Boolean) {
     Box(Modifier.fillMaxSize()) {
