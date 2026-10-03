@@ -493,8 +493,10 @@ private fun SuperLikeBadge(size: Dp, modifier: Modifier = Modifier, mark: Dp = s
     }
 }
 
-/** The deck card's corner super like disc and its heart. */
+/** The deck card's corner super like disc. */
 private val CORNER_BADGE = 44.dp
+
+/** The heart inside the corner super like disc. */
 private val CORNER_MARK = 20.dp
 
 /** The deck card's super like disc, in the top-right corner; it pops in once the card reaches the top. */

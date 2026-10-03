@@ -144,7 +144,7 @@ class AndroidLocalNotifications(
         return if (res != 0) res else context.applicationInfo.icon
     }
 
-    /** The icon's tint, the same graphite as the pushes the system draws (`default_notification_color`). */
+    /** The icon's tint, the same anthracite (`ic_launcher_background`) as the pushes the system draws (`default_notification_color`). */
     private fun accentColor(): Int? {
         val res = context.resources.getIdentifier("ic_launcher_background", "color", context.packageName)
         return if (res != 0) context.getColor(res) else null

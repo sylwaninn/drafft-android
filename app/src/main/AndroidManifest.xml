@@ -82,8 +82,9 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="messages" />
-        <!-- Pushes the system draws itself (app in the background) take the word mark, tinted graphite,
-             never the full-colour launcher icon, which the system caches and draws as a blank shape. -->
+        <!-- Pushes the system draws itself (app in the background) take the word mark, tinted anthracite
+             (ic_launcher_background), never the full-colour launcher icon, which the system caches and
+             draws as a blank shape. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
