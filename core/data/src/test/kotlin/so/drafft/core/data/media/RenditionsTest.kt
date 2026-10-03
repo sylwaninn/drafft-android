@@ -1,7 +1,9 @@
 package so.drafft.core.data.media
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import org.junit.Test
 
 class RenditionsTest {
@@ -70,26 +72,77 @@ class RenditionsTest {
         assertEquals(PixelSize(64, 64), Renditions.decodeSize(PixelSize(10, 0)))
     }
 
+    /** The gallery, 393 × 440 dp at 3x density, for a 4:5 photo: 1 179 px needed, the 1 440 copy. */
+    private val gallery = Renditions.neededWidth(PixelSize(1_179, 1_320), aspect = 0.8)
+
     @Test
     fun theCardsCopyStandsInForAnOpenProfilesWiderOne() {
-        // The gallery, 393 × 440 dp at 3x density, wants 1 440; the card left its 1 080 on this phone.
-        val needed = Renditions.neededWidth(PixelSize(1_179, 1_320), aspect = 0.8)
-        assertEquals(1_080, Renditions.standIn(needed) { it == 1_080 })
-        // The widest one below wins.
-        assertEquals(1_080, Renditions.standIn(needed) { it == 640 || it == 1_080 })
+        // The card left its 1 080 on this phone.
+        assertEquals(1_080, Renditions.standIn(gallery) { it == 1_080 })
+        // The widest one here wins.
+        assertEquals(1_080, Renditions.standIn(gallery) { it == 640 || it == 1_080 })
+        // 640 is just enough.
+        assertEquals(640, Renditions.standIn(gallery) { it == 640 })
     }
 
     @Test
-    fun noStandInWhenTheRightCopyIsHereOrOnlyATinyOneIs() {
-        assertNull(Renditions.standIn(1_179.0) { it == 1_440 })
-        assertNull(Renditions.standIn(1_179.0) { it == 1_080 || it == 1_440 })
-        // A chat avatar's copy says no more than the blurred preview.
-        assertNull(Renditions.standIn(1_179.0) { it == 320 })
-        assertNull(Renditions.standIn(1_179.0) { false })
+    fun noStandInWhenACoveringCopyIsHere() {
+        assertNull(Renditions.standIn(gallery) { it == 1_440 })
+        assertNull(Renditions.standIn(gallery) { it == 1_080 || it == 1_440 })
+        // The original covers everything.
+        assertNull(Renditions.standIn(gallery) { it == null || it == 1_080 })
+        // A larger copy than the covering one.
+        assertNull(Renditions.standIn(1_000.0) { it == 1_440 })
+    }
+
+    @Test
+    fun noStandInWhenNothingWorthShowingIsHere() {
+        // A 320 copy is too soft to stand in.
+        assertNull(Renditions.standIn(gallery) { it == 320 })
+        assertNull(Renditions.standIn(gallery) { false })
+        // A small frame: its covering copy is the 640 or narrower.
+        assertNull(Renditions.standIn(600.0) { it == 320 })
+    }
+
+    @Test
+    fun theFivePercentToleranceDecidesBetweenCoveringAndStandingIn() {
+        assertNull(Renditions.standIn(1_136.0) { it == 1_080 })
+        assertEquals(1_080, Renditions.standIn(1_137.0) { it == 1_080 })
+        assertNull(Renditions.standIn(1_515.0) { it == 1_440 })
+        assertEquals(1_440, Renditions.standIn(1_516.0) { it == 1_440 })
     }
 
     @Test
     fun anyLadderCopyStandsInForTheOriginal() {
         assertEquals(1_440, Renditions.standIn(1_800.0) { it == 1_440 })
+        assertNull(Renditions.standIn(1_800.0) { it == null || it == 1_440 })
+    }
+
+    @Test
+    fun onASlowLineTheCardsCopyIsTheGallerysOwn() {
+        val slow = gallery * Renditions.limitedShare
+        assertEquals(1_080, Renditions.width(slow))
+        assertNull(Renditions.standIn(slow) { it == 1_080 })
+        assertEquals(640, Renditions.standIn(slow) { it == 640 })
+    }
+
+    @Test
+    fun aStandInIsNeverACopyTheRequestWouldPick() {
+        val widths: List<Int?> = Renditions.ladder + listOf(null)
+        for (mask in 0 until (1 shl widths.size)) {
+            val here = widths.filterIndexed { i, _ -> mask and (1 shl i) != 0 }.toSet()
+            var needed = 1.0
+            while (needed <= 2_500.0) {
+                val candidates = Renditions.candidates(needed)
+                val copy = Renditions.standIn(needed) { it in here }
+                if (copy != null) {
+                    assertTrue(copy in here)
+                    assertTrue(copy >= Renditions.standInMinimum)
+                    assertFalse(copy in candidates)
+                    assertFalse(candidates.any { it in here })
+                }
+                needed += 7.0
+            }
+        }
     }
 }

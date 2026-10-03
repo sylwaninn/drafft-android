@@ -56,6 +56,44 @@ class PhotoDownloadsTest {
         assertEquals(listOf("behind", "window"), order)
     }
 
+    private fun raceTwo(first: Pair<String, Images.Priority>, second: Pair<String, Images.Priority>, between: (PhotoDownloads) -> Unit): List<String> {
+        val queue = PhotoDownloads(limit = 1)
+        val order = Collections.synchronizedList(mutableListOf<String>())
+        queue.acquire(Images.Priority.NORMAL.ordinal) { false }
+        fun start(name: String, priority: Images.Priority) = thread {
+            if (queue.acquire(priority.ordinal, photo = name) { false }) {
+                order += name
+                queue.release()
+            }
+        }
+        val a = start(first.first, first.second)
+        waitFor { queue.waitingCount == 1 }
+        val b = start(second.first, second.second)
+        waitFor { queue.waitingCount == 2 }
+        between(queue)
+        queue.release()
+        a.join(5_000)
+        b.join(5_000)
+        return order
+    }
+
+    @Test
+    fun aRaiseNeverLowersAPhoto() {
+        // A long look's fetch, after the tap opened the profile.
+        val order = raceTwo("opened" to Images.Priority.HIGH, "window" to Images.Priority.NORMAL) {
+            it.raise("opened", Images.Priority.LOW.ordinal)
+        }
+        assertEquals(listOf("opened", "window"), order)
+    }
+
+    @Test
+    fun aRaiseLiftsAPhotoWaitingBehind() {
+        val order = raceTwo("window" to Images.Priority.NORMAL, "opened" to Images.Priority.LOW) {
+            it.raise("opened", Images.Priority.HIGH.ordinal)
+        }
+        assertEquals(listOf("opened", "window"), order)
+    }
+
     @Test
     fun aCancelledDownloadLeavesTheQueue() {
         val queue = PhotoDownloads(limit = 1)
