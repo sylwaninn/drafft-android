@@ -500,7 +500,8 @@ class AppModel(
         val tap = pending.tap
         val opened = try {
             // Bound to the account that tapped (null: the session wasn't read yet, whoever signed in).
-            if (pending.account != null && pending.account != backend.userID?.toString()) false else open(tap.route)
+            val sameAccount = pending.account == null || pending.account == backend.userID?.toString()
+            sameAccount && open(tap.route)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

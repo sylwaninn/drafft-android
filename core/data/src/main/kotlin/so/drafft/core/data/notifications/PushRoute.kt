@@ -92,8 +92,8 @@ class PushTap private constructor(val kind: PushKind, val route: PushRoute, val 
             "super_like" -> PushTap(PushKind.SUPER_LIKE, PushRoute.Likes)
             "match" -> toChat(PushKind.MATCH, chat)
             // Cancelled because its match ended: no chat any more, so the Sessions tab.
-            "session_cancelled" -> PushTap(PushKind.SESSION_CANCELLED, chat?.let(PushRoute::Chat) ?: PushRoute.Sessions)
-            "session_reminder" -> PushTap(PushKind.SESSION_REMINDER, chat?.let(PushRoute::Chat) ?: PushRoute.Sessions)
+            "session_cancelled" -> toSessionChat(PushKind.SESSION_CANCELLED, chat)
+            "session_reminder" -> toSessionChat(PushKind.SESSION_REMINDER, chat)
             "photo_refused" -> PushTap(
                 PushKind.PHOTO_REFUSED,
                 text(info["media"])?.let(PushRoute::PhotoRefusal) ?: PushRoute.Current,
@@ -116,6 +116,9 @@ class PushTap private constructor(val kind: PushKind, val route: PushRoute, val 
 
         private fun toChat(kind: PushKind, chat: String?) =
             if (chat != null) PushTap(kind, PushRoute.Chat(chat)) else PushTap(kind, PushRoute.Chats, fallsBack = true)
+
+        private fun toSessionChat(kind: PushKind, chat: String?) =
+            PushTap(kind, chat?.let(PushRoute::Chat) ?: PushRoute.Sessions)
 
         private fun unknown(chat: String?, info: Map<String, String>): PushTap {
             if (chat != null) return PushTap(PushKind.UNKNOWN, PushRoute.Chat(chat))

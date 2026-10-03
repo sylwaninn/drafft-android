@@ -434,8 +434,7 @@ class NotificationService(
             return
         }
         val account = backend.userID?.toString()
-        pendingRoute?.let(::countSkipped)
-        pendingRoute = null
+        dropPendingRoute()
         // Signed out in a running app: the push was for an account that left (its token is unregistered at
         // sign-out), never for the next one to sign in.
         if (account == null && tabsSeen) {
