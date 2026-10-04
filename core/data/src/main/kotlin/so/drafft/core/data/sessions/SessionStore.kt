@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import so.drafft.core.data.backend.Backend
 import so.drafft.core.data.platform.Haptics
+import so.drafft.core.data.platform.KeyValueStore
 import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Telemetry
 import so.drafft.core.model.SessionProposal
@@ -31,6 +32,8 @@ import so.drafft.core.model.Sport
  *   said in the app's words ([SessionFailureNotice]).
  * - Around it: the calendar event added for a session follows it ([SessionCalendar]); reminders are the
  *   server's pushes (`notify_session_*`), so a cancelled session never leaves one behind on a phone.
+ * - What needs the person (the Sessions tab's badge, a row's dot) and what they have looked at, kept per
+ *   account on the phone ([SessionAttention]).
  *
  * A voluntary pause doesn't stop any of this (only discovery pauses); a hold does, server side
  * (`moderated`). Every call runs on the main thread (the scope's dispatcher), like `@MainActor`.
@@ -39,6 +42,7 @@ class SessionStore(
     private val backend: Backend,
     private val calendar: SessionCalendar,
     val failureNotice: SessionFailureNotice,
+    defaults: KeyValueStore,
     private val scope: CoroutineScope,
 ) {
     var ledger: SessionLedger by mutableStateOf(SessionLedger())
@@ -54,6 +58,8 @@ class SessionStore(
     /** The signed-in person (`proposer_id` tells whose invite a card is). */
     var me: UUID? = null
         private set
+
+    private val attention = SessionAttention(defaults)
 
     /** Edits a copy of the ledger and publishes it, so the screens observing [ledger] redraw. */
     private inline fun <T> edit(block: SessionLedger.() -> T): T {
@@ -79,12 +85,49 @@ class SessionStore(
     fun isMine(row: SessionRecord): Boolean = row.proposerID == me
 
     /**
+     * The pending sessions of a chat still ahead, the one waiting on the person first: what the chat's
+     * banner shows. A confirmed session is settled and has no banner.
+     */
+    fun pending(inMatch: UUID): List<SessionRecord> {
+        val now = Instant.now()
+        return ledger.visible.values
+            .filter { it.matchID == inMatch && it.status == SessionRecord.Status.PENDING && it.isUpcoming(now) }
+            .sortedWith(compareBy<SessionRecord> { isMine(it) }.thenBy { it.date })
+    }
+
+    // What needs the person
+
+    /**
+     * An answer is expected from the person, or the other person changed something not looked at yet
+     * (confirmed, declined, cancelled).
+     */
+    fun needsAttention(row: SessionRecord): Boolean = me != null && attention.needsAttention(row, mine = isMine(row))
+
+    /** The count on the Sessions tab. */
+    val attentionCount: Int get() = ledger.visible.values.count(::needsAttention)
+
+    /** Opened as it stands: no longer news. */
+    fun markSeen(id: UUID) {
+        if (me == null) return
+        record(id)?.let { attention.markSeen(it) }
+    }
+
+    /** Whether "Meet safely" was already shown for this invite. */
+    fun hasShownSafety(id: UUID): Boolean = attention.hasShownSafety(aliases[id] ?: id)
+
+    fun markSafetyShown(id: UUID) {
+        if (me == null) return
+        attention.markSafetyShown(aliases[id] ?: id)
+    }
+
+    /**
      * Everything read again: the upcoming list, then the other sessions this phone shows, by id.
      * Only a successful read changes anything.
      */
     suspend fun refresh() {
         val me = backend.userID ?: return
         this.me = me
+        attention.load(me)
         val rows = attempt { SessionRecord.decodeList(backend.rpc("upcoming_sessions", JsonObject(emptyMap())).decodeToString()) }
             ?: return
         val returned = rows.map { it.id }.toSet()
@@ -229,6 +272,7 @@ class SessionStore(
         aliases.clear()
         requested.clear()
         me = null
+        attention.reset()
     }
 
     // Helpers

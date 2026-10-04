@@ -31,6 +31,7 @@ enum class Screen(val id: String) {
     CHAT("chat"),
     MEDIA_VIEWER("media_viewer"),
     PROPOSE_SESSION("propose_session"),
+    SESSION("session"),
     FILTERS("filters"),
     SUPER_LIKE_COMPOSER("super_like_composer"),
     EXTRAS("extras"),
