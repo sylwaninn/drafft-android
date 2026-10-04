@@ -77,7 +77,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import so.drafft.app.feature.me.SessionsView
+import so.drafft.app.feature.sessions.SessionsView
+import so.drafft.core.data.sessions.SessionStore
 import so.drafft.core.data.AppModel
 import so.drafft.core.data.DiscoveryFreshness
 import so.drafft.core.data.location.LocationGate
@@ -131,6 +132,7 @@ fun MainTabs(
     val store = koinInject<Store>()
     val location = koinInject<LocationGate>()
     val foreground = koinInject<so.drafft.core.data.platform.ForegroundReturns>()
+    val sessions = koinInject<SessionStore>()
     val saveable = rememberSaveableStateHolder()
     // Tabs opened at least once stay composed; the others are built on their first visit (or ahead of
     // it, one after another, while the tabs are still hidden).
@@ -180,7 +182,12 @@ fun MainTabs(
         ) {
             TabBar(
                 selected = app.tab,
-                badges = mapOf(AppModel.Tab.LIKES to app.likedMeCount, AppModel.Tab.CHATS to app.unreadTotal),
+                badges = mapOf(
+                    AppModel.Tab.LIKES to app.likedMeCount,
+                    // An answer expected, or a change of the other person's not looked at yet.
+                    AppModel.Tab.SESSIONS to sessions.attentionCount,
+                    AppModel.Tab.CHATS to app.unreadTotal,
+                ),
                 onSelect = { app.tab = it },
                 modifier = Modifier
                     .windowInsetsPadding(WindowInsets.navigationBars)

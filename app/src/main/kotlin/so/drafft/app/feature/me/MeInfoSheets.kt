@@ -47,12 +47,12 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import java.time.Instant
 import so.drafft.app.feature.auth.LegalDoc
 import so.drafft.app.feature.verification.HelpTopics
 import so.drafft.app.feature.verification.SupportSheet
@@ -60,10 +60,8 @@ import so.drafft.core.data.platform.Haptics
 import so.drafft.core.data.telemetry.AnalyticsEvent
 import so.drafft.core.data.telemetry.Screen
 import so.drafft.core.data.telemetry.Telemetry
-import so.drafft.core.model.DateText
 import so.drafft.core.model.L
 import so.drafft.core.model.Profile
-import so.drafft.core.model.SessionProposal
 import so.drafft.core.ui.LocalAppModel
 import so.drafft.core.ui.TrackScreen
 import so.drafft.core.ui.components.ConfirmAction
@@ -429,19 +427,17 @@ private fun SafetyEmergency() {
     }
 }
 
-/** Shown right after you confirm a session time: the session in one line, then the safety tips. */
+/**
+ * "Meet safely", slid in when a request has left (a session was proposed) and when one arrives, before
+ * the invite itself: the tips come first, then the person decides.
+ */
 @Composable
-fun SessionSafetySheet(
-    session: SessionProposal,
-    date: Instant,
-    partner: String,
-    modifier: Modifier = Modifier,
-) {
+fun SessionSafetySheet(modifier: Modifier = Modifier) {
     val dismiss = LocalSheetDismiss.current
     val scroll = rememberScrollState()
     val p = DS.palette
     SheetPage(
-        title = L("Meet safely"),
+        title = "",
         scroll = scroll,
         modifier = modifier,
         // No close button: "Got it" is the one way out (and the swipe down or back), never both.
@@ -459,31 +455,23 @@ fun SessionSafetySheet(
                 .fillMaxSize()
                 .verticalScroll(scroll)
                 .padding(bars)
-                .padding(start = DS.Space.lg, end = DS.Space.lg, top = DS.Space.sm, bottom = DS.Space.xl),
-            verticalArrangement = Arrangement.spacedBy(DS.Space.md),
+                .padding(start = DS.Space.lg, end = DS.Space.lg, top = DS.Space.lg, bottom = DS.Space.xl),
+            verticalArrangement = Arrangement.spacedBy(DS.Space.xl),
         ) {
             Column(
-                Modifier
-                    .fillMaxWidth()
-                    .draftBlock(p.night)
-                    .padding(DS.Space.xl)
-                    .semantics(mergeDescendants = true) { },
-                verticalArrangement = Arrangement.spacedBy(DS.Space.sm),
+                Modifier.padding(horizontal = DS.Space.xs),
+                verticalArrangement = Arrangement.spacedBy(DS.Space.lg),
             ) {
-                NightSurface {
-                    IconLabel(
-                        L("Session confirmed"),
-                        "check-circle",
-                        style = TextStyles.subheadline.semibold,
-                        color = p.accentOnNight,
-                    )
-                    Text(L("%s with %s", session.sport.displayName, partner), style = display(28f), color = Color.White)
-                    Text(
-                        L("%s at %s", DateText.format("EEEEdMMMM", date), DateText.time(date)),
-                        style = TextStyles.headline,
-                        color = Color.White.copy(alpha = 0.8f),
-                    )
+                Box(
+                    Modifier
+                        .size(56.dp)
+                        .background(p.lime, CircleShape)
+                        .clearAndSetSemantics { },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DrafftIcon("shield-check", size = 28.dp, tint = p.onLime)
                 }
+                Text(L("Meet safely"), Modifier.semantics { heading() }, style = display(34f), color = p.ink)
             }
             SheetBlock(title = L("Before you go")) {
                 SafetyTipRows()

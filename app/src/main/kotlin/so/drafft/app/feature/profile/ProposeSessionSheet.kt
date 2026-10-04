@@ -59,8 +59,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
@@ -68,7 +66,6 @@ import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import so.drafft.app.feature.discover.FirstThatFits
-import so.drafft.app.feature.me.SafetyTipRows
 import so.drafft.core.data.platform.Haptics
 import so.drafft.core.model.DateText
 import so.drafft.core.model.L
@@ -84,18 +81,15 @@ import so.drafft.core.ui.components.FocusScrollView
 import so.drafft.core.ui.components.LocalSheetDismiss
 import so.drafft.core.ui.components.Photo
 import so.drafft.core.ui.components.PressScaleButton
-import so.drafft.core.ui.components.RollingText
 import so.drafft.core.ui.components.SheetNavBar
 import so.drafft.core.ui.components.pressScale
 import so.drafft.core.ui.components.revealsOnFocus
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.Motion
-import so.drafft.core.ui.theme.NightSurface
 import so.drafft.core.ui.theme.TextStyles
 import so.drafft.core.ui.theme.bold
 import so.drafft.core.ui.theme.display
-import so.drafft.core.ui.theme.displayBold
 import so.drafft.core.ui.theme.monospacedDigits
 import so.drafft.core.ui.theme.semibold
 
@@ -108,7 +102,7 @@ private const val MAX_OPTIONS = 3
 
 /**
  * Session invite composer: sport, pitch, and one or more exact dates and times. Lets you pick
- * any other time. A live recap above the button always states exactly what will be sent.
+ * any other time. "Other times" (from a session's page) changes the times only.
  * Sheet content: present it in a `DrafftSheet`.
  */
 @Composable
@@ -164,8 +158,6 @@ fun ProposeSessionSheet(
 
     /** What gets sent: the options in time order. */
     val outgoingOptions = options.sorted()
-    val sessionDate = outgoingOptions.firstOrNull() ?: Instant.now()
-    val isCounter = counterTo != null
 
     /** Two times that are the same. */
     val hasDuplicate = options.map { it.epochSecond / 60 }.toSet().size < options.size
@@ -218,13 +210,7 @@ fun ProposeSessionSheet(
         topBar = { SheetNavBar("", onClose = dismiss) },
         bottomBar = {
             Footer(
-                sport = chosen,
-                discovery = discovery,
                 options = options,
-                outgoingOptions = outgoingOptions,
-                sessionDate = sessionDate,
-                title = title,
-                isCounter = isCounter,
                 sending = sending,
                 sendTitle = sendTitle,
                 canSend = canSend,
@@ -242,10 +228,8 @@ fun ProposeSessionSheet(
                 verticalArrangement = Arrangement.spacedBy(DS.Space.md),
             ) {
                 Header(profile, counterTo)
-                if (counterTo != null) {
-                    // Other times: the session stays as it is, only the times change.
-                    FixedSession(counterTo)
-                } else {
+                // Other times: the session stays as it is, only the times change.
+                if (counterTo == null) {
                     Block(L("Sport"), "running") {
                         SportPicker(profile, me, theyTeach, youTeach, chosen, discovery) { s, d ->
                             Haptics.select()
@@ -260,7 +244,6 @@ fun ProposeSessionSheet(
                 Block(L("When"), "calendar", trailing = L("Up to %d times", MAX_OPTIONS)) {
                     SlotsEditor(profile, options, onCompose = { compose(it) })
                 }
-                Block(L("Meet safely"), "shield-check") { SafetyTipRows() }
             }
         }
     }
@@ -303,30 +286,32 @@ private fun pitchIdeas(sport: Sport, discovery: SessionProposal.Discovery?): Lis
 private fun Header(profile: Profile, counterTo: SessionProposal?) {
     val p = DS.palette
     // Nothing floats on the sage ground: the header is a white block like the sections below.
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
             .background(p.canvas, RoundedCornerShape(DS.Radius.xl))
             .padding(DS.Space.lg),
-        horizontalArrangement = Arrangement.spacedBy(DS.Space.md),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(DS.Space.md),
     ) {
-        Avatar(profile.portrait, size = 52.dp, ring = true)
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.md), verticalAlignment = Alignment.CenterVertically) {
+            Avatar(profile.portrait, size = 52.dp, ring = true)
             Text(
                 if (counterTo == null) L("Train with %s", profile.name) else L("Suggest other times"),
-                Modifier.semantics { heading() },
+                Modifier.weight(1f).semantics { heading() },
                 style = display(22f),
                 color = p.ink,
                 // Long names wrap to a second line instead of being cut.
                 maxLines = 2,
             )
-            Text(
-                if (counterTo == null) L("Meet up and move together.") else L("Offer a few times that work for you."),
-                style = TextStyles.subheadline,
-                color = p.body,
-            )
         }
+        // Under the photo, so the sentence has the whole width of the block.
+        // Other times: the session they are for, in its own words, nothing about the times refused.
+        Text(
+            counterTo?.displayTitle ?: L("Meet up and move together."),
+            Modifier.fillMaxWidth(),
+            style = TextStyles.subheadline,
+            color = p.body,
+        )
     }
 }
 
@@ -417,54 +402,6 @@ private fun SportTile(
     }
 }
 
-/** Read-only recap of the invite being answered: sport and pitch are theirs, only times change. */
-@Composable
-private fun FixedSession(original: SessionProposal) {
-    val p = DS.palette
-    val shape = RoundedCornerShape(DS.Radius.xl)
-    NightSurface {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                // A sheet: plain night.
-                .background(p.night, shape)
-                .border(1.dp, p.blockEdge, shape)
-                .padding(DS.Space.xl),
-            verticalArrangement = Arrangement.spacedBy(DS.Space.md),
-        ) {
-            // The sport as a small lime tag; the pitch gets the full width below it.
-            Row(
-                Modifier
-                    .background(p.accentOnNight, CircleShape)
-                    .defaultMinSize(minHeight = 30.dp)
-                    .padding(horizontal = DS.Space.md),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DrafftIcon(original.sport.symbol, size = symbol(13f), tint = p.onAccentOnNight)
-                Text(
-                    if (original.discovery == null) original.sport.displayName else L("%s discovery", original.sport.displayName),
-                    style = TextStyles.footnote.bold,
-                    color = p.onAccentOnNight,
-                )
-            }
-
-            Text(original.displayTitle, Modifier.fillMaxWidth(), style = displayBold(26f), color = Color.White)
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(L("They offered"), style = TextStyles.caption.bold, color = Color.White.copy(alpha = 0.55f))
-                original.options.forEach { d ->
-                    Text(
-                        slotText(d),
-                        style = TextStyles.subheadline.semibold.monospacedDigits.copy(textDecoration = TextDecoration.LineThrough),
-                        color = Color.White.copy(alpha = 0.55f),
-                    )
-                }
-            }
-        }
-    }
-}
-
 private fun slotText(d: Instant): String = L("%s at %s", DateText.weekdayDayMonth(d), DateText.time(d))
 
 /** Up to three time cards. "Add a time" and each card open the native date and time sheet. */
@@ -543,16 +480,18 @@ private fun AddCard(first: Boolean, modifier: Modifier, onClick: () -> Unit) {
                     cornerRadius = CornerRadius(DS.Radius.lg.toPx()),
                     style = Stroke(width = w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))),
                 )
-            },
+            }
+            // The words never touch the dashed frame.
+            .padding(horizontal = DS.Space.md),
         verticalArrangement = Arrangement.spacedBy(DS.Space.xs, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         DrafftIcon("add", size = symbol(20f), tint = p.accentInk)
-        Text(
-            if (first) L("Add a time") else L("Add another"),
-            style = TextStyles.caption.semibold.copy(textAlign = TextAlign.Center),
-            color = p.accentInk,
-        )
+        // One line, never wrapped: the full words when they fit inside the dashed frame, else "Add".
+        FirstThatFits {
+            Text(if (first) L("Add a time") else L("Add another"), style = TextStyles.caption.semibold, color = p.accentInk, maxLines = 1, softWrap = false)
+            Text(L("Add"), style = TextStyles.caption.semibold, color = p.accentInk, maxLines = 1, softWrap = false)
+        }
     }
 }
 
@@ -580,7 +519,15 @@ private fun TitlePicker(
         ) {
             BasicTextField(
                 value = title,
-                onValueChange = onTitle,
+                // One line of pitch: Return puts the keyboard away instead of breaking the line.
+                onValueChange = { new ->
+                    if (new.contains('\n')) {
+                        onTitle(new.replace("\n", ""))
+                        focusManager.clearFocus()
+                    } else {
+                        onTitle(new)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = DS.Space.md, vertical = 13.dp)
@@ -663,16 +610,10 @@ private fun IdeaRow(idea: String, on: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** Recap of exactly what will be sent, then the action. */
+/** The action, and why it can't run yet. */
 @Composable
 private fun Footer(
-    sport: Sport,
-    discovery: SessionProposal.Discovery?,
     options: List<Instant>,
-    outgoingOptions: List<Instant>,
-    sessionDate: Instant,
-    title: String,
-    isCounter: Boolean,
     sending: Boolean,
     sendTitle: String,
     canSend: Boolean,
@@ -685,40 +626,6 @@ private fun Footer(
         verticalArrangement = Arrangement.spacedBy(DS.Space.md),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            Modifier.fillMaxWidth().semantics(mergeDescendants = true) { },
-            horizontalArrangement = Arrangement.spacedBy(DS.Space.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(40.dp).background(p.lime, CircleShape), contentAlignment = Alignment.Center) {
-                Crossfade(sport, label = "recapSport") { s -> DrafftIcon(s.symbol, size = symbol(15f), tint = p.onLime) }
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                val what = if (discovery == null) sport.displayName else L("%s discovery", sport.displayName)
-                val day = DateText.weekdayShortDayMonth(sessionDate)
-                val time = DateText.time(sessionDate)
-                RollingText(
-                    when {
-                        options.isEmpty() -> L("%s, no time yet", what)
-                        outgoingOptions.size > 1 -> L("%s, %d time options", what, outgoingOptions.size)
-                        else -> L("%s, %s at %s", what, day, time)
-                    },
-                    style = TextStyles.subheadline.bold,
-                    color = p.ink,
-                )
-                Crossfade(title, label = "recapPitch") { t ->
-                    Text(
-                        t.ifEmpty { if (isCounter) L("Same session, new times") else L("No pitch yet") },
-                        style = TextStyles.footnote,
-                        color = p.body,
-                        maxLines = 1,
-                        // design-lint: allow truncation - the session's pitch, written by the proposer (content, not copy)
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-
         DrafftButton(
             onClick = onSend,
             enabled = canSend,
@@ -728,8 +635,7 @@ private fun Footer(
                 Text(L("Sent"))
             } else {
                 DrafftIcon("plain", size = symbol(17f), tint = p.onLime)
-                // One line in every language: the count goes when it doesn't fit (the recap above
-                // already says how many times).
+                // One line in every language: the count goes when it doesn't fit.
                 FirstThatFits {
                     Text(if (options.size > 1) L("%s (%d times)", sendTitle, options.size) else sendTitle, maxLines = 1, softWrap = false)
                     Text(sendTitle, maxLines = 2)
