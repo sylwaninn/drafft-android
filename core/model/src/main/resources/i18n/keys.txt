@@ -24,6 +24,7 @@
 %d super likes added.
 %d super likes left
 %d super likes left after this
+%d times
 %d times offered
 %d too many
 %d unread
@@ -42,23 +43,27 @@
 %s away
 %s billed monthly
 %s billed yearly
+%s confirmed your session
 %s could show you
+%s declined your session
 %s discovery
 %s each
 %s every 6 months
+%s hasn't answered yet. They can pick one of your times or suggest others.
 %s liked you back
 %s likes you too. Say hi, or propose a session while it's fresh.
 %s only sees it if you match.
+%s proposes a session
 %s sees you first.
 %s session
 %s session, confirmed on drafft.
 %s sessions per week
+%s suggested other times
 %s super liked you
 %s together, then coffee?
 %s voice intro
 %s went the other way.
 %s will be told it's off.
-%s will pick a time or suggest others.
 %s with %s
 %s won't be notified, and you won't see each other again.
 %s%s
@@ -131,6 +136,7 @@ Account check
 Active
 Active now
 Activity
+Add
 Add %s at %s
 Add a comment
 Add a few more photos
@@ -319,8 +325,6 @@ Discard your changes?
 Discard your photo changes?
 Discover
 Discovery
-Discovery: %s shows you the ropes
-Discovery: you show %s the ropes
 Dismiss
 Distance
 Doesn't match yet.
@@ -400,6 +404,7 @@ Format
 Format, %s
 Forwards to your email
 Friendly match after work?
+From %s
 From the birthday you gave at sign-up. It can't be changed.
 From your %s account. You can change it.
 Fully agree. Finally someone said it.
@@ -636,6 +641,7 @@ Name, bio, sports, prompts, lifestyle
 Need inspiration?
 Needs attention
 Never
+New
 New account
 New email
 New friends to train with
@@ -646,7 +652,6 @@ New matches and likes
 New password
 New people join every morning. Meanwhile, your matches are waiting in Chats.
 New time
-New times below.
 Next up
 Night owl
 No alcohol
@@ -671,6 +676,7 @@ No pitch yet
 No profiles right now.
 No prompt matches “%s”.
 No results
+No sessions with %s yet.
 No sessions yet.
 No sport called “%s”. Try another word.
 Nobody can see your profile yet, so a boost wouldn't reach anyone.
@@ -701,7 +707,6 @@ OK
 Obstacle racing
 Off
 Off: notifications only say who wrote, not what.
-Offer a few times that work for you.
 Offer up to %d times. %s picks one, or suggests others.
 Okay that got a groan AND a laugh. Respect 😂
 Omnivore
@@ -719,6 +724,7 @@ Open Settings
 Open a chat with a match and propose a session. Confirmed ones show up here.
 Open chat
 Open profile
+Open session
 Open water
 Open-water dip if you dare?
 Opening the camera.
@@ -814,6 +820,7 @@ Profile paused
 Project night, you spot me?
 Prompts
 Propose a session
+Propose one from the chat.
 Punchline, hidden until they tap
 Purchase
 Purchases are turned off on this iPhone. You can allow them in Screen Time settings.
@@ -855,6 +862,7 @@ Renews
 Renews %s
 Renews on %s
 Reply
+Reply to %s
 Replying to %s
 Replying to yourself
 Report and block
@@ -888,7 +896,6 @@ Safety & reports
 Safety tips
 Sailing
 Same pick as %s!
-Same session, new times
 Saturday class, you in?
 Save %d%%
 Save %s at %s
@@ -930,11 +937,13 @@ Sends
 Sensitive data consent
 Sent
 Sent to you by email
-Session confirmed
+Session
+Session cancelled
 Session reminders, the evening before and an hour before
 Session: %s, %s
 Sessions
 Sessions a week for each sport. Rough is fine.
+Sessions with %s
 Set at sign-up. It can't be changed.
 Share
 Share My Email
@@ -1062,7 +1071,6 @@ There's already an account with this email. Log in instead.
 They agree or disagree
 They can't see your profile or message you, and you won't see them.
 They guess the right answer
-They offered
 They pick a side, then see yours
 They see you first, with a red heart on your profile. It doesn't use a daily like.
 They see you first, with a red heart on your profile. Use them when you like: they never expire.
@@ -1187,6 +1195,7 @@ Voice message (%s)
 Volleyball
 WOD together, no mercy?
 Waiting
+Waiting for %s
 Waiting for approval. It'll be added to your account once the payment goes through.
 Walking
 Warm-up first
@@ -1249,6 +1258,7 @@ Widen to %s
 Widen to any distance
 Win the club tournament
 Wing foil
+With
 With %s
 Withdrawing it means deleting your account.
 Withdrawing your consent means deleting your account.
@@ -1280,13 +1290,17 @@ You can replace your number, not remove it: it keeps your account secure.
 You can't change it later. If it's ever wrong, write to the help center in You.
 You can't create a new drafft account.
 You choose what you hear about in You › Notifications.
+You confirmed %s's session
+You declined %s's session
 You do it too
 You matched with %s
 You need to be 18 or older to use drafft.
 You now have
+You proposed a session to %s
 You should not go out with me if
 You sign in with %s, no password
 You sign in with %s. Changing your email here only affects notifications.
+You suggested other times to %s
 You'll see each other in Discover again. Your old chat doesn't come back.
 You'll stay logged in on this iPhone.
 You'll use it to log in from now on.
@@ -1458,6 +1472,7 @@ trail running
 training
 training for Hyrox
 walking
+with
 you both do it
 you could show %s
 you@example.com
