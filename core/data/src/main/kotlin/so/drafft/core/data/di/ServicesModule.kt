@@ -30,7 +30,7 @@ private fun mainScope() = CoroutineScope(SupervisorJob() + Dispatchers.Main.imme
 val sessionsStoreNotificationsModule = module {
     single { SessionFailureNotice(mainScope()) }
     single { SessionCalendar(get(), get(), get()) }
-    single { SessionStore(get(), get(), get(), mainScope()) }
+    single { SessionStore(get(), get(), get(), get(), mainScope()) }
     single { PurchaseCredit(get(), get(), get(), mainScope()) }
     single {
         PhotoModeration(

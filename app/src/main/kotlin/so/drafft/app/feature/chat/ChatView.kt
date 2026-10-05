@@ -4,12 +4,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,11 +62,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -102,6 +99,8 @@ import so.drafft.app.feature.profile.ProfileDetailMode
 import so.drafft.app.feature.profile.ProfileDetailView
 import so.drafft.app.feature.profile.ProposeSessionSheet
 import so.drafft.app.feature.profile.ReportSheet
+import so.drafft.app.feature.sessions.PersonSessionsRoute
+import so.drafft.app.feature.sessions.SessionDetailView
 import so.drafft.app.feature.profile.VoicePlayer
 import so.drafft.core.data.audio.AudioPlayback
 import so.drafft.core.data.chat.ChatService
@@ -160,19 +159,19 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Opening a chat, on a given session card when [sessionID] is set (from the Sessions tab). */
-data class ChatRoute(val chatID: String, val sessionID: UUID? = null)
-
-/** How far from the end, in dp, before the jump-to-latest button shows. */
-private const val JUMP_BUTTON_DISTANCE = 240f
+/** Opening a chat in a tab's stack (Chats, Sessions). */
+data class ChatRoute(val chatID: String)
 
 /**
- * Scroll bookkeeping for a chat. A plain reference, not observed: it changes on every scroll frame
- * and must never re-render the thread.
+ * Scroll bookkeeping for a chat. A plain reference, not observed (it changes on every scroll frame and
+ * must never re-render the thread), except [stick], which only flips when a scroll starts or settles.
  */
 private class ScrollMemo {
-    /** Follow the end of the thread (true on open, false once the person scrolls up). */
-    var stick = true
+    /**
+     * Follow the end of the thread (true on open, false once the person scrolls up). Observed: the
+     * jump-to-latest button never shows while the thread follows its end.
+     */
+    var stick by mutableStateOf(true)
 
     /** The initial layout has settled: later pins animate. */
     var settled = false
@@ -189,8 +188,8 @@ private class ScrollMemo {
     /** A scroll (drag, fling or animation) was running. */
     var scrolling = false
 
-    /** What was last revealed on arrival ("bottom" or a session ID). */
-    var revealed: String? = null
+    /** The thread already opened on its latest message. */
+    var revealed = false
 
     /** The newest message already handled (their new one is followed or counted once). */
     var lastID: String? = null
@@ -210,14 +209,9 @@ private class ScrollMemo {
     val rows = HashMap<String, LayoutCoordinates>()
 }
 
-/** A "Meet safely" sheet asked for a confirmed time. */
-private data class SafetyRequest(val session: SessionProposal, val date: Instant, val id: UUID = UUID.randomUUID())
-
 @Composable
 fun ChatView(
     conversationID: String,
-    /** Scroll to this session's card and flash it (from the Sessions tab). */
-    focusSession: UUID? = null,
     modifier: Modifier = Modifier,
 ) {
     TrackScreen(Screen.CHAT)
@@ -269,19 +263,19 @@ fun ChatView(
         }
         return
     }
-    ChatContent(convo, focusSession, draft, { draft = it }, modifier)
+    ChatContent(convo, draft, { draft = it }, modifier)
 }
 
 @Composable
 private fun ChatContent(
     convo: Conversation,
-    focusSession: UUID?,
     draft: String,
     onDraftChange: (String) -> Unit,
     modifier: Modifier,
 ) {
     val app = LocalAppModel.current
     val chat = koinInject<ChatService>()
+    val sessions = koinInject<SessionStore>()
     val stack = LocalNavStack.current
     val density = LocalDensity.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -292,12 +286,14 @@ private fun ChatContent(
     var viewer by remember { mutableStateOf<MediaItem?>(null) }
     var showProfile by remember { mutableStateOf(false) }
     var proposing by remember { mutableStateOf(false) }
+    // A proposal left: once its sheet is down, "Meet safely" slides in over the chat.
+    var proposalSent by remember { mutableStateOf(false) }
+    var showMeetSafely by remember { mutableStateOf(false) }
     var replyingTo by remember { mutableStateOf<Message?>(null) }
     var focused by remember { mutableStateOf<FocusedMessage?>(null) }
-    var counterTo by remember { mutableStateOf<SessionProposal?>(null) }
     var showSafety by remember { mutableStateOf(false) }
-    var safetyFor by remember { mutableStateOf<SafetyRequest?>(null) }
-    var highlighted by remember { mutableStateOf<String?>(null) }
+    // A session's page, as a sheet over the chat (its card, its banner): closing it returns here.
+    var openSession by remember { mutableStateOf<UUID?>(null) }
     /** Their messages that arrived while scrolled up: the count on the jump button. */
     var unseen by remember { mutableIntStateOf(0) }
     // Where the thread sits: pinned to the latest message until the person scrolls up, then kept
@@ -334,12 +330,12 @@ private fun ChatContent(
         }?.id
     }
 
-    suspend fun scrollToMessage(id: String, center: Boolean) {
+    /** Brings a message's bottom to the bottom of the visible thread. */
+    suspend fun scrollToMessage(id: String) {
         val (y, h) = rowBounds(id) ?: return
-        // The visible part of the thread: between the nav bar and the composer.
+        // Above the composer.
         val viewport = scroll.viewportSize.toFloat()
-        val visible = viewport - memo.insetTop - memo.insetBottom
-        val target = if (center) y + h / 2 - memo.insetTop - visible / 2 else y + h - viewport + memo.insetBottom
+        val target = y + h - viewport + memo.insetBottom
         scroll.scrollTo(target.roundToInt().coerceIn(0, scroll.maxValue))
     }
 
@@ -398,9 +394,20 @@ private fun ChatContent(
             memo.scrolling = running
         }
     }
-    // The jump button: only once clearly away from the end (a bit more than a message's height).
-    val awayFromEnd by remember { derivedStateOf { scroll.maxValue - scroll.value > px(JUMP_BUTTON_DISTANCE) } }
-    val reachedEnd by remember { derivedStateOf { atBottom() } }
+    /**
+     * The latest message is on screen (its top above the composer), decided from what is shown rather
+     * than from scroll offsets, which the bars and the keyboard shift.
+     */
+    fun latestVisible(): Boolean {
+        if (!scroll.canScrollForward) return true
+        val id = current.messages.lastOrNull()?.id ?: return true
+        val (top, _) = rowBounds(id) ?: return false
+        return top < scroll.value + scroll.viewportSize - memo.insetBottom
+    }
+    // The jump button: only when the latest message is out of sight and the thread isn't following its
+    // end (never while typing or as the keyboard comes up).
+    val awayFromEnd by remember { derivedStateOf { !memo.stick && !latestVisible() } }
+    val reachedEnd by remember { derivedStateOf { latestVisible() } }
     LaunchedEffect(reachedEnd) { if (reachedEnd && unseen > 0) unseen = 0 }
 
     // Their new message: followed if you're at the end, otherwise counted on the jump button and the
@@ -442,41 +449,29 @@ private fun ChatContent(
             app.markRead(conversationID)
             repeat(2) {
                 val saved = memo.saved
-                if (memo.stick) scroll.scrollTo(scroll.maxValue) else if (saved != null) scrollToMessage(saved, center = false)
+                if (memo.stick) scroll.scrollTo(scroll.maxValue) else if (saved != null) scrollToMessage(saved)
                 delay(150)
             }
             memo.saved = null
         }
     }
 
-    // Opens on the latest message, or (from Sessions) centres the session card we came for, then
-    // flashes it once. Only on arrival: coming back from a photo or a cover keeps the place.
-    LaunchedEffect(focusSession) {
-        val key = focusSession?.toString() ?: "bottom"
-        if (memo.revealed == key) return@LaunchedEffect
-        memo.revealed = key
-        if (focusSession == null) {
-            // Pinned to the latest message; heights settling (images, composer) keep it pinned
-            // without animation until the thread has settled.
-            memo.stick = true
-            pinToBottom(animated = false)
-            delay(600)
-            // Once more after images, the composer and the push transition have settled.
-            if (memo.stick) pinToBottom(animated = false)
-            memo.settled = true
-            return@LaunchedEffect
-        }
-        memo.stick = false
+    // Opens on the latest message. Only on arrival: coming back from a photo, a cover or a session's
+    // page keeps the place.
+    LaunchedEffect(Unit) {
+        if (memo.revealed) return@LaunchedEffect
+        memo.revealed = true
+        // Pinned to the latest message; heights settling (images, composer) keep it pinned without
+        // animation until the thread has settled.
+        memo.stick = true
+        pinToBottom(animated = false)
+        delay(600)
+        // Once more after images, the composer and the push transition have settled.
+        if (memo.stick) pinToBottom(animated = false)
         memo.settled = true
-        val message = current.messages.firstOrNull { (it.content as? MessageContent.Session)?.proposal?.id == focusSession }
-            ?: return@LaunchedEffect
-        delay(80) // let the list lay out first
-        scrollToMessage(message.id, center = true)
-        delay(250)
-        highlighted = message.id
-        delay(1400)
-        highlighted = null
     }
+    // The sessions as the server has them, for the banner and the cards (Realtime keeps them current).
+    LaunchedEffect(conversationID) { sessions.refresh() }
 
     // At the top of what's loaded: the page before (the bottom anchor keeps the thread in place).
     LaunchedEffect(scroll) {
@@ -510,14 +505,18 @@ private fun ChatContent(
                 .blur(focusBlur)
                 .background(DS.palette.canvasSoft),
             topBar = {
-                ChatNavigationBar(
-                    convo = convo,
-                    onBack = { stack.pop() },
-                    onProfile = { showProfile = true },
-                    onPropose = { proposing = true },
-                    onMarkUnread = ::markUnread,
-                    onSafety = { showSafety = true },
-                )
+                Column {
+                    ChatNavigationBar(
+                        convo = convo,
+                        onBack = { stack.pop() },
+                        onProfile = { showProfile = true },
+                        onPropose = { proposing = true },
+                        onSessions = { stack.push(PersonSessionsRoute(conversationID, convo.profile.name)) },
+                        onMarkUnread = ::markUnread,
+                        onSafety = { showSafety = true },
+                    )
+                    ChatSessionBanner(conversationID, onOpen = { openSession = it })
+                }
             },
             bottomBar = {
                 Composer(
@@ -579,19 +578,11 @@ private fun ChatContent(
                                     onOpen = { item ->
                                         viewer = item
                                     },
-                                    onCounterSession = { counterTo = it },
-                                    onSessionSafety = { s, d ->
-                                        // After the card has settled into "Confirmed".
-                                        scope.launch {
-                                            delay(250)
-                                            safetyFor = SafetyRequest(s, d)
-                                        }
-                                    },
+                                    onOpenSession = { openSession = it },
                                     onReply = { replyingTo = it },
                                     onRetry = { app.retry(it.id, conversationID) },
                                     onFocus = { message, frame -> focused = FocusedMessage(message, frame) },
                                     hidden = focused?.id == m.id,
-                                    highlighted = highlighted == m.id,
                                 )
                             }
                         }
@@ -618,7 +609,7 @@ private fun ChatContent(
                     visible = awayFromEnd,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = DS.Space.md, bottom = padding.calculateBottomPadding() + DS.Space.sm),
+                        .padding(end = DS.Space.md, bottom = padding.calculateBottomPadding() + DS.Space.lg),
                     enter = scaleIn(Motion.snappy(), initialScale = 0.6f) + fadeIn(Motion.snappy()),
                     exit = scaleOut(Motion.snappy(), targetScale = 0.6f) + fadeOut(Motion.snappy()),
                 ) {
@@ -652,24 +643,31 @@ private fun ChatContent(
     DrafftSheet(visible = showProfile, onDismissRequest = { showProfile = false }, showsGrabber = false, drawsUnderNavigationBar = true) {
         ProfileDetailView(profile = convo.profile, mode = ProfileDetailMode.SHEET, onBlocked = { stack.pop() })
     }
-    val counter = counterTo
-    DrafftSheet(visible = counter != null, onDismissRequest = { counterTo = null }) {
-        val original = counter ?: return@DrafftSheet
+    DrafftSheet(
+        visible = proposing,
+        onDismissRequest = {
+            proposing = false
+            if (proposalSent) {
+                proposalSent = false
+                showMeetSafely = true
+            }
+        },
+    ) {
         ProposeSessionSheet(
             profile = convo.profile,
             me = app.publicMe,
-            sendTitle = L("Send new times"),
-            counterTo = original,
-            onSend = { p -> app.counterSession(original.id, conversationID, p) },
+            onSend = { p ->
+                proposalSent = true
+                app.proposeSession(p, conversationID)
+            },
         )
     }
-    DrafftSheet(visible = proposing, onDismissRequest = { proposing = false }) {
-        ProposeSessionSheet(profile = convo.profile, me = app.publicMe, onSend = { p -> app.proposeSession(p, conversationID) })
-    }
-    val safety = safetyFor
-    DrafftSheet(visible = safety != null, onDismissRequest = { safetyFor = null }) {
-        val r = safety ?: return@DrafftSheet
-        SessionSafetySheet(session = r.session, date = r.date, partner = convo.profile.name)
+    DrafftSheet(visible = showMeetSafely, onDismissRequest = { showMeetSafely = false }) { SessionSafetySheet() }
+    // The last one stays drawn while the sheet slides down.
+    val lastSession = remember { arrayOfNulls<UUID>(1) }
+    openSession?.let { lastSession[0] = it }
+    DrafftSheet(visible = openSession != null, onDismissRequest = { openSession = null }) {
+        lastSession[0]?.let { SessionDetailView(sessionID = it, presented = true) }
     }
     DrafftSheet(visible = showSafety, onDismissRequest = { showSafety = false }) {
         ReportSheet(profile = convo.profile, onDone = { blockFromChat(convo.profile) })
@@ -756,7 +754,8 @@ private fun JumpToLatestButton(unseen: Int, action: () -> Unit) {
 /**
  * The chat's navigation bar, WhatsApp style: back, then the person
  * (avatar at the bar controls' 44 dp, first name and presence beside it; opens their profile), and on
- * the right propose a session and More (mute, mark as unread, then report or block, apart).
+ * the right propose a session and More (every session with them; mute, mark as unread; then report or
+ * block, apart).
  */
 @Composable
 private fun ChatNavigationBar(
@@ -764,6 +763,7 @@ private fun ChatNavigationBar(
     onBack: () -> Unit,
     onProfile: () -> Unit,
     onPropose: () -> Unit,
+    onSessions: () -> Unit,
     onMarkUnread: () -> Unit,
     onSafety: () -> Unit,
 ) {
@@ -793,42 +793,52 @@ private fun ChatNavigationBar(
                 // The size of Back and the trailing discs.
                 Avatar(convo.profile.portrait, size = BarControl)
                 Column {
-                    // The name takes the room up to the trailing buttons and ends with "…" only when it
-                    // can't fit: the one header text allowed to truncate (DESIGN.md, Headers).
+                    // The name takes the room up to the trailing buttons, wraps to a second line, and ends
+                    // with "…" only past it: the one header text allowed to truncate (DESIGN.md, Headers).
                     Text(
                         convo.profile.name,
-                        style = TextStyles.headline,
+                        style = TextStyles.subheadline.semibold,
                         color = DS.palette.ink,
-                        maxLines = 1,
+                        maxLines = 2,
                         // design-lint: allow truncation - the chat header name, asked for by the user (DESIGN.md, Headers)
                         overflow = TextOverflow.Ellipsis,
                     )
                     PresenceLine(convo)
                 }
             }
-            // Proposing a session is the chat's main action: a solid accent disc; More (vertical dots) stays
-            // a neutral glass utility, the size of Back.
+            // Proposing a session is the chat's main action, the only place to start one: a solid accent
+            // capsule, "+ Session". More (vertical dots) stays a neutral glass utility, the size of Back.
             Row(horizontalArrangement = Arrangement.spacedBy(DS.Space.sm)) {
-                Box(
+                Row(
                     Modifier
-                        .size(BarControl)
+                        .height(BarControl)
                         .pressScale({
                             Haptics.tap()
                             onPropose()
                         })
-                        .semantics { contentDescription = proposeLabel }
-                        .background(DS.palette.lime, CircleShape),
-                    contentAlignment = Alignment.Center,
+                        .clearAndSetSemantics {
+                            contentDescription = proposeLabel
+                            onClick { onPropose(); true }
+                        }
+                        .background(DS.palette.lime, CircleShape)
+                        .padding(horizontal = DS.Space.lg),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // `.body.weight(.semibold)`.
-                    DrafftIcon("calendar-add", size = 20.4.dp, tint = DS.palette.onLime)
+                    DrafftIcon("add", size = 17.dp, tint = DS.palette.onLime)
+                    Text(L("Session"), style = TextStyles.subheadline.semibold, color = DS.palette.onLime, maxLines = 1, softWrap = false)
                 }
                 Box {
                     // Neutral icons: the menu doesn't take the accent tint.
                     GlassCircleButton("menu-dots-vertical", { menu = true }, contentDescription = L("More"))
-                    // Profile and sessions are one tap away in the bar: this is about the chat, then
-                    // safety, apart.
+                    // Profile and proposing are one tap away in the bar: this is every session with them,
+                    // the chat itself, then safety, apart.
                     ChatMenu(expanded = menu, onDismiss = { menu = false }) {
+                        ChatMenuItem(L("Sessions with %s", convo.profile.name), "stopwatch-play") {
+                            menu = false
+                            onSessions()
+                        }
+                        MenuGap()
                         ChatMenuItem(
                             if (convo.muted) L("Unmute notifications") else L("Mute notifications"),
                             if (convo.muted) "bell" else "bell-off",
@@ -840,7 +850,7 @@ private fun ChatNavigationBar(
                             menu = false
                             onMarkUnread()
                         }
-                        Box(Modifier.fillMaxWidth().padding(vertical = DS.Space.xs).height(6.dp).background(DS.palette.ink.copy(alpha = 0.05f)))
+                        MenuGap()
                         ChatMenuItem(L("Report or block"), "shield-warning", destructive = true) {
                             menu = false
                             onSafety()
@@ -867,6 +877,41 @@ private fun ChatNavigationBar(
 
 /** Bar controls: Back, the trailing discs and the header avatar share one 44 dp diameter. */
 private val BarControl = 44.dp
+
+/** Between the menu's sections. */
+@Composable
+private fun MenuGap() {
+    Box(Modifier.fillMaxWidth().padding(vertical = DS.Space.xs).height(6.dp).background(DS.palette.ink.copy(alpha = 0.05f)))
+}
+
+/**
+ * What needs the person in this chat, under the header: a session waiting on their answer, or one they
+ * sent and wait on (the one waiting on them first). A confirmed session is settled and has no banner;
+ * the thread holds its card.
+ */
+@Composable
+private fun ChatSessionBanner(conversationID: String, onOpen: (UUID) -> Unit) {
+    val store = koinInject<SessionStore>()
+    val match = remember(conversationID) { runCatching { UUID.fromString(conversationID) }.getOrNull() }
+    val row = match?.let { store.pending(it).firstOrNull() }
+    val shown = row?.let { r -> SessionProposal.from(r)?.let { Triple(r.id, it, store.isMine(r)) } }
+    // The last one stays drawn while the banner leaves.
+    val last = remember { arrayOfNulls<Triple<UUID, SessionProposal, Boolean>>(1) }
+    if (shown != null) last[0] = shown
+    AnimatedVisibility(
+        visible = shown != null,
+        enter = fadeIn(Motion.snappy()) + expandVertically(Motion.snappy()),
+        exit = fadeOut(Motion.snappy()) + shrinkVertically(Motion.snappy()),
+    ) {
+        val (id, session, mine) = last[0] ?: return@AnimatedVisibility
+        SessionBanner(
+            session = session,
+            mine = mine,
+            onOpen = { onOpen(id) },
+            modifier = Modifier.padding(start = DS.Space.lg, end = DS.Space.lg, bottom = DS.Space.sm),
+        )
+    }
+}
 
 /** Under the name in the bar: "Typing…", or "Active now" while they have the app open (nothing otherwise). */
 @Composable
@@ -951,10 +996,8 @@ fun MessageRow(
     convo: Conversation,
     groupedWithNext: Boolean,
     onOpen: (MediaItem) -> Unit,
-    /** Opens the "other times" sheet for an invite. */
-    onCounterSession: (SessionProposal) -> Unit = {},
-    /** A session time was confirmed (by you) or the safety tips were asked for from its card. */
-    onSessionSafety: (SessionProposal, Instant) -> Unit = { _, _ -> },
+    /** A session's card tapped: its page opens. */
+    onOpenSession: (UUID) -> Unit = {},
     onReply: (Message) -> Unit = {},
     /** A message that couldn't be sent, tapped. */
     onRetry: (Message) -> Unit = {},
@@ -964,14 +1007,12 @@ fun MessageRow(
     hidden: Boolean = false,
     /** Render only the bubble (the overlay's copy): no swipe, no long press. */
     presentation: Boolean = false,
-    /** The card we came for (from Sessions): an accent wash behind the bubble, fading out. */
-    highlighted: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (presentation) {
-        BubbleWithReaction(message, convo, groupedWithNext, onOpen, onCounterSession, onSessionSafety, presentation = true, modifier = modifier)
+        BubbleWithReaction(message, convo, groupedWithNext, onOpen, onOpenSession, presentation = true, modifier = modifier)
     } else {
-        MessageRowContent(message, convo, groupedWithNext, onOpen, onCounterSession, onSessionSafety, onReply, onRetry, onFocus, hidden, highlighted, modifier)
+        MessageRowContent(message, convo, groupedWithNext, onOpen, onOpenSession, onReply, onRetry, onFocus, hidden, modifier)
     }
 }
 
@@ -981,13 +1022,11 @@ private fun MessageRowContent(
     convo: Conversation,
     groupedWithNext: Boolean,
     onOpen: (MediaItem) -> Unit,
-    onCounterSession: (SessionProposal) -> Unit,
-    onSessionSafety: (SessionProposal, Instant) -> Unit,
+    onOpenSession: (UUID) -> Unit,
     onReply: (Message) -> Unit,
     onRetry: (Message) -> Unit,
     onFocus: (Message, Rect) -> Unit,
     hidden: Boolean,
-    highlighted: Boolean,
     modifier: Modifier,
 ) {
     val mine = message.fromMe
@@ -1004,11 +1043,13 @@ private fun MessageRowContent(
     // Swipe right to reply, like WhatsApp: the bubble follows, an arrow fills in, release past it.
     val swipe = remember { Animatable(0f) }
     val armed by remember { derivedStateOf { swipe.value >= REPLY_THRESHOLD } }
-    val wash by animateFloatAsState(
-        if (highlighted) 1f else 0f,
-        if (highlighted) Motion.snappy() else tween(500, easing = Motion.EaseOut),
-        label = "highlight",
-    )
+    // A tap that ends a long press (the reactions) or a reply slide is part of that gesture: a card in the
+    // bubble (a session) ignores clicks until then, in System.nanoTime. A plain reference, never state.
+    val tapBlockedUntil = remember { LongArray(1) }
+    fun blockTaps(millis: Long) {
+        tapBlockedUntil[0] = maxOf(tapBlockedUntil[0], System.nanoTime() + millis * 1_000_000L)
+    }
+    val openSession: (UUID) -> Unit = { id -> if (System.nanoTime() >= tapBlockedUntil[0]) onOpenSession(id) }
     val quoted = quoted(message, convo)
     val isText = message.content is MessageContent.Text
     val replyLabel = L("Reply")
@@ -1016,6 +1057,7 @@ private fun MessageRowContent(
 
     fun lift() {
         val coords = frameBox[0]?.takeIf { it.isAttached } ?: return
+        blockTaps(4_000)
         focus(currentMessage, coords.boundsInWindow())
     }
 
@@ -1025,6 +1067,7 @@ private fun MessageRowContent(
             .padding(bottom = if (groupedWithNext) 0.dp else DS.Space.sm)
             .replySwipeGesture(
                 onChanged = { x ->
+                    blockTaps(1_000)
                     val crossedBefore = swipe.value >= REPLY_THRESHOLD
                     // Rubber band past the threshold.
                     val next = if (x < REPLY_THRESHOLD) x else REPLY_THRESHOLD + (x - REPLY_THRESHOLD) * 0.25f
@@ -1079,11 +1122,10 @@ private fun MessageRowContent(
             ) {
                 if (mine) Spacer(Modifier.width(56.dp + DS.Space.sm))
                 BubbleWithReaction(
-                    message, convo, groupedWithNext, onOpen, onCounterSession, onSessionSafety,
+                    message, convo, groupedWithNext, onOpen, openSession,
                     presentation = false,
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .drawHighlight(p.lime) { wash }
                         .onPlaced { frameBox[0] = it }
                         .alpha(if (hidden) 0f else 1f)
                         // Long press (0.3 s) lifts the bubble; it never takes the tap from buttons inside.
@@ -1131,27 +1173,13 @@ private fun MessageRowContent(
     }
 }
 
-/** Flash: an accent wash behind the bubble, not a frame ([alpha] read at draw time). */
-private fun Modifier.drawHighlight(color: Color, alpha: () -> Float): Modifier = drawBehind {
-    val a = alpha()
-    if (a <= 0f) return@drawBehind
-    val pad = 6.dp.toPx()
-    drawRoundRect(
-        color.copy(alpha = 0.28f * a),
-        topLeft = Offset(-pad, -pad),
-        size = Size(size.width + pad * 2, size.height + pad * 2),
-        cornerRadius = CornerRadius((DS.Radius.xl + 6.dp).toPx()),
-    )
-}
-
 @Composable
 private fun BubbleWithReaction(
     message: Message,
     convo: Conversation,
     groupedWithNext: Boolean,
     onOpen: (MediaItem) -> Unit,
-    onCounterSession: (SessionProposal) -> Unit,
-    onSessionSafety: (SessionProposal, Instant) -> Unit,
+    onOpenSession: (UUID) -> Unit,
     presentation: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -1160,7 +1188,7 @@ private fun BubbleWithReaction(
     val shown = remember { arrayOfNulls<String>(1) }
     message.reaction?.let { shown[0] = it }
     Box(modifier) {
-        Bubble(message, convo, groupedWithNext, onOpen, onCounterSession, onSessionSafety, presentation)
+        Bubble(message, convo, groupedWithNext, onOpen, onOpenSession, presentation)
         AnimatedVisibility(
             visible = message.reaction != null,
             modifier = Modifier
@@ -1288,8 +1316,7 @@ private fun Bubble(
     convo: Conversation,
     groupedWithNext: Boolean,
     onOpen: (MediaItem) -> Unit,
-    onCounterSession: (SessionProposal) -> Unit,
-    onSessionSafety: (SessionProposal, Instant) -> Unit,
+    onOpenSession: (UUID) -> Unit,
     presentation: Boolean,
 ) {
     val app = LocalAppModel.current
@@ -1446,20 +1473,11 @@ private fun Bubble(
             val row = store.record(snapshot.id)
             val s = row?.let { SessionProposal.from(it) } ?: snapshot
             LaunchedEffect(snapshot.id) { store.need(snapshot.id) }
-            SessionCard(
+            SessionRefCard(
                 session = s,
                 mine = row?.let(store::isMine) ?: mine,
-                profileName = convo.profile.name,
-                chatID = convo.id,
-                busy = store.isBusy(s.id),
-                onPick = { d ->
-                    app.respondToSession(s.id, accept = true, pick = d)
-                    onSessionSafety(s, d)
-                },
-                onDecline = { app.respondToSession(s.id, accept = false) },
-                onCounter = { onCounterSession(s) },
-                onCancel = { app.cancelSession(s.id) },
-                onSafety = { s.chosen?.let { onSessionSafety(s, it) } },
+                name = convo.profile.name,
+                onOpen = { if (!presentation) onOpenSession(s.id) },
             )
         }
 

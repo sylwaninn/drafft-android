@@ -107,6 +107,7 @@ import so.drafft.core.ui.components.trackingScrollOffset
 import so.drafft.core.ui.navigation.LocalNavStack
 import so.drafft.core.ui.navigation.NavStackHost
 import so.drafft.core.ui.navigation.rememberNavStack
+import so.drafft.app.feature.sessions.ChatStackScreen
 import so.drafft.core.ui.theme.DS
 import so.drafft.core.ui.theme.DrafftIcon
 import so.drafft.core.ui.theme.LocalReduceMotion
@@ -122,7 +123,8 @@ private object ConversationsRoot
 
 /**
  * Chats tab: new matches in a row, then the conversations. Chats open in this tab's own stack
- * ([ChatRoute]); the tab bar hides while one is pushed and comes back as soon as Back begins.
+ * ([ChatRoute]), and the session pages and lists a chat opens push on top of it; the tab bar hides while
+ * one is pushed and comes back as soon as Back begins.
  */
 @Composable
 fun ConversationsView(modifier: Modifier = Modifier) {
@@ -138,12 +140,7 @@ fun ConversationsView(modifier: Modifier = Modifier) {
         app.chatRequest = null
     }
 
-    NavStackHost(stack, modifier) { route ->
-        when (route) {
-            is ChatRoute -> ChatView(conversationID = route.chatID, focusSession = route.sessionID)
-            else -> ConversationList()
-        }
-    }
+    NavStackHost(stack, modifier) { route -> ChatStackScreen(route) { ConversationList() } }
 }
 
 /** The list's own side margin, where its cards start. */
